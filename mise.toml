@@ -24,7 +24,7 @@ LEAN_NUM_THREADS = "4"
 from = "debian:bookworm-slim"                       # glibc base, matches lean4 binaries
 tag = "ghcr.io/TreeHappy/brane:latest"              # what `mise oci push` pushes
 workdir = "/workspace"
-user = "1000:1000"                                  # matches typical podmanmachine mapstatics
+user = "1000:1000"                                  # non-root user inside the image
 
 [oci.labels]
 "org.opencontainers.image.source" = "https://github.com/TreeHappy/brane"

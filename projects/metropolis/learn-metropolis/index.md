@@ -1,10 +1,10 @@
-# Metropolis → Samplers in Lean 4 — the learning plan
+# 🎲 Metropolis → Samplers in Lean 4 — the learning plan
 
-Welcome to the learning track for this repo. The root project (`/workspace/brane`)
-contains the *code*: `Solver.lean` (generic solver architecture + Metropolis) and
-`Main.lean` (a concrete Bayesian model). This folder contains the *course*.
+Welcome to the learning track for this project. The project code lives in
+`projects/metropolis`: `Solver.lean` (generic solver architecture + Metropolis)
+and `Main.lean` (a concrete Bayesian model). This folder contains the *course*.
 
-## How the chapters fit together
+## 🧭 How the chapters fit together
 
 ```mermaid
 flowchart LR
@@ -21,7 +21,7 @@ the theme of the whole course.
 
 ---
 
-## Chapter 1 — Metropolis core ([TUTORIAL.md](TUTORIAL.md)) ✅ done
+## 1️⃣ Chapter 1 — Metropolis core ([TUTORIAL.md](TUTORIAL.md)) ✅ done
 
 What one MCMC sampler is, and *why it is allowed to work*:
 
@@ -37,7 +37,7 @@ What one MCMC sampler is, and *why it is allowed to work*:
 Key invariant established in Ch. 1 (proved in `Proofs.lean`):
 `Δ = logU(θ′) − logU(θ)` is all the sampler ever needs — `Z` never computed.
 
-## Chapter 2 — The sampler zoo ([SAMPLERS.md](SAMPLERS.md)) → **next up**
+## 2️⃣ Chapter 2 — The sampler zoo ([SAMPLERS.md](SAMPLERS.md)) → **next up** 👀
 
 The landscape question: *if Metropolis works, why is there any other sampler?*
 and *what makes each one "better"?*
@@ -57,7 +57,7 @@ Planned outline:
    burden, ESS-per-iteration, and how each one plugs into our `Solver`
    interface.
 
-## Chapter 3+ — hands-on planned chapters
+## 3️⃣ Chapter 3 + 🚧 — hands-on planned chapters
 - **Ch. 3: Second solver** — implement Gibbs (then MALA) against the `Solver`
   interface and measure them on the same model.
 - **Ch. 4: Diagnosing chains** — implement R̂ and ESS/closest-match ACT in
@@ -67,10 +67,10 @@ Planned outline:
 
 ---
 
-## Running the code
+## 🏃 Running the code
 
 ```bash
-cd /workspace/brane
+cd projects/metropolis
 lake build
 lake exe metropolis                            # the sampler of Ch. 1
 lake env lean learn-metropolis/Proofs.lean     # the proofs of Ch. 1 §5
