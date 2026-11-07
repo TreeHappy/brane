@@ -1,0 +1,58 @@
+# mise-managed toolchain for the Brane repo
+# `mise install` fetches everything; `mise run`/hooked shims put them on PATH.
+
+[tools]
+# Lean 4 + lake (lake ships inside the lean4 tool package).
+# Must match projects/*/lean-toolchain files.
+"github:leanprover/lean4" = "4.35.0"
+
+# For the figure scripts (projects/*/learn-*/images/make_figs.py) and misc tooling.
+python = "3.15.2"
+
+# GitHub CLI — used to create/push repos and inspect Actions runs.
+gh = "2.103.3"
+
+[env]
+# Persist build outputs even if someone deletes them accidentally;
+# keeps CI and local runs equivalent.
+LEAN_NUM_THREADS = "4"
+
+[tasks.build]
+description = "Build every Lean project in the repo"
+run = '''
+set -euo pipefail
+for proj in projects/*/lakefile.toml; do
+  dir=$(dirname "$proj")
+  echo "== lake build: $dir"
+  (cd "$dir" && lake build)
+done
+'''
+
+[tasks.test]
+description = "Check all Lean proofs in every project"
+run = '''
+set -euo pipefail
+for proj in projects/*/lakefile.toml; do
+  dir=$(dirname "$proj")
+  for proof in "$dir"/learn-*/Proofs.lean; do
+    [ -e "$proof" ] || continue
+    echo "== lean check: $proof"
+    (cd "$dir" && lake env lean "${proof#"$dir"/}")
+  done
+done
+'''
+
+[tasks.solve]
+description = "Run the metropolis sampler executable (topic: metropolis)"
+run = '''
+set -euo pipefail
+cd projects/metropolis && lake build && lake exe metropolis
+'''
+
+[tasks.figs]
+description = "Regenerate tutorial figures (topic: metropolis)"
+run = '''
+set -euo pipefail
+cd projects/metropolis/learn-metropolis/images
+python3 make_figs.py
+'''
