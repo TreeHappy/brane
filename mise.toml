@@ -9,9 +9,6 @@
 # For the figure scripts (projects/*/learn-*/images/make_figs.py) and misc tooling.
 python = "3.15.2"
 
-# GitHub CLI — used to create/push repos and inspect Actions runs.
-gh = "2.103.3"
-
 [env]
 # Persist build outputs even if someone deletes them accidentally;
 # keeps CI and local runs equivalent.
