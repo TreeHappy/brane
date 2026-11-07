@@ -1,0 +1,10 @@
+name = "metropolis"
+version = "0.1.0"
+defaultTargets = ["metropolis"]
+
+[[lean_lib]]
+name = "Solver"
+
+[[lean_exe]]
+name = "metropolis"
+root = "Main"
