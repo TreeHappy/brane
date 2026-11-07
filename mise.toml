@@ -1,6 +1,9 @@
 # mise-managed toolchain for the Brane repo
 # `mise install` fetches everything; `mise run`/hooked shims put them on PATH.
 
+[settings]
+experimental = true
+
 [tools]
 # Lean 4 + lake (lake ships inside the lean4 tool package).
 # Must match projects/*/lean-toolchain files.
@@ -9,10 +12,36 @@
 # For the figure scripts (projects/*/learn-*/images/make_figs.py) and misc tooling.
 python = "3.15.2"
 
-[env]
-# Persist build outputs even if someone deletes them accidentally;
-# keeps CI and local runs equivalent.
+# Threads for the Lean compiler; goes into the image itself, not the host env.
+[oci.env]
 LEAN_NUM_THREADS = "4"
+
+# ------------------------------------------------------------------------------
+# OCI container image (use on a Linux host — e.g. WSL; Windows binaries would
+# otherwise be copied in and fail with "Exec format error" inside the image)
+# ------------------------------------------------------------------------------
+[oci]
+from = "debian:bookworm-slim"                       # glibc base, matches lean4 binaries
+tag = "ghcr.io/TreeHappy/brane:latest"              # what `mise oci push` pushes
+workdir = "/workspace"
+user = "1000:1000"                                  # matches typical podmanmachine mapstatics
+
+[oci.labels]
+"org.opencontainers.image.source" = "https://github.com/TreeHappy/brane"
+"org.opencontainers.image.title" = "brane-dev"
+"org.opencontainers.image.description" = "Lean 4 + Python dev image for the Brane math exploration repo"
+
+[tasks.image-build]
+description = "Build the OCI dev image (mise-oci layout, one layer per tool)"
+run = "mise oci build -o ./mise-oci"
+
+[tasks.image-run]
+description = "Run a command in the dev image (podman preferred, docker fallback); mount the repo"
+run = "mise oci run --image-dir ./mise-oci -it --volume \"$PWD:/workspace\" --"
+
+[tasks.image-push]
+description = "Push the dev image to ghcr.io (needs `podman login ghcr.io` or docker login)"
+run = "mise oci push --image-dir ./mise-oci"
 
 [tasks.build]
 description = "Build every Lean project in the repo"
