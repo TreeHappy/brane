@@ -103,10 +103,10 @@ asymmetric: the forward and reverse proposal densities differ, so accept with
 (asymmetric: the forward and reverse proposal densities differ, so accept
 with)
 
-$$
+```math
 \min\Bigl(1,\ \exp\bigl(\log p(\theta') - \log p(\theta)
 + \log q(\theta \mid \theta') - \log q(\theta' \mid \theta)\bigr)\Bigr)
-$$
+```
 
 where $q(\theta' \mid \theta) = \mathcal N(\theta + h\,\nabla \log p(\theta),\, 2h)$
 — i.e. the Ch. 1 `Δ` plus two correction terms from the drifted proposal. The
@@ -128,9 +128,9 @@ this by chaining many steps).
 **Idea.** Introduce a momentum `p` and simulate *Hamiltonian dynamics* on the
 landscape
 
-$$
+```math
 L(\theta) = \log p(\theta) - \tfrac{1}{2}\, p^{\\!\\top} M^{-1} p
-$$
+```
 
 for `L` leapfrog steps, then Metropolis flip on total energy error.
 Physically: a ball rolling on the *negative* log-density surface, with

@@ -32,42 +32,42 @@ second is the most useful computationally; the third is the most intuitive.
 
 Let $\gamma(s)=\Phi(q(s))$ with $q(s)=(u(s),v(s))$. Differentiate twice:
 
-$$
+```math
 \gamma'=\dot q^i\Phi_i,
-$$
+```
 
-$$
+```math
 \gamma''=\ddot q^k\Phi_k+\dot q^i\dot q^j\Phi_{ij}.
-$$
+```
 
 Insert the Gauss formula $\Phi_{ij}=\Gamma^k_{\;ij}\Phi_k+II_{ij}n$:
 
-$$
+```math
 \gamma''
 =\bigl(\ddot q^k+\Gamma^k_{\;ij}\dot q^i\dot q^j\bigr)\Phi_k
 +II_{ij}\dot q^i\dot q^j\,n.
-$$
+```
 
 The **covariant acceleration** is the tangent part:
 
-$$
+```math
 \frac{D\dot\gamma}{ds}
 =\bigl(\ddot q^k+\Gamma^k_{\;ij}\dot q^i\dot q^j\bigr)\Phi_k.
-$$
+```
 
 A geodesic has zero covariant acceleration, so
 
-$$
+```math
 \boxed{\;\ddot q^k+\Gamma^k_{\;ij}\dot q^i\dot q^j=0\;}
 \qquad k=u,v.
 \tag{geodesic equation}
-$$
+```
 
 The normal part is still there:
 
-$$
+```math
 n\cdot\gamma''=II_{ij}\dot q^i\dot q^j.
-$$
+```
 
 So a geodesic’s acceleration is **purely normal to the surface**. That is
 exactly what “the surface pushes back” means: the surface supplies whatever
@@ -87,66 +87,66 @@ This is the derivation that makes the Christoffel formula unsurprising.
 
 The **kinetic energy** of a particle moving in parameter space is
 
-$$
+```math
 T=\tfrac12\,g_{ij}(q)\,\dot q^i\dot q^j,
 \qquad
 L=T
-$$
+```
 
 (no potential: free motion). The Euler–Lagrange equations are
 
-$$
+```math
 \frac{d}{ds}\frac{\partial L}{\partial\dot q^k}
 -\frac{\partial L}{\partial q^k}=0.
-$$
+```
 
 Compute the pieces:
 
-$$
+```math
 \frac{\partial L}{\partial\dot q^k}=g_{kj}\dot q^j,
-$$
+```
 
-$$
+```math
 \frac{\partial L}{\partial q^k}
 =\tfrac12\,\partial_k g_{ij}\,\dot q^i\dot q^j.
-$$
+```
 
 Therefore
 
-$$
+```math
 \frac{d}{ds}\bigl(g_{kj}\dot q^j\bigr)
 -\tfrac12\,\partial_k g_{ij}\,\dot q^i\dot q^j=0,
-$$
+```
 
 i.e.
 
-$$
+```math
 g_{kj}\ddot q^j
 +\partial_i g_{kj}\,\dot q^i\dot q^j
 -\tfrac12\,\partial_k g_{ij}\,\dot q^i\dot q^j=0.
-$$
+```
 
 The middle term is symmetric in $i,j$ after contraction with
 $\dot q^i\dot q^j$, so replace it by its symmetrisation:
 
-$$
+```math
 \partial_i g_{kj}\,\dot q^i\dot q^j
 =\tfrac12\bigl(\partial_i g_{kj}+\partial_j g_{ki}\bigr)\dot q^i\dot q^j.
-$$
+```
 
 Then
 
-$$
+```math
 g_{kj}\ddot q^j
 +\tfrac12\bigl(\partial_i g_{kj}+\partial_j g_{ki}
 -\partial_k g_{ij}\bigr)\dot q^i\dot q^j=0.
-$$
+```
 
 Contract with $g^{mk}$ and use the definition of the Christoffel symbol:
 
-$$
+```math
 \boxed{\;\ddot q^m+\Gamma^m_{\;ij}\dot q^i\dot q^j=0.\;}
-$$
+```
 
 The “mysterious” metric formula for $\Gamma$ is simply what you get when you
 move the metric derivatives in the Euler–Lagrange equation to the other side.
@@ -157,16 +157,16 @@ move the metric derivatives in the Euler–Lagrange equation to the other side.
 
 Because $L$ does not depend explicitly on $s$, the **energy**
 
-$$
+```math
 E=\tfrac12\,g_{ij}\dot q^i\dot q^j
-$$
+```
 
 is conserved. Check directly from the geodesic equation:
 
-$$
+```math
 \frac{dE}{ds}
 =g_{ij}\dot q^i\Bigl(\ddot q^j+\Gamma^j_{\;k\ell}\dot q^k\dot q^\ell\Bigr)=0.
-$$
+```
 
 (The bracket is zero by the geodesic equation; the factor is just the
 equation contracted with $\dot q$.)
@@ -206,18 +206,18 @@ $L$ is really using the energy action, and the value of $E$ fixes the speed.
 
 In a general coordinate system, a free particle obeys
 
-$$
+```math
 \ddot q^k=-\Gamma^k_{\;ij}\dot q^i\dot q^j.
-$$
+```
 
 The right-hand side looks like a force but is entirely due to the
 coordinates. Polar coordinates make this vivid:
 
-$$
+```math
 \ddot r=r\dot\theta^2,
 \qquad
 \ddot\theta=-\frac{2}{r}\dot r\dot\theta.
-$$
+```
 
 The first is centrifugal, the second is the polar-coordinate analogue of the
 Coriolis term. The particle is moving in a straight line; the coordinates are
@@ -231,9 +231,9 @@ force is the physical constraint that keeps the particle on the surface.
 
 If the metric does not depend on a coordinate $q^\ell$, then
 
-$$
+```math
 p_\ell=g_{\ell j}\dot q^j
-$$
+```
 
 is conserved. Examples:
 
@@ -254,22 +254,22 @@ these momenta to high accuracy.
 
 The Legendre transform gives
 
-$$
+```math
 p_i=\frac{\partial L}{\partial\dot q^i}=g_{ij}\dot q^j,
 \qquad
 H=p_i\dot q^i-L=\tfrac12\,g^{ij}p_ip_j.
-$$
+```
 
 Hamilton’s equations are
 
-$$
+```math
 \dot q^i=\frac{\partial H}{\partial p_i}=g^{ij}p_j,
-$$
+```
 
-$$
+```math
 \dot p_k=-\frac{\partial H}{\partial q^k}
 =-\tfrac12\,\partial_k g^{ij}\,p_ip_j.
-$$
+```
 
 They are equivalent to the geodesic equation. The geodesic flow lives on the
 cotangent bundle $T^*S$; this is the starting point for symplectic
@@ -287,21 +287,21 @@ $g=I$, $\Gamma=0$, so $\ddot q=0$: geodesics are straight lines.
 
 ### Plane in polar coordinates
 
-$$
+```math
 \ddot r-r\dot\theta^2=0,\qquad
 \ddot\theta+\frac{2}{r}\dot r\dot\theta=0.
-$$
+```
 
 These are straight lines written in polar coordinates. The conserved
 $r^2\dot\theta$ is the angular momentum of the straight motion.
 
 ### Sphere
 
-$$
+```math
 \ddot\theta-\sin\theta\cos\theta\,\dot\varphi^2=0,
 \qquad
 \ddot\varphi+2\cot\theta\,\dot\theta\dot\varphi=0.
-$$
+```
 
 Solutions are great circles. Meridians ($\varphi=\text{const}$) give
 $\ddot\theta=0$; the equator ($\theta=\pi/2$) gives $\ddot\varphi=0$.
@@ -338,15 +338,15 @@ Geodesic.speed s st      -- √(2E)
 
 `accel` is exactly
 
-$$
+```math
 u''=-(\Gamma^u_{\;uu}\dot u^2+2\Gamma^u_{\;uv}\dot u\dot v
 +\Gamma^u_{\;vv}\dot v^2),
-$$
+```
 
-$$
+```math
 v''=-(\Gamma^v_{\;uu}\dot u^2+2\Gamma^v_{\;uv}\dot u\dot v
 +\Gamma^v_{\;vv}\dot v^2).
-$$
+```
 
 The demo integrates a geodesic on the paraboloid and prints
 `E(0) = E(1) = 0.68`, which is the discrete analogue of energy conservation.

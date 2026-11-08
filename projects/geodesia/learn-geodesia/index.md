@@ -6,10 +6,10 @@ look the way they do, with a bias toward *pictures, Jacobians and physics*.
 
 The central object is a **parameterized surface**
 
-$$
+```math
 \Phi : \mathbb{R}^2 \to \mathbb{R}^3,
 \qquad (u,v) \mapsto \Phi(u,v) = \big(x(u,v),\,y(u,v),\,z(u,v)\big).
-$$
+```
 
 Everything else is built from two derivatives of $\Phi$:
 
@@ -23,9 +23,9 @@ Everything else is built from two derivatives of $\Phi$:
 
 The one equation that ties it all together is the **Gauss formula**
 
-$$
+```math
 \boxed{\;\Phi_{ij} = \Gamma^k_{\;ij}\,\Phi_k + II_{ij}\,n\;}
-$$
+```
 
 The second derivative of the embedding has a **tangent part** (the Christoffel
 symbols) and a **normal part** (the second fundamental form). Geodesics keep

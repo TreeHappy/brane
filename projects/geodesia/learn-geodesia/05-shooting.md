@@ -23,15 +23,15 @@ precisely.
 The geodesic equation is a second-order ODE. An **initial-value problem**
 (IVP) specifies position and velocity:
 
-$$
+```math
 q(0)=a,\qquad q'(0)=v.
-$$
+```
 
 A **boundary-value problem** (BVP) specifies two positions:
 
-$$
+```math
 q(0)=a,\qquad q(L)=b,
-$$
+```
 
 with the total length $L$ generally **unknown**. The BVP is harder: you are
 not allowed to choose the velocity; it is determined by the requirement of
@@ -40,15 +40,15 @@ initial velocity.
 
 Write the solution of the IVP as
 
-$$
+```math
 q(s;a,v),
-$$
+```
 
 emphasising its dependence on the initial data. For a fixed $L$, the miss is
 
-$$
+```math
 \boxed{\;R(v)=q(L;a,v)-b.\;}
-$$
+```
 
 We want $R(v)=0$. This is a nonlinear equation in $v\in\mathbb{R}^2$ (for a
 surface). The function $R$ is only available through numerical integration,
@@ -60,33 +60,33 @@ but that is enough for Newton’s method.
 
 Newton’s method is
 
-$$
+```math
 \boxed{\;v_{k+1}=v_k-\bigl[DR(v_k)\bigr]^{-1}R(v_k).\;}
-$$
+```
 
 The only hard part is the **Jacobian** $DR=\partial R/\partial v$. Formally,
 
-$$
+```math
 DR(v)=\frac{\partial q(L;a,v)}{\partial v}.
-$$
+```
 
 Let $Y(s)=\partial q(s;a,v)/\partial v$ be the $2\times2$ matrix of
 derivatives with respect to the initial velocity. Differentiate the ODE
 $q''=F(q,q')$ with respect to $v$:
 
-$$
+```math
 \boxed{\;
 Y''=F_q(q,q')\,Y+F_{q'}(q,q')\,Y'.
 \;}
 \tag{first variational equation}
-$$
+```
 
 The initial conditions follow from $q(0)=a$ (independent of $v$) and
 $q'(0)=v$:
 
-$$
+```math
 Y(0)=0,\qquad Y'(0)=I.
-$$
+```
 
 Then $DR(v)=Y(L)$. This is a **linear matrix ODE**; integrate it together
 with the geodesic (or after it) using RK4, and you have an exact (up to RK4
@@ -96,28 +96,28 @@ error) Jacobian. This is the standard algorithm in Eberly §2.1.
 
 For
 
-$$
+```math
 F^i(q,q')=-\Gamma^i_{\;jk}(q)\,q'^j q'^k,
-$$
+```
 
 we have
 
-$$
+```math
 \frac{\partial F^i}{\partial q'^j}
 =-2\Gamma^i_{\;jk}q'^k,
 \qquad
 \frac{\partial F^i}{\partial q^m}
 =-\partial_m\Gamma^i_{\;jk}\,q'^j q'^k.
-$$
+```
 
 Therefore each column $Y_{\cdot j}$ of $Y$ satisfies
 
-$$
+```math
 \boxed{\;
 (Y^i)''+2\Gamma^i_{\;jk}q'^k\,(Y^j)'
 +\partial_m\Gamma^i_{\;jk}q'^j q'^k\,Y^m=0.
 \;}
-$$
+```
 
 In vector notation this is
 $Y''+2\Gamma(q)[q',Y']+(\partial\Gamma(q)[q',q'])Y=0$, where the brackets
@@ -147,17 +147,17 @@ $c(v)=q(L';a,v)$. The true geodesic passes through $b$ at some $s=L<L'$, so
 $b$ lies on the curve even though the endpoint is not $b$. Minimise the
 distance from $b$ to the endpoint:
 
-$$
+```math
 \ell(v)=\operatorname{dist}\bigl(b,c(v)\bigr).
-$$
+```
 
 Eberly uses a line-segment distance weighted by the metric along the segment
 (his eq. 18):
 
-$$
+```math
 \ell(v)=\int_0^1
 \sqrt{(c-b)^{\mathsf T}G\bigl((1-t)b+tc\bigr)(c-b)}\,dt.
-$$
+```
 
 The gradient $\ell_v$ involves $c_v=\partial c/\partial v$, i.e. the same
 variational matrix $Y$ as before. Use steepest descent or conjugate gradients
@@ -169,17 +169,17 @@ minimiser.
 On a 2-D surface there is a cleaner formulation. Parameterise the initial
 velocity by a **unit** tangent direction and an unknown length:
 
-$$
+```math
 v=\cos\alpha\,e_1+\sin\alpha\,e_2,
 \qquad (e_1,e_2)\text{ orthonormal in }T_aS.
-$$
+```
 
 The unknowns are $(\alpha,L)$, and the equations are
 
-$$
+```math
 q(L;a,\alpha)-b=0
 \qquad (2\text{ equations}).
-$$
+```
 
 So $2$ unknowns for $2$ equations. This is the version used in the worked
 example below and in the figure script. It is the $n=2$ case of the general
@@ -293,11 +293,11 @@ inverting the endpoint map.
 
 Take
 
-$$
+```math
 \Phi(u,v)=\bigl(u,v,0.3(u^2+v^2)\bigr),
 \qquad
 a=(0.4,0.2),\quad b=(1.2,0.9).
-$$
+```
 
 The straight chord has length $1.2281$. Start with the chord direction and
 $L_0=1.15\times\text{chord}=1.4123$. Damped Newton on $(\alpha,L)$ gives:

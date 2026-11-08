@@ -12,36 +12,36 @@
 
 A surface is a map
 
-$$
+```math
 \Phi : \mathbb{R}^2 \to \mathbb{R}^3,
 \qquad \Phi(u,v) = \big(x(u,v),\,y(u,v),\,z(u,v)\big).
-$$
+```
 
 Think of $(u,v)$ as **coordinates painted on the surface**. A curve in the
 parameter plane, $s \mapsto (u(s),v(s))$, becomes a curve on the surface:
 
-$$
+```math
 \gamma(s) = \Phi\big(u(s),v(s)\big).
-$$
+```
 
 Differentiate with the chain rule:
 
-$$
+```math
 \gamma'(s)
 = \frac{\partial\Phi}{\partial u}\dot u
  + \frac{\partial\Phi}{\partial v}\dot v
 = \underbrace{\begin{bmatrix}\Phi_u & \Phi_v\end{bmatrix}}_{J}
   \begin{bmatrix}\dot u\\ \dot v\end{bmatrix}.
-$$
+```
 
 The **Jacobian** is the $3\times 2$ matrix
 
-$$
+```math
 J = \begin{bmatrix}\Phi_u & \Phi_v\end{bmatrix},
 \qquad
 \Phi_u=\frac{\partial\Phi}{\partial u},\quad
 \Phi_v=\frac{\partial\Phi}{\partial v}.
-$$
+```
 
 Two interpretations, both important:
 
@@ -52,18 +52,21 @@ Two interpretations, both important:
   $J$.
 
 > **Directional derivative.** If you walk in the parameter direction
-> $\xi=(a,b)$, your 3-D direction on the surface is
-> $$
-> D_\xi\Phi = J\xi = a\,\Phi_u + b\,\Phi_v.
-> $$
-> This is the directional derivative of the embedding, and it is the only
-> “directional derivative” you need for the first fundamental form.
+> $\xi=(a,b)$, your 3-D direction on the surface is the directional
+> derivative of the embedding
+
+```math
+D_\xi\Phi = J\xi = a\,\Phi_u + b\,\Phi_v,
+```
+
+> and this is the only "directional derivative" you need for the first
+> fundamental form.
 
 ### A graph is a special case
 
 For a height field $z=f(x,y)$,
 
-$$
+```math
 \Phi(x,y)=(x,y,f(x,y)),
 \qquad
 J=
@@ -72,7 +75,7 @@ J=
 0 & 1\\
 f_x & f_y
 \end{bmatrix}.
-$$
+```
 
 This is the most common surface in the code: `Surface.ofHeight`.
 
@@ -82,15 +85,15 @@ This is the most common surface in the code: `Surface.ofHeight`.
 
 The **first fundamental form** is
 
-$$
+```math
 \boxed{\;I = J^{\mathsf T}J\;}
 \qquad
 I_{ij}=\langle \Phi_i,\Phi_j\rangle.
-$$
+```
 
 Written out:
 
-$$
+```math
 I=
 \begin{bmatrix}
 E & F\\
@@ -101,25 +104,25 @@ F & G
 \langle\Phi_u,\Phi_u\rangle & \langle\Phi_u,\Phi_v\rangle\\
 \langle\Phi_v,\Phi_u\rangle & \langle\Phi_v,\Phi_v\rangle
 \end{bmatrix}.
-$$
+```
 
 For a parameter velocity $\xi=(\dot u,\dot v)$:
 
-$$
+```math
 |\gamma'|^2
 = (J\xi)^{\mathsf T}(J\xi)
 = \xi^{\mathsf T}J^{\mathsf T}J\,\xi
 = \xi^{\mathsf T}I\,\xi
 = E\,\dot u^2 + 2F\,\dot u\dot v + G\,\dot v^2.
-$$
+```
 
 So $I$ is the **ruler**: it converts coordinate velocity into actual length.
 It also gives angles between tangent vectors $v,w$ via
 $\langle v,w\rangle = v^{\mathsf T}I w$, and area via
 
-$$
+```math
 dA = \sqrt{\det I}\;du\,dv = |\Phi_u\times\Phi_v|\,du\,dv.
-$$
+```
 
 ### Recovering a 3-D tangent vector’s coordinates
 
@@ -127,18 +130,18 @@ Suppose someone gives you an ambient tangent vector $w\in T_pS$ (a 3-vector)
 and asks for its parameter coordinates $\xi=(\dot u,\dot v)$. Since
 $w=J\xi$ and $J^{\mathsf T}J=I$,
 
-$$
+```math
 \boxed{\;\xi = I^{-1}J^{\mathsf T}w\;}
-$$
+```
 
 This is exactly the formula Eberly uses to convert an initial 3-D velocity
 $y'(0)$ into initial parameter velocity $(du/ds,dv/ds)$:
 
-$$
+```math
 \begin{bmatrix}du/ds\\ dv/ds\end{bmatrix}
 = G^{-1}J^{\mathsf T}y'(s),
 \qquad G=I.
-$$
+```
 
 It is implemented as `Geodesic.tangentVecToParams`.
 
@@ -146,13 +149,13 @@ It is implemented as `Geodesic.tangentVecToParams`.
 
 For $\Phi=(x,y,f)$,
 
-$$
+```math
 I=
 \begin{bmatrix}
 1+f_x^2 & f_xf_y\\
 f_xf_y & 1+f_y^2
 \end{bmatrix}.
-$$
+```
 
 Check: a step $(dx,dy)$ in the plane lifts to $(dx,dy,f_xdx+f_ydy)$, whose
 squared length is $dx^2+dy^2+(f_xdx+f_ydy)^2$, precisely the quadratic form
@@ -166,13 +169,13 @@ The first fundamental form sees only *intrinsic* geometry: distances and
 angles measured by a bug living on the surface. To see how the surface bends
 in the surrounding 3-D space, we need the **unit normal**
 
-$$
+```math
 n = \frac{\Phi_u\times\Phi_v}{|\Phi_u\times\Phi_v|}.
-$$
+```
 
 The **second fundamental form** is
 
-$$
+```math
 \boxed{\;II_{ij}=\langle n,\Phi_{ij}\rangle\;}
 \qquad
 II=
@@ -185,35 +188,35 @@ f & g_2
 \langle n,\Phi_{uu}\rangle & \langle n,\Phi_{uv}\rangle\\
 \langle n,\Phi_{vu}\rangle & \langle n,\Phi_{vv}\rangle
 \end{bmatrix}.
-$$
+```
 
 ### Why this measures bending
 
 Take a curve $\gamma(s)=\Phi(q(s))$ on the surface, parameterized by arc
 length so that $|\gamma'|=1$. Differentiate twice:
 
-$$
+```math
 \gamma' = q^i{}\Phi_i,
-$$
+```
 
-$$
+```math
 \gamma'' = \ddot q^i\,\Phi_i + \dot q^i\dot q^j\,\Phi_{ij}.
-$$
+```
 
 Dot with the normal $n$. Since $n\cdot\Phi_i=0$,
 
-$$
+```math
 \boxed{\;n\cdot\gamma'' = II_{ij}\,\dot q^i\dot q^j\;}
-$$
+```
 
 The normal component of the curve’s acceleration is the **normal curvature**
 
-$$
+```math
 \kappa_n
 = \frac{n\cdot\gamma''}{|\gamma'|^2}
 = \frac{II(\xi,\xi)}{I(\xi,\xi)},
 \qquad \xi=(\dot u,\dot v).
-$$
+```
 
 So $II$ answers: *how much does the surface leave its tangent plane as I walk
 in direction $\xi$?* Positive/negative signs depend on the choice of $n$, but
@@ -223,11 +226,11 @@ the product of the two principal curvatures (Gaussian curvature) does not.
 
 Differentiate $n\cdot\Phi_i=0$:
 
-$$
+```math
 n_j\cdot\Phi_i + n\cdot\Phi_{ij}=0
 \quad\Longrightarrow\quad
 II_{ij}=-n_i\cdot\Phi_j.
-$$
+```
 
 This is the **Weingarten** view: $II$ is the derivative of the normal field,
 with a minus sign. The shape operator below makes this precise.
@@ -237,9 +240,9 @@ with a minus sign. The shape operator below makes this precise.
 Choose coordinates at a point so that $\Phi(0,0)=0$, the tangent plane is
 $z=0$, and $n=(0,0,1)$. Taylor’s theorem gives
 
-$$
+```math
 z(u,v)=\tfrac12\,II_{ij}(0,0)\,u^i u^j + O(3).
-$$
+```
 
 So the second fundamental form is literally the **quadratic approximation of
 the surface above its tangent plane**. A bowl has definite $II$; a saddle has
@@ -253,11 +256,11 @@ eigenvalue.
 The two forms are not independent: both are bilinear forms on the same
 tangent plane. The linear map that compares them is the **shape operator**
 
-$$
+```math
 S = I^{-1}II,
 \qquad
 II(\xi,\eta)=I(S\xi,\eta).
-$$
+```
 
 Its eigenvalues are the **principal curvatures** $\kappa_1,\kappa_2$ and its
 eigenvectors are the **principal directions** — the directions of maximal and
@@ -265,22 +268,22 @@ minimal bending. In an orthonormal basis, $S$ is just the matrix of $II$.
 
 The two classical scalar curvatures are
 
-$$
+```math
 K=\det S=\frac{\det II}{\det I}
 \qquad\text{(Gaussian curvature)},
-$$
+```
 
-$$
+```math
 H=\tfrac12\operatorname{tr}S
 =\tfrac12\operatorname{tr}(I^{-1}II)
 \qquad\text{(mean curvature)}.
-$$
+```
 
 They determine the principal curvatures:
 
-$$
+```math
 \kappa_{1,2}=H\pm\sqrt{H^2-K}.
-$$
+```
 
 - $K>0$: bowl/ellipsoid (both directions bend the same way).
 - $K<0$: saddle (directions bend oppositely).
@@ -291,9 +294,9 @@ $$
 
 The derivative of the normal in direction $\xi$ is
 
-$$
+```math
 D_\xi n = -S\xi
-$$
+```
 
 (with our outward-normal sign convention). So the shape operator *is* the
 derivative of the Gauss map $n:S\to S^2$. That is the cleanest geometric
@@ -306,19 +309,19 @@ meaning of $II$: “how fast does the normal turn when I move?”
 Decompose the second derivative $\Phi_{ij}$ into a tangent part and a normal
 part:
 
-$$
+```math
 \boxed{\;\Phi_{ij}
 = \Gamma^k_{\;ij}\,\Phi_k + II_{ij}\,n\;}
-$$
+```
 
 This is the **Gauss formula**. Dotting with $n$ recovers
 $II_{ij}=\langle n,\Phi_{ij}\rangle$. Dotting with $\Phi_k$ gives the
 Christoffel symbols of the first kind:
 
-$$
+```math
 \Gamma_{kij}
 = \langle \Phi_{ij},\Phi_k\rangle.
-$$
+```
 
 The next chapter is entirely about $\Gamma$: it is the tangent part of the
 “second Jacobian” $\Phi_{ij}$.
@@ -333,41 +336,41 @@ The next chapter is entirely about $\Gamma$: it is the tangent part of the
 
 ### Plane
 
-$$
+```math
 \Phi(u,v)=(u,v,0),\quad
 I=\begin{bmatrix}1&0\\0&1\end{bmatrix},\quad
 II=0.
-$$
+```
 
 $K=H=0$. The plane neither stretches nor bends.
 
 ### Cylinder of radius $R$
 
-$$
+```math
 \Phi(\theta,z)=(R\cos\theta,R\sin\theta,z).
-$$
+```
 
-$$
+```math
 \Phi_\theta=(-R\sin\theta,R\cos\theta,0),\qquad
 \Phi_z=(0,0,1),
-$$
+```
 
-$$
+```math
 I=\begin{bmatrix}R^2&0\\0&1\end{bmatrix},\qquad
 n=(\cos\theta,\sin\theta,0).
-$$
+```
 
-$$
+```math
 \Phi_{\theta\theta}=(-R\cos\theta,-R\sin\theta,0)=-R\,n,
 \qquad
 \Phi_{zz}=0,
-$$
+```
 
 so
 
-$$
+```math
 II=\begin{bmatrix}-R&0\\0&0\end{bmatrix}.
-$$
+```
 
 One principal curvature is $-1/R$, the other is $0$; $K=0$ (a cylinder is
 developable — you can unroll it without stretching). The nonzero curvature is
@@ -375,14 +378,14 @@ the bending of the circle, the zero one is the straight generator.
 
 ### Sphere of radius $R$
 
-$$
+```math
 \Phi(\theta,\varphi)
 =R(\sin\theta\cos\varphi,\ \sin\theta\sin\varphi,\ \cos\theta).
-$$
+```
 
 With the outward normal $n=\Phi/R$,
 
-$$
+```math
 I=
 \begin{bmatrix}
 R^2&0\\
@@ -394,15 +397,15 @@ II=
 -R&0\\
 0&-R\sin^2\theta
 \end{bmatrix},
-$$
+```
 
 so $S=-(1/R)\,\mathrm{Id}$ and
 
-$$
+```math
 \kappa_1=\kappa_2=-\frac1R,\qquad
 K=\frac1{R^2},\qquad
 H=-\frac1R.
-$$
+```
 
 The sign is negative because the outward normal points *away* from the centre
 while the surface bends toward it. Using the inward normal flips all signs
@@ -412,13 +415,13 @@ but leaves $K$ unchanged. The code prints $K=1$ for the unit sphere.
 
 At $(x,y)=(1,0)$:
 
-$$
+```math
 \nabla f=(0.6,0),\qquad
 \operatorname{Hess}f=
 \begin{bmatrix}0.6&0\\0&0.6\end{bmatrix},
-$$
+```
 
-$$
+```math
 I=
 \begin{bmatrix}1.36&0\\0&1\end{bmatrix},
 \qquad
@@ -427,11 +430,11 @@ II=
 \begin{bmatrix}0.6&0\\0&0.6\end{bmatrix}
 =
 \begin{bmatrix}0.5145&0\\0&0.5145\end{bmatrix}.
-$$
+```
 
 Notice $II$ is a multiple of the identity here, but $I$ is not. Therefore
 
-$$
+```math
 S=I^{-1}II
 =
 \begin{bmatrix}
@@ -443,20 +446,20 @@ S=I^{-1}II
 0.3783&0\\
 0&0.5145
 \end{bmatrix}.
-$$
+```
 
 So the principal curvatures are $0.3783$ and $0.5145$, even though the
 “bending matrix” $II$ looked isotropic. The **metric** decides which direction
 is more curved. These are exactly the numbers printed by `lake exe geodesia`.
 Also
 
-$$
+```math
 K=\frac{\det II}{\det I}
 =\frac{0.5145^2}{1.36}
 =0.1946,
 \qquad
 H=\frac{0.3783+0.5145}{2}=0.4464.
-$$
+```
 
 ---
 
@@ -517,17 +520,17 @@ never differentiates numerically.
    $\det I=\det(J^{\mathsf T}J)=|\Phi_u\times\Phi_v|^2$.
 3. **Graph curvature.** Starting from
 
-   $$
+   ```math
    I=\begin{bmatrix}1+f_x^2&f_xf_y\\f_xf_y&1+f_y^2\end{bmatrix}
    \qquad\text{and}\qquad
    II=\operatorname{Hess}f/\sqrt{1+|\nabla f|^2},
-   $$
+   ```
 
    derive
 
-   $$
+   ```math
    K=\frac{f_{xx}f_{yy}-f_{xy}^2}{(1+f_x^2+f_y^2)^2}.
-   $$
+   ```
 4. **Weingarten sign.** Differentiate $n\cdot\Phi_i=0$ to prove
    $II_{ij}=-n_i\cdot\Phi_j$. What changes if you choose $-n$ instead of $n$?
 5. **Cylinder vs sphere.** Explain in words why the cylinder has $K=0$ but the

@@ -10,10 +10,10 @@
 
 A first-order ODE is
 
-$$
+```math
 y'(s)=f\bigl(s,y(s)\bigr),
 \qquad y(s_0)=y_0.
-$$
+```
 
 Here $y$ can be a vector. The **state** is everything you need to know to
 continue the solution; $f$ is the **vector field** that says how the state
@@ -21,29 +21,29 @@ changes.
 
 The geodesic equation is second order:
 
-$$
+```math
 q''=F(q,q'),
 \qquad F^k(q,q')=-\Gamma^k_{\;ij}(q)\,q'^i q'^j.
-$$
+```
 
 Introduce velocities $p=q'$:
 
-$$
+```math
 \boxed{
 \begin{aligned}
 q' &= p,\\
 p' &= F(q,p).
 \end{aligned}}
-$$
+```
 
 In components, with $q=(u,v)$ and $p=(\dot u,\dot v)$:
 
-$$
+```math
 u'=\dot u,\quad
 v'=\dot v,\quad
 \dot u'=F^u(u,v,\dot u,\dot v),\quad
 \dot v'=F^v(u,v,\dot u,\dot v).
-$$
+```
 
 This is the `GeoState` in the code:
 
@@ -67,10 +67,10 @@ and `Geodesic.rhs` returns `(du, dv, u'', v'')`.
 
 The simplest integrator is
 
-$$
+```math
 y_{n+1}=y_n+h\,f(s_n,y_n),
 \qquad s_{n+1}=s_n+h.
-$$
+```
 
 It walks along the tangent of the vector field for a time $h$.
 
@@ -85,36 +85,36 @@ It walks along the tangent of the vector field for a time $h$.
 
 The midpoint method samples the vector field halfway along the Euler step:
 
-$$
+```math
 k_1=f(s_n,y_n),
-$$
+```
 
-$$
+```math
 k_2=f\bigl(s_n+\tfrac h2,\ y_n+\tfrac h2 k_1\bigr),
-$$
+```
 
-$$
+```math
 y_{n+1}=y_n+h\,k_2.
-$$
+```
 
 It is second order: global error $O(h^2)$.
 
 **Classical RK4** uses four samples:
 
-$$
+```math
 \begin{aligned}
 k_1&=f(s_n,y_n),\\
 k_2&=f\bigl(s_n+\tfrac h2,\ y_n+\tfrac h2 k_1\bigr),\\
 k_3&=f\bigl(s_n+\tfrac h2,\ y_n+\tfrac h2 k_2\bigr),\\
 k_4&=f\bigl(s_n+h,\ y_n+h k_3\bigr),
 \end{aligned}
-$$
+```
 
-$$
+```math
 \boxed{\;
 y_{n+1}=y_n+\frac h6\bigl(k_1+2k_2+2k_3+k_4\bigr).
 \;}
-$$
+```
 
 It is fourth order: global error $O(h^4)$. The weights
 $(1,2,2,1)/6$ are Simpson’s rule in disguise: RK4 matches the Taylor
@@ -139,16 +139,16 @@ orders $1,2,4$.
 
 Apply a method to the test equation
 
-$$
+```math
 y'=\lambda y,
 \qquad \lambda\in\mathbb{C}.
-$$
+```
 
 The numerical solution is $y_n=R(z)^n y_0$ with $z=\lambda h$. For RK4,
 
-$$
+```math
 R(z)=1+z+\frac{z^2}{2}+\frac{z^3}{6}+\frac{z^4}{24}.
-$$
+```
 
 The method is stable when $|R(z)|\le 1$. For real negative $\lambda$, RK4 is
 stable for roughly $-2.8\le \lambda h\le 0$. This is a **conditional**
@@ -209,17 +209,17 @@ for the paraboloid, i.e. energy is conserved to the printed precision.
 To integrate a geodesic you need a point and a direction. A convenient way to
 specify the direction is a unit vector in the tangent plane:
 
-$$
+```math
 w=\cos\alpha\,e_1+\sin\alpha\,e_2,
-$$
+```
 
 where $(e_1,e_2)$ is an orthonormal tangent frame (`Geodesic.tangentFrame`).
 Then convert to parameter velocity:
 
-$$
+```math
 \xi=I^{-1}J^{\mathsf T}w
 \qquad\text{(`Geodesic.tangentVecToParams`)}.
-$$
+```
 
 This is exactly the conversion in Eberly’s *Geodesics on a Parameterized
 Surface*: $J^{\mathsf T}J=I$, so $I^{-1}J^{\mathsf T}J\xi=\xi$.
@@ -234,23 +234,23 @@ into a boundary-value solver.
 For shooting we need to know how the final point changes when the initial
 velocity changes. If $y(s;v)$ solves
 
-$$
+```math
 y'=f(s,y),
 \qquad y(0)=y_0,
-$$
+```
 
 then the matrix
 
-$$
+```math
 Y(s)=\frac{\partial y(s;v)}{\partial v}
-$$
+```
 
 solves the **variational equation**
 
-$$
+```math
 Y'=f_y(s,y(s;v))\,Y,
 \qquad Y(0)=I
-$$
+```
 
 (where $I$ is the identity on the velocity components, and zeros on the
 position components). This is just the chain rule applied to the ODE. It is a

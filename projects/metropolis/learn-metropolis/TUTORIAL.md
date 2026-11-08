@@ -171,11 +171,11 @@ rate, and sample count.
 
 The true likelihood is a *product* of small numbers:
 
-$$
+```math
 p(\text{data} \mid \mu)
 = \prod_{i=1}^{50} \mathcal N(x_i \mid \mu, 1)
 = (2\pi)^{-25} \exp\!\Big(-\tfrac{1}{2}\sum_i (x_i - \mu)^2\Big).
-$$
+```
 
 For 50 data points, $p(\text{data} \mid \mu)$ is on the order of $10^{-40}$ —
 and for a big dataset ($10^6$ points) it dips below $10^{-400000}$. IEEE
@@ -187,11 +187,11 @@ compute.
 The fix is to work in **log space**, because the log of a product is a sum of
 logs:
 
-$$
+```math
 \log p(\text{data} \mid \mu)
 = \sum_{i=1}^{50} \log \mathcal N(x_i \mid \mu, 1)
 = -25 \log(2\pi) - \tfrac{1}{2}\sum_i (x_i - \mu)^2.
-$$
+```
 
 Each term is a modest negative number ($-0.5 (x_i - \mu)^2$ is tens or
 hundreds), and the sum stays representable no matter how many observations
@@ -210,10 +210,10 @@ Two extra payoffs, for free:
 
 The Metropolis accept probability is
 
-$$
+```math
 \alpha = \min\bigl(1, \exp(\Delta)\bigr),
 \qquad \Delta = \log p(\theta') - \log p(\theta).
-$$
+```
 
 We would love to just sample $w \sim \mathrm{Uniform}(0,1)$ and accept iff
 $w < \alpha$. But computing $\alpha$ means evaluating $\exp(\Delta)$ — and
@@ -230,9 +230,9 @@ let accept := Float.log u < Δ      -- instead of: u < exp(Δ)
 Why is `Float.log u < Δ` the same test? Because `log` is **strictly
 increasing**:
 
-$$
+```math
 u < \exp(\Delta) \quad\Longleftrightarrow\quad \log u < \log(\exp \Delta) = \Delta.
-$$
+```
 
 The equivalence holds only because log preserves `<`; that's the monotonicity
 from 4.1 pulling its weight. So we never evaluate `exp` at all — no underflow, and the
@@ -387,8 +387,9 @@ where the effort goes, in roughly the order you'd meet it in practice:
    - **Metropolis within-Gibbs** — cycle coordinate-wise *exact* draws when
      a full conditional is available in closed form (our normal-mean model
      with conjugate priors admits one).
-   - **MALA** — propose $\theta' = \theta + h\,\nabla\log p(\theta)
-     + \sqrt{2h}\,\varepsilon$: drift *toward* higher
+   - **MALA** — propose
+     $\theta' = \theta + h\,\nabla\log p(\theta) + \sqrt{2h}\,\varepsilon$:
+     drift *toward* higher
      probability instead of a blind random walk. Needs the gradient of the
      log-posterior (finite differences, or AD in Lean via SciLean later).
    - **HMC / NUTS** — simulate Hamiltonian dynamics on the log-posterior
@@ -454,32 +455,32 @@ cancellation stated for density *ratios* rather than log differences.
 
 ### The math in three lines
 
-$$
+```math
 \text{posterior}(\theta \mid D) = \frac{p(D \mid \theta)\, p(\theta)}{Z},
 \qquad Z = \int p(D \mid \theta)\, p(\theta)\, d\theta,
-$$
+```
 
-$$
+```math
 \log \text{posterior}(\theta) = \log U(\theta) - \log Z,
 \qquad \log U = \text{log-likelihood} + \text{log-prior},
-$$
+```
 
-$$
+```math
 \Delta = \log \text{posterior}(\theta') - \log \text{posterior}(\theta)
 \;=\; \bigl(\log U(\theta') - \log Z\bigr) - \bigl(\log U(\theta) - \log Z\bigr)
 \;=\; \log U(\theta') - \log U(\theta),
-$$
+```
 
 with the last step being exactly the cancellation of $\log Z$.
 
 The same cancellation happens at the level of the acceptance probability:
 
-$$
+```math
 \alpha(\theta \to \theta')
 = \min\!\Bigl(1,\ \frac{\text{posterior}(\theta')}{\text{posterior}(\theta)}\Bigr)
 = \min\!\Bigl(1,\ \frac{\text{unnorm}(\theta') / Z}{\text{unnorm}(\theta) / Z}\Bigr)
 = \min\!\Bigl(1,\ \frac{\text{unnorm}(\theta')}{\text{unnorm}(\theta)}\Bigr).
-$$
+```
 
 $Z$ is a single number that does not depend on $\theta$, so it is the *same*
 constant in numerator and denominator. That is the entire reason MCMC can

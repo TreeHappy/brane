@@ -19,13 +19,13 @@ shortest path — a geodesic.
 
 Start from the geodesic equation
 
-$$
+```math
 q''^k+\Gamma^k_{\;ij}q'^i q'^j=0.
-$$
+```
 
 Introduce an artificial “time” $t$ and let the curve evolve:
 
-$$
+```math
 \boxed{\;
 \frac{\partial q^k}{\partial t}
 =\frac{\partial^2 q^k}{\partial s^2}
@@ -33,21 +33,21 @@ $$
 \frac{\partial q^j}{\partial s}
 \;}
 \tag{relaxation PDE}
-$$
+```
 
 At steady state $\partial_t q=0$, so the right-hand side is zero — exactly the
 geodesic equation. This is a **parabolic PDE**, like the heat equation plus a
 transport term. The initial condition is any curve connecting the endpoints:
 
-$$
+```math
 q(s,0)=c(s),\qquad 0\le s\le L',
-$$
+```
 
 and the boundary conditions pin the ends:
 
-$$
+```math
 q(0,t)=a,\qquad q(L',t)=b.
-$$
+```
 
 If the true geodesic length $L$ is unknown, use an overestimate $L'>L$ and
 let the endpoint move; Eberly calls this a **moving boundary**. In practice
@@ -64,21 +64,21 @@ $s=0$ and $s=1$.
 
 Discretise the curve into a polyline
 
-$$
+```math
 q_i \approx q(i\,\Delta s),\qquad i=0,\dots,N,
-$$
+```
 
 with $q_0=a$ and $q_N=b$ fixed. Use central differences in $s$:
 
-$$
+```math
 q' \approx\frac{q_{i+1}-q_{i-1}}{2\Delta s},
 \qquad
 q'' \approx\frac{q_{i+1}-2q_i+q_{i-1}}{(\Delta s)^2}.
-$$
+```
 
 Replace the PDE by an explicit Euler step in $t$:
 
-$$
+```math
 \boxed{
 \begin{aligned}
 q_i^{\,n+1}
@@ -90,7 +90,7 @@ q_{i+1}^{\,n}-2q_i^{\,n}+q_{i-1}^{\,n}\\
 \bigl(q_{i+1}^{\,j}-q_{i-1}^{\,j}\bigr)
 \Bigr].
 \end{aligned}}
-$$
+```
 
 This is Eberly’s finite-difference update (his eq. 32). The factor
 $1/4$ comes from $(1/(2\Delta s))^2$. The interior points are updated into a
@@ -118,37 +118,37 @@ Instead of the PDE, write a discrete energy for the polyline and minimise it.
 
 ### Length energy
 
-$$
+```math
 L(q_0,\dots,q_N)
 =\sum_{i=0}^{N-1}\bigl|\Phi(q_{i+1})-\Phi(q_i)\bigr|
-$$
+```
 
 (the ambient Euclidean length of each chord; for a fine polyline this
 approximates the surface length). The gradient with respect to an interior
 node is
 
-$$
+```math
 \nabla_{q_i}L
 =J(q_i)^{\mathsf T}\bigl(\tau_i^{-}-\tau_i^{+}\bigr),
-$$
+```
 
 where
 
-$$
+```math
 \tau_i^{-}
 =\frac{\Phi(q_i)-\Phi(q_{i-1})}{|\Phi(q_i)-\Phi(q_{i-1})|},
 \qquad
 \tau_i^{+}
 =\frac{\Phi(q_{i+1})-\Phi(q_i)}{|\Phi(q_{i+1})-\Phi(q_i)|}
-$$
+```
 
 are the unit chord directions. Gradient descent is
 
-$$
+```math
 \boxed{\;q_i\leftarrow q_i-\varepsilon\,\nabla_{q_i}L
 =q_i+\varepsilon\,J(q_i)^{\mathsf T}
 \bigl(\tau_i^{+}-\tau_i^{-}\bigr).\;}
-$$
+```
 
 At a minimum, $\tau_i^{-}=\tau_i^{+}$: consecutive chords are parallel. In
 the Euclidean plane this is exactly a straight line; on a surface it is the
@@ -158,20 +158,20 @@ polyline analogue of a geodesic.
 
 Another useful discrete energy is
 
-$$
+```math
 E=\sum_{i=0}^{N-1}
 \tfrac12\,\Delta q_i^{\mathsf T}I(\bar q_i)\,\Delta q_i,
 \qquad
 \Delta q_i=q_{i+1}-q_i,
-$$
+```
 
 with $\bar q_i$ a midpoint or endpoint. Its gradient is a metric Laplacian:
 in Cartesian coordinates, minimising it gives the discrete Laplace equation,
 and the update is the familiar smoothing
 
-$$
+```math
 q_i\leftarrow \tfrac12(q_{i-1}+q_{i+1}).
-$$
+```
 
 Length and Dirichlet energies have the same stationary curves (geodesics),
 but different parameterisations and convergence behaviour. Length is
@@ -182,9 +182,9 @@ algebra.
 
 For faster convergence, linearise the gradient:
 
-$$
+```math
 \nabla L(q+\delta)\approx \nabla L(q)+H_L(q)\delta,
-$$
+```
 
 and solve $H_L\delta=-\nabla L$. The Hessian is **block tridiagonal** because
 node $i$ couples only to $i-1,i,i+1$. A banded solver costs $O(N)$ time
@@ -206,32 +206,32 @@ fine initial polyline and the cost of a global solve.
 
 Given endpoints $a$ and $b$, choose a midpoint $m$ that shortens the path:
 
-$$
+```math
 L(m)=\operatorname{len}(a,m)+\operatorname{len}(m,b),
-$$
+```
 
 where $\operatorname{len}$ is the geodesic length of the (straight) segment,
 approximated by the metric integral
 
-$$
+```math
 \operatorname{len}(p,q)
 =\int_0^1
 \sqrt{(q-p)^{\mathsf T}G\bigl((1-t)p+tq\bigr)(q-p)}\,dt.
-$$
+```
 
 Minimise $L(m)$ by steepest descent:
 
-$$
+```math
 m\leftarrow m-r\,\nabla L(m),
-$$
+```
 
 with a one-dimensional line search for $r$. The gradient is Eberly’s eq. 36;
 it involves the metric derivatives $\partial_k g_{ij}$ and the same
 Christoffel identity
 
-$$
+```math
 \partial_\ell g_{ij}=\Gamma_{i\ell j}+\Gamma_{j\ell i}.
-$$
+```
 
 ### The multiscale loop
 
@@ -290,11 +290,11 @@ $a=(0.4,0.2)$, $b=(1.2,0.9)$. Start with a deliberately bent path in
 parameter space: the straight chord plus a perpendicular bump of amplitude
 $0.45$,
 
-$$
+```math
 q_i^{(0)}
 =\operatorname{lerp}(a,b,t_i)
 +0.45\sin(\pi t_i)\,\frac{(b-a)^\perp}{|b-a|}.
-$$
+```
 
 This path has length $1.5741$. Run length-gradient descent with $N=24$
 segments and backtracking line search:

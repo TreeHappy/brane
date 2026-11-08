@@ -15,19 +15,19 @@ components.
 On a surface, or even on a plane in curvilinear coordinates, the basis
 **changes from point to point**. The polar basis
 
-$$
+```math
 e_r=(\cos\theta,\sin\theta,0),\qquad
 e_\theta=(-r\sin\theta,r\cos\theta,0)
-$$
+```
 
 rotates as you move. If you differentiate a vector field
 $V=V^r e_r+V^\theta e_\theta$ naively, you get
 
-$$
+```math
 \partial_\theta V
 =(\partial_\theta V^r)e_r+(\partial_\theta V^\theta)e_\theta
 +V^r\,\partial_\theta e_r+V^\theta\,\partial_\theta e_\theta.
-$$
+```
 
 The last two terms are the **change of the basis itself**. Christoffel
 symbols are exactly the coefficients of that change.
@@ -38,32 +38,32 @@ symbols are exactly the coefficients of that change.
 
 Write the coordinate basis vectors as
 
-$$
+```math
 e_i=\Phi_i=\frac{\partial\Phi}{\partial q^i}.
-$$
+```
 
 Their derivative in the $j$-direction is the second derivative of the
 embedding:
 
-$$
+```math
 D_j e_i = \partial_j\Phi_i = \Phi_{ij}.
-$$
+```
 
 Now decompose $\Phi_{ij}$ into a **tangent part** and a **normal part**:
 
-$$
+```math
 \boxed{\;\Phi_{ij}=\Gamma^k_{\;ij}\,e_k+II_{ij}\,n\;}
 \tag{Gauss formula}
-$$
+```
 
 - The normal coefficient is forced: dot with $n$ gives
   $II_{ij}=\langle n,\Phi_{ij}\rangle$.
 - The tangent coefficients are the **Christoffel symbols of the second kind**:
 
-$$
+```math
 \Gamma^k_{\;ij}
 =\langle \Phi_{ij},e_\ell\rangle\,g^{\ell k}.
-$$
+```
 
 This is the geometric definition used by the code:
 `Surface.d2Phi` supplies $\Phi_{ij}$, and `Surface.christoffel` projects it
@@ -77,13 +77,13 @@ In words:
 
 This is why the Gauss formula is the best single picture of the subject:
 
-$$
+```math
 \underbrace{\Phi_{ij}}_{\text{second derivative}}
 =
 \underbrace{\Gamma^k_{\;ij}e_k}_{\text{grid twist}}
 +
 \underbrace{II_{ij}n}_{\text{bending}}.
-$$
+```
 
 ---
 
@@ -91,77 +91,77 @@ $$
 
 Define the **Christoffel symbols of the first kind**
 
-$$
+```math
 \Gamma_{kij}=\langle \Phi_{ij},\Phi_k\rangle.
-$$
+```
 
 They are symmetric in $i,j$ because mixed partials commute. The second kind
 is obtained by raising the first index with the inverse metric:
 
-$$
+```math
 \Gamma^k_{\;ij}=g^{k\ell}\Gamma_{\ell ij}.
-$$
+```
 
 ### Deriving the metric formula
 
 Start from the metric and differentiate:
 
-$$
+```math
 \partial_i g_{jk}
 =\partial_i\langle \Phi_j,\Phi_k\rangle
 =\langle \Phi_{ij},\Phi_k\rangle+\langle \Phi_j,\Phi_{ik}\rangle
 =\Gamma_{kij}+\Gamma_{jik}.
-$$
+```
 
 Now write the same identity with the indices cyclically permuted:
 
-$$
+```math
 \partial_i g_{jk}=\Gamma_{kij}+\Gamma_{jik},
-$$
+```
 
-$$
+```math
 \partial_j g_{ik}=\Gamma_{kji}+\Gamma_{ijk},
-$$
+```
 
-$$
+```math
 \partial_k g_{ij}=\Gamma_{jki}+\Gamma_{ijk}.
-$$
+```
 
 Because $\Gamma_{kij}=\Gamma_{kji}$ (symmetry in the last two indices),
 add the first two and subtract the third:
 
-$$
+```math
 \partial_i g_{jk}+\partial_j g_{ik}-\partial_k g_{ij}
 =2\Gamma_{kij}.
-$$
+```
 
 Therefore
 
-$$
+```math
 \boxed{\;
 \Gamma_{kij}
 =\frac12\bigl(\partial_i g_{jk}+\partial_j g_{ik}-\partial_k g_{ij}\bigr)
 \;}
-$$
+```
 
 and
 
-$$
+```math
 \boxed{\;
 \Gamma^k_{\;ij}
 =\frac12\,g^{k\ell}
 \bigl(\partial_i g_{j\ell}+\partial_j g_{i\ell}-\partial_\ell g_{ij}\bigr).
 \;}
-$$
+```
 
 This is the formula in `Curvature.lean`. It is the only formula you need to
 compute geodesics from a metric alone. The code computes
 $\partial_i g_{jk}$ **exactly** from the stored second partials:
 
-$$
+```math
 \partial_i g_{jk}
 =\langle \Phi_{ij},\Phi_k\rangle+\langle \Phi_j,\Phi_{ik}\rangle,
-$$
+```
 
 via `dMetricEntry`.
 
@@ -169,19 +169,19 @@ via `dMetricEntry`.
 
 If $V=V^k e_k$ is a vector field, then
 
-$$
+```math
 D_i V
 =\partial_i(V^k e_k)
 =(\partial_i V^k)e_k+V^k\Phi_{ik}
 =\bigl(\partial_i V^k+\Gamma^k_{\;ij}V^j\bigr)e_k
 +II_{ik}V^k n.
-$$
+```
 
 The **covariant derivative** is the tangent part:
 
-$$
+```math
 \boxed{\;\nabla_i V^k=\partial_i V^k+\Gamma^k_{\;ij}V^j\;}
-$$
+```
 
 The extra $\Gamma$ term subtracts the rotation of the basis. This is exactly
 the “connection” that lets you compare vectors in neighbouring tangent
@@ -189,9 +189,9 @@ planes.
 
 The metric is compatible with this derivative:
 
-$$
+```math
 \nabla_k g_{ij}=0,
-$$
+```
 
 which is another way to derive the formula above: impose
 $\nabla_k g_{ij}=0$ and solve for $\Gamma$.
@@ -203,17 +203,17 @@ $\nabla_k g_{ij}=0$ and solve for $\Gamma$.
 Let $J=[\Phi_u\ \Phi_v]$. Moving in the parameter direction $j$ changes the
 Jacobian:
 
-$$
+```math
 D_j J
 =\bigl[\Phi_{uj}\ \ \Phi_{vj}\bigr].
-$$
+```
 
 The Gauss formula says each column of this “derivative of the Jacobian” is
 
-$$
+```math
 D_j\Phi_i
 =\Gamma^k_{\;ij}\Phi_k+II_{ij}n.
-$$
+```
 
 So:
 
@@ -232,88 +232,88 @@ This is the most important example, because it separates **coordinate
 twist** from **curvature**. The plane is flat ($K=0$), yet the polar
 Christoffel symbols are not zero.
 
-$$
+```math
 \Phi(r,\theta)=(r\cos\theta,r\sin\theta,0).
-$$
+```
 
 Basis:
 
-$$
+```math
 e_r=(\cos\theta,\sin\theta,0),\qquad
 e_\theta=(-r\sin\theta,r\cos\theta,0).
-$$
+```
 
 Derivatives:
 
-$$
+```math
 \partial_r e_r=0,\qquad
 \partial_\theta e_r=(-r\sin\theta,r\cos\theta,0)=\frac1r e_\theta,
-$$
+```
 
-$$
+```math
 \partial_r e_\theta=(-\sin\theta,\cos\theta,0)=\frac1r e_\theta,
 \qquad
 \partial_\theta e_\theta=(-r\cos\theta,-r\sin\theta,0)=-r\,e_r.
-$$
+```
 
 Therefore the nonzero symbols are
 
-$$
+```math
 \Gamma^\theta_{\;\theta r}
 =\Gamma^\theta_{\;r\theta}=\frac1r,
 \qquad
 \Gamma^r_{\;\theta\theta}=-r.
-$$
+```
 
 Metric and inverse:
 
-$$
+```math
 g=\begin{bmatrix}1&0\\0&r^2\end{bmatrix},
 \qquad
 g^{-1}=\begin{bmatrix}1&0\\0&1/r^2\end{bmatrix}.
-$$
+```
 
 Check with the metric formula: the only nonzero metric derivative is
 $\partial_r g_{\theta\theta}=2r$, hence
 
-$$
+```math
 \Gamma^r_{\;\theta\theta}
 =\tfrac12 g^{rr}(-\partial_r g_{\theta\theta})
 =-r,
-$$
+```
 
 and
 
-$$
+```math
 \Gamma^\theta_{\;r\theta}
 =\tfrac12 g^{\theta\theta}(\partial_r g_{\theta\theta})
 =\frac1r.
-$$
+```
 
 ### Geodesic equations and the centrifugal force
 
 The geodesic equation is
 
-$$
+```math
 \ddot q^k+\Gamma^k_{\;ij}\dot q^i\dot q^j=0.
-$$
+```
 
 In polar coordinates:
 
-$$
+```math
 \ddot r-r\dot\theta^2=0,
 \qquad
 \ddot\theta+\frac{2}{r}\dot r\dot\theta=0.
-$$
+```
 
 The first equation is the familiar **centrifugal term**: to stay on a
 straight line, a particle in polar coordinates needs an inward coordinate
 acceleration $-r\dot\theta^2$. The second equation says
 
-$$
+```math
 \frac{d}{ds}(r^2\dot\theta)
 =r^2\Bigl(\ddot\theta+\frac{2}{r}\dot r\dot\theta\Bigr)=0,
-$$
+```
 
 i.e. **conservation of angular momentum**. Straight lines in the plane are
 the geodesics; the Christoffel terms are coordinate effects, not curvature.
@@ -329,48 +329,49 @@ Indeed the Riemann curvature of the plane is zero.
 
 Use polar coordinates on the sphere:
 
-$$
+```math
 \Phi(\theta,\varphi)
 =(\sin\theta\cos\varphi,\ \sin\theta\sin\varphi,\ \cos\theta).
-$$
+```
 
 Metric:
 
-$$
+```math
 g=
 \begin{bmatrix}
 1&0\\
 0&\sin^2\theta
 \end{bmatrix}.
-$$
+```
 
-The nonzero metric derivative is $\partial_\theta g_{\varphi\varphi}
-=2\sin\theta\cos\theta$. The nonzero symbols are
+The nonzero metric derivative is
+$\partial_\theta g_{\varphi\varphi}=2\sin\theta\cos\theta$.
+The nonzero symbols are
 
-$$
+```math
 \Gamma^\theta_{\;\varphi\varphi}
 =-\sin\theta\cos\theta,
 \qquad
 \Gamma^\varphi_{\;\theta\varphi}
 =\Gamma^\varphi_{\;\varphi\theta}
 =\cot\theta.
-$$
+```
 
 The geodesic equations are
 
-$$
+```math
 \ddot\theta-\sin\theta\cos\theta\,\dot\varphi^2=0,
-$$
+```
 
-$$
+```math
 \ddot\varphi+2\cot\theta\,\dot\theta\dot\varphi=0.
-$$
+```
 
 The second equation gives
 
-$$
+```math
 \frac{d}{ds}\bigl(\sin^2\theta\,\dot\varphi\bigr)=0,
-$$
+```
 
 conservation of angular momentum about the polar axis. Solutions are great
 circles: set $\varphi=\text{const}$ to get a meridian
@@ -383,23 +384,23 @@ circles: set $\varphi=\text{const}$ to get a meridian
 
 For $z=0.3(x^2+y^2)$, the metric at $(x,y)$ is
 
-$$
+```math
 I=
 \begin{bmatrix}
 1+0.36x^2 & 0.36xy\\
 0.36xy & 1+0.36y^2
 \end{bmatrix}.
-$$
+```
 
 At $(1,0)$ the code prints
 
-$$
+```math
 I=\begin{bmatrix}1.36&0\\0&1\end{bmatrix},
 \qquad
 \Gamma^u_{\;uu}=0.2647,\quad
 \Gamma^u_{\;uv}=0,\quad
 \Gamma^u_{\;vv}=0.2647,
-$$
+```
 
 and all $\Gamma^v_{\;ij}=0$. The nonzero $\Gamma^u_{\;vv}$ is a good check of
 the geometric picture: the $v$-coordinate line $x=\text{const}$ does not look
@@ -423,13 +424,13 @@ Surface.metricI s x y   -- I
 
 `christoffel` is a literal transcription of
 
-$$
+```math
 \Gamma^k_{\;ij}
 =\tfrac12 g^{k0}
 \bigl(\partial_i g_{j0}+\partial_j g_{i0}-\partial_0 g_{ij}\bigr)
 +\tfrac12 g^{k1}
 \bigl(\partial_i g_{j1}+\partial_j g_{i1}-\partial_1 g_{ij}\bigr).
-$$
+```
 
 Because `Smooth2` stores exact partials, no finite differences are involved.
 `Geodesic.accel` then forms
