@@ -2,7 +2,8 @@
 
 This is the learning track for `projects/geodesia`. The Lean code gives you an
 exact differential-geometry sandbox; these notes explain **why** the formulas
-look the way they do, with a bias toward *pictures, Jacobians and physics*.
+look the way they do, in plain *vector math*: dot products, matrices and
+concrete arrows — no hidden vocabulary.
 
 The central object is a **parameterized surface**
 
@@ -15,11 +16,11 @@ Everything else is built from two derivatives of $\Phi$:
 
 | Object | Formula | What it measures |
 |---|---|---|
-| Jacobian | $J = [\Phi_u\ \ \Phi_v]$ | how parameter velocity becomes 3-D velocity |
+| Jacobian | $J = [\Phi_u\ \ \Phi_v]$ | turns a 2-D parameter direction into the actual 3-D arrow |
 | First fundamental form | $I = J^{\mathsf T}J$ | lengths, angles, area — the *ruler* |
 | Second fundamental form | $II = [\,n\cdot\Phi_{ij}\,]$ | how the surface bends — the *bending* |
 | Christoffel symbols | tangent part of $\Phi_{ij}$ | how the coordinate grid twists |
-| Geodesic | zero covariant acceleration | inertial / shortest path |
+| Geodesic | zero tangent part of $\gamma''$ | locally straightest / shortest path |
 
 The one equation that ties it all together is the **Gauss formula**
 
@@ -39,7 +40,7 @@ only the tangent part and set it to zero.
 flowchart TD
     A["Ch. 1 — Fundamental forms<br/>Jacobian J, I = JᵀJ, II, shape operator"]
     B["Ch. 2 — Christoffel symbols<br/>moving frame, Γ from I, polar & sphere"]
-    C["Ch. 3 — Geodesics & Lagrangians<br/>zero covariant acceleration, Euler–Lagrange, physics"]
+    C["Ch. 3 — Geodesics<br/>zero tangent part of γ″, length functional, conserved pairings"]
     D["Ch. 4 — ODEs & RK4<br/>state space, Runge–Kutta, stability"]
     E["Ch. 5 — Shooting<br/>BVP → IVP, Newton, variational equations"]
     F["Ch. 6 — Relaxation<br/>deform a whole path, PDE & hierarchical methods"]
@@ -58,8 +59,9 @@ Suggested paths:
   Read Ch. 3 (the ODE), Ch. 4 (RK4), then Ch. 5 slowly.
 - **“I want the relaxation algorithm.”**
   Read Ch. 1–3, then Ch. 6.
-- **“I want the physics/Lagrangian view.”**
-  Read Ch. 3 and the Hamiltonian section of Ch. 4.
+- **“I want the variational view.”**
+  Read Ch. 3 (length functional and conserved pairings) and Ch. 6 (discrete
+  minimisation).
 
 ---
 
@@ -69,8 +71,8 @@ The numerical algorithms and conventions follow David Eberly’s Geometric Tools
 notes (Creative Commons Attribution 4.0):
 
 - [*Geodesics on a Parameterized Surface*](https://www.geometrictools.com/Documentation/GeodesicsOnSurface.pdf)
-  — metric, Christoffel symbols, the geodesic ODE, $J^{\mathsf T}J=G$,
-  $\xi = G^{-1}J^{\mathsf T}y'$.
+  — the Gram matrix, Christoffel symbols, the geodesic ODE, $I=J^{\mathsf T}J$,
+  $\xi = I^{-1}J^{\mathsf T}y'$.
 - [*Computing Geodesics on a Riemannian Manifold*](https://www.geometrictools.com/Documentation/RiemannianGeodesics.pdf)
   — §2 shooting methods (standard, modified for unknown length, alternate
   parameterization), §3 continuous relaxation by PDEs, §4 Dijkstra, §5
@@ -118,29 +120,29 @@ and constant geodesic energy.
 - $\Phi_i = \partial\Phi/\partial q^i$, $\Phi_{ij} = \partial^2\Phi/\partial q^i\partial q^j$.
 - $q(s) = (u(s),v(s))$ is a curve in parameter space; $\gamma(s)=\Phi(q(s))$ is the curve on the surface.
 - $\dot q = dq/ds$, $\ddot q = d^2q/ds^2$.
-- $g_{ij} = I_{ij} = \langle \Phi_i,\Phi_j\rangle$, $g^{ij}$ is the inverse matrix.
+- $I = J^{\mathsf T}J$ is the Gram matrix of the tangent arrows, with entries
+  $I_{ij} = \Phi_i\cdot\Phi_j$; $I^{-1}$ is its inverse.
 - $n$ is the unit normal; $II_{ij} = \langle n,\Phi_{ij}\rangle$.
 - Repeated indices are summed.
 
-A useful mental dictionary:
+A useful dictionary in the other direction (older books use these):
 
-| Differential geometry | Physics / mechanics |
+| Older name | Meaning here |
 |---|---|
-| parameter coordinates $q^i$ | generalized coordinates |
-| metric $g_{ij}$ | mass matrix / inertia tensor |
-| Christoffel $\Gamma^k_{\;ij}$ | fictitious force (centrifugal, Coriolis) |
-| geodesic | free-particle trajectory with no external force |
-| covariant derivative | derivative corrected for rotating basis |
-| $II$ | bending / normal force needed to stay on the surface |
-| shape operator | linear map “bend in direction $v$” |
+| first fundamental form $E, F, G$ | the Gram matrix entries $I_{ij}=\Phi_i\cdot\Phi_j$ |
+| second fundamental form $e, f, g$ | the normal dot products $II_{ij}=n\cdot\Phi_{ij}$ |
+| metric tensor | the Gram matrix $I=J^{\mathsf T}J$ |
+| Christoffel $\Gamma^k_{\;ij}$ | tangent-basis coordinates of $\Phi_{ij}$ |
+| covariant derivative | derivative corrected for the rotating basis arrows |
+| shape operator | the linear map $S=I^{-1}II$ |
 
 ---
 
 ## 🖼️ The three pictures to keep in mind
 
 1. **The ruler.** $I$ is what you measure *inside* the surface: a tiny
-   displacement $dq=(du,dv)$ has length squared
-   $ds^2 = E\,du^2 + 2F\,du\,dv + G\,dv^2$.
+   displacement $dq=(du,dv)$ has 3-D arrow $J\,dq$ and length squared
+   $ds^2 = dq^{\mathsf T} I\, dq$.
 2. **The bending.** $II$ is what an outside observer sees: how fast the
    normal tilts as you walk, or equivalently how much the surface leaves its
    tangent plane.

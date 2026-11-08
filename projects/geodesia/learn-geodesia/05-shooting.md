@@ -1,7 +1,7 @@
 # 5️⃣ Shooting methods — hitting a target with geodesics
 
 > **Goal.** Understand the shooting method as *“integrate an initial-value
-> problem, measure the miss, adjust the initial velocity, repeat”*, see where
+> problem, measure the miss, adjust the initial direction, repeat”*, see where
 > the Jacobian comes from, and learn why the unknown geodesic length makes the
 > naive version tricky (Eberly §2).
 
@@ -21,7 +21,7 @@ precisely.
 ## 5.1 The boundary-value problem
 
 The geodesic equation is a second-order ODE. An **initial-value problem**
-(IVP) specifies position and velocity:
+(IVP) specifies the starting point and starting direction:
 
 ```math
 q(0)=a,\qquad q'(0)=v.
@@ -34,9 +34,10 @@ q(0)=a,\qquad q(L)=b,
 ```
 
 with the total length $L$ generally **unknown**. The BVP is harder: you are
-not allowed to choose the velocity; it is determined by the requirement of
+not allowed to choose the starting direction; it is determined by the
+requirement of
 hitting $b$. Shooting turns the BVP into a root-finding problem for the
-initial velocity.
+initial direction.
 
 Write the solution of the IVP as
 
@@ -71,7 +72,7 @@ DR(v)=\frac{\partial q(L;a,v)}{\partial v}.
 ```
 
 Let $Y(s)=\partial q(s;a,v)/\partial v$ be the $2\times2$ matrix of
-derivatives with respect to the initial velocity. Differentiate the ODE
+derivatives with respect to the 2-component initial direction $v$. Differentiate the ODE
 $q''=F(q,q')$ with respect to $v$:
 
 ```math
@@ -142,7 +143,7 @@ you cannot simply guess it:
 ### Fix 1: overestimate and minimise the miss
 
 Choose an overestimate $L'>L$ (for example, the length of the straight chord
-from $a$ to $b$). For each initial velocity $v$, integrate to
+from $a$ to $b$). For each initial direction $v$, integrate to
 $c(v)=q(L';a,v)$. The true geodesic passes through $b$ at some $s=L<L'$, so
 $b$ lies on the curve even though the endpoint is not $b$. Minimise the
 distance from $b$ to the endpoint:
@@ -167,7 +168,7 @@ minimiser.
 ### Fix 2: solve for angle and length together
 
 On a 2-D surface there is a cleaner formulation. Parameterise the initial
-velocity by a **unit** tangent direction and an unknown length:
+initial data by a **unit** surface direction and an unknown length:
 
 ```math
 v=\cos\alpha\,e_1+\sin\alpha\,e_2,
@@ -207,7 +208,7 @@ in the PDF) because the unknown length is hidden in $s'$.
 
 | Situation | Unknowns | Equations |
 |---|---|---|
-| target is a point, $L$ known | initial velocity $v\in\mathbb{R}^2$ | $q(L)-b=0$ (2) |
+| target is a point, $L$ known | starting direction $v\in\mathbb{R}^2$ | $q(L)-b=0$ (2) |
 | target is a point, unit speed | angle $\alpha$, length $L$ | $q(L)-b=0$ (2) |
 | general $n$-D manifold, unit speed | $n-1$ angles + $L$ | $n$ endpoint eqs |
 | target is a curve (e.g. boundary) | angle $\alpha$ (or $v$ modulo tangent to curve) | one scalar condition |
@@ -224,7 +225,7 @@ the surface. Working in parameter coordinates avoids the redundancy.
 shoot(alpha, L):
     e1, e2 = orthonormal tangent frame at a
     w = cos(alpha) e1 + sin(alpha) e2
-    xi = I(a)^{-1} J(a)^T w        # unit parameter velocity
+    xi = I(a)^{-1} J(a)^T w        # tangent-basis coords of w
     q = integrate_geodesic(a, xi, L)
     return q
 
@@ -330,7 +331,7 @@ host script) is the other half.
 
 1. **Variational equation.** Derive
    $Y''=F_qY+F_{q'}Y'$ from $q''=F(q,q')$ by differentiating with respect to
-   the initial velocity. What are $Y(0)$ and $Y'(0)$?
+   the initial direction. What are $Y(0)$ and $Y'(0)$?
 2. **Jacobi equation.** Substitute
    $F^i=-\Gamma^i_{\;jk}q'^jq'^k$ and derive the explicit second-order
    equation for $Y$ in §5.2.

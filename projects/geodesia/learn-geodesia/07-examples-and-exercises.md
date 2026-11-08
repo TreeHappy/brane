@@ -13,7 +13,7 @@ script in `images/make_figs.py`.
 \Phi(r,\theta)=(r\cos\theta,r\sin\theta,0).
 ```
 
-### Metric
+### Gram matrix of the tangent arrows
 
 ```math
 I=\begin{bmatrix}1&0\\0&r^2\end{bmatrix},
@@ -54,7 +54,9 @@ both are satisfied. The conserved quantity is
 r^2\dot\theta=\text{const},
 ```
 
-the angular momentum of the straight motion. This is the cleanest example of
+this is the pairing $p_\\theta=\\Phi_\\theta\\cdot\\gamma'$ of Chapter 3 — the
+projection of the (constant) straight-line direction arrow onto the rotating
+$\\Phi_\\theta$ arrow, whose length is $r$. This is the cleanest example of
 **nonzero Christoffel symbols on a flat surface**: the symbols encode the
 rotation of the polar basis, not curvature.
 
@@ -67,7 +69,7 @@ rotation of the polar basis, not curvature.
 =(\sin\theta\cos\varphi,\ \sin\theta\sin\varphi,\ \cos\theta).
 ```
 
-### Metric and symbols
+### Gram matrix and symbols
 
 ```math
 I=\begin{bmatrix}1&0\\0&\sin^2\theta\end{bmatrix},
@@ -99,7 +101,7 @@ Let $U,V$ be orthonormal vectors and set
 ```
 
 Then $\gamma''=-\gamma$, which is normal to the sphere, so the tangential
-acceleration is zero: $\gamma$ is a geodesic. The conserved momentum is
+acceleration is zero: $\gamma$ is a geodesic. The conserved pairing is
 
 ```math
 \sin^2\theta\,\dot\varphi=\text{const}.
@@ -116,7 +118,7 @@ easiest special cases.
 \Phi(u,v)=\bigl(u,v,0.3(u^2+v^2)\bigr).
 ```
 
-### Metric
+### Gram matrix
 
 ```math
 I=
@@ -196,7 +198,7 @@ paraboloid z = 0.3(x² + y²) at (x, y) = (1.000000, 0.000000)
   Γ²₁₁, Γ²₁₂, Γ²₂₂ = 0.000000, 0.000000, 0.000000
   K, H          = 0.194637, 0.446401
   κ_min, κ_max  = 0.378306, 0.514496
-geodesic from (1, 0) with parameter velocity (1, 0), s ∈ [0, 1]
+geodesic from (1, 0) with tangent-basis direction (1, 0), s ∈ [0, 1]
   endpoint      = (1.879182, 0.000000, 1.059398)
   E(0), E(1)    = 0.680000, 0.680000
 unit sphere at (θ, φ) = (1.000000, 0.200000)
@@ -269,9 +271,9 @@ n=\frac{\Phi_u\times\Phi_v}{|\Phi_u\times\Phi_v|}.
 
 ```math
 \Gamma_{kij}
-=\tfrac12(\partial_i g_{jk}+\partial_j g_{ik}-\partial_k g_{ij}),
+=\tfrac12(\partial_i I_{jk}+\partial_j I_{ik}-\partial_k I_{ij}),
 \qquad
-\Gamma^k_{\;ij}=g^{k\ell}\Gamma_{\ell ij}.
+\Gamma^k_{\;ij}=\bigl(I^{-1}\bigr)^{k\ell}\Gamma_{\ell ij}.
 ```
 
 ### Gauss formula
@@ -290,13 +292,21 @@ n=\frac{\Phi_u\times\Phi_v}{|\Phi_u\times\Phi_v|}.
 \ddot q^k+\Gamma^k_{\;ij}\dot q^i\dot q^j=0.
 ```
 
-### Lagrangian
+### Length functional
 
 ```math
-L=\tfrac12 g_{ij}\dot q^i\dot q^j,
+\mathcal{L}=\tfrac12\,\dot q^{\mathsf T}I\,\dot q
+=\tfrac12\,I_{ij}\dot q^i\dot q^j,
 \qquad
-\frac{d}{ds}\frac{\partial L}{\partial\dot q^k}
--\frac{\partial L}{\partial q^k}=0.
+\frac{d}{ds}\frac{\partial\mathcal L}{\partial\dot q^k}
+-\frac{\partial\mathcal L}{\partial q^k}=0.
+```
+
+### Conserved pairing
+
+```math
+p_\ell=\bigl(I\,\dot q\bigr)_\ell=\Phi_\ell\cdot\gamma'
+\quad\text{whenever } \partial_\ell I_{ij}=0.
 ```
 
 ### Curvature
@@ -352,7 +362,10 @@ For a surface of revolution
 $\Phi(r,\theta)=(r\cos\theta,r\sin\theta,f(r))$, prove that
 $r^2\dot\theta=\text{const}$ along a geodesic.
 
-*Hint:* the metric does not depend on $\theta$; use Noether’s theorem.
+*Hint:* the Gram matrix $I$ does not depend on $\theta$ (each tangent
+arrow is unchanged when $\theta$ changes), so the pairing
+$p_\\theta=\\Phi_\\theta\\cdot\\gamma'$ of Chapter 3 is conserved —
+differentiate it and use the geodesic equations.
 
 ### Exercise 4 — sphere antipodes
 
@@ -368,8 +381,9 @@ $DR=Y(L)$ with a finite-difference Jacobian. How close are they?
 
 ### Exercise 6 — relaxation Hessian
 
-Derive the block tridiagonal Hessian of the discrete Dirichlet energy
-$E=\sum\frac12|\Delta q_i|^2$. Write the linear system for a Newton step.
+Derive the block tridiagonal Hessian of the discrete Dirichlet functional
+$\mathcal D=\sum\frac12|\Delta q_i|^2$ (the sum of squared parameter-space
+steps). Write the linear system for a Newton step.
 
 *Hint:* the Hessian is the discrete Laplacian with Dirichlet boundary
 conditions.
@@ -392,7 +406,7 @@ $f(x,y)=x^2-y^2$ (a saddle). Where is $K$ negative?
 ### Exercise 10 — code
 
 Add a `geodesicLength` function to `Geodesic.lean` that sums
-$\sqrt{g_{ij}\Delta q^i\Delta q^j}$ along an integrated geodesic, and check
+$\sqrt{\Delta q^{\mathsf T} I\, \Delta q}$ along an integrated geodesic, and check
 that it matches `length` in `shootState`.
 
 ---
@@ -403,24 +417,25 @@ that it matches `length` in `shootState`.
   $J$ is $m\times n$, $\Gamma^k_{\;ij}$ has three indices, and the geodesic
   state has $2n$ components. Eberly’s Riemannian note is written for this
   case.
-- **Anisotropic metrics.** If the metric is not $J^{\mathsf T}J$ but an
+- **Anisotropic rulers.** If the ruler is not $J^{\mathsf T}J$ but an
   arbitrary positive-definite matrix (e.g. a Finsler/Riemannian model), the
-  same formulas apply with $g_{ij}$ given directly.
+  same formulas apply with $I$ supplied directly instead.
 - **Meshes.** On a triangle mesh, replace derivatives by per-vertex estimates;
   see Eberly’s *Mesh Differential Geometry* and *Geodesics On Triangle
   Meshes*.
-- **General relativity.** Geodesics in spacetime use the same equation with a
-  Lorentzian metric; timelike, spacelike and null geodesics correspond to
-  $E>0$, $E<0$ and $E=0$.
-- **Optimal control.** The geodesic equation is the Euler–Lagrange equation
-  of a free particle; adding a potential gives forced motion, and the same
-  variational machinery produces the control equations.
+- **Indefinite forms.** If $J^{\mathsf T}J$ is replaced by an indefinite
+  matrix (reversed-sign dot products), the geodesic equation is unchanged
+  formally; the classification of directions above/below/on the cone of the
+  form corresponds to timelike-, spacelike- and null-like curves.
+- **Constrained minimisation.** The same variational machinery with an added
+  term $U(q)$ in the functional produces forced curves; the geodesic equation
+  gains a tangent driving term $-I^{-1}\nabla U$.
 
 ---
 
 ## 7.8 Where to go next
 
-1. Re-derive the Gauss formula and the metric formula for $\Gamma$ on paper.
+1. Re-derive the Gauss formula and the Gram-matrix formula for $\Gamma$ on paper.
 2. Implement the variational Jacobian and a Newton shooting solver.
 3. Implement hierarchical relaxation and compare it with gradient descent.
 4. Try a surface with negative curvature (a saddle or a catenoid) and watch

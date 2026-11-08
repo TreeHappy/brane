@@ -1,7 +1,7 @@
 # 6️⃣ Relaxation — deform the whole path at once
 
 > **Goal.** Understand the second major strategy: instead of guessing an
-> initial velocity, guess an entire curve and let it “flow” downhill until it
+> initial direction, guess an entire curve and let it “flow” downhill until it
 > becomes a geodesic. This is the relaxation method in Eberly’s
 > *Computing Geodesics on a Riemannian Manifold*, §3–§5.
 
@@ -9,9 +9,8 @@ Shooting is local in the initial data and global in the integration.
 Relaxation is the opposite: it keeps the endpoints fixed, discretises the
 whole path, and moves the interior points until the path stops changing.
 
-The physical picture is a **taut string**: pin both ends on the surface and
-let the string tighten. A frictionless string under tension settles into the
-shortest path — a geodesic.
+The picture is a rubber band: pin both ends on the surface and let it
+contract. A band under tension settles into the shortest path — a geodesic.
 
 ---
 
@@ -112,11 +111,11 @@ temporary array, then copied back; the endpoints never move.
 
 ---
 
-## 6.3 Discrete energy minimisation (the tidy version)
+## 6.3 Discrete length minimisation (the tidy version)
 
-Instead of the PDE, write a discrete energy for the polyline and minimise it.
+Instead of the PDE, write a discrete length functional for the polyline and minimise it.
 
-### Length energy
+### Polyline length
 
 ```math
 L(q_0,\dots,q_N)
@@ -154,9 +153,9 @@ At a minimum, $\tau_i^{-}=\tau_i^{+}$: consecutive chords are parallel. In
 the Euclidean plane this is exactly a straight line; on a surface it is the
 polyline analogue of a geodesic.
 
-### Squared-speed / Dirichlet energy
+### The quadratic alternative (Dirichlet functional)
 
-Another useful discrete energy is
+Another useful discrete functional is
 
 ```math
 E=\sum_{i=0}^{N-1}
@@ -173,7 +172,7 @@ and the update is the familiar smoothing
 q_i\leftarrow \tfrac12(q_{i-1}+q_{i+1}).
 ```
 
-Length and Dirichlet energies have the same stationary curves (geodesics),
+Polyline length and the Dirichlet functional have the same stationary curves (geodesics),
 but different parameterisations and convergence behaviour. Length is
 geometrically natural; Dirichlet is smoother and easier to solve with linear
 algebra.
@@ -226,11 +225,11 @@ m\leftarrow m-r\,\nabla L(m),
 ```
 
 with a one-dimensional line search for $r$. The gradient is Eberly’s eq. 36;
-it involves the metric derivatives $\partial_k g_{ij}$ and the same
+it involves the Gram-matrix derivatives $\partial_k I_{ij}$ and the same
 Christoffel identity
 
 ```math
-\partial_\ell g_{ij}=\Gamma_{i\ell j}+\Gamma_{j\ell i}.
+\partial_\ell I_{ij}=\Gamma_{i\ell j}+\Gamma_{j\ell i}.
 ```
 
 ### The multiscale loop
@@ -269,7 +268,7 @@ dimension. It is a good seed, not usually the final answer.
 
 | | Shooting | Relaxation |
 |---|---|---|
-| Unknowns | initial velocity (and length) | all interior nodes |
+| Unknowns | starting direction (and length) | all interior nodes |
 | Problem size | small (2–4) | large ($2N$) |
 | Jacobian | $2\times2$ or $n\times n$ | block tridiagonal, $O(N)$ solve |
 | Good initial guess | crucial | helpful, but not as crucial |
@@ -279,7 +278,7 @@ dimension. It is a good seed, not usually the final answer.
 | Best use | accurate BVP on a smooth surface | robust path-finding, graphics, bad guesses |
 
 In practice: use relaxation/hierarchical/Dijkstra to get a good path, then
-use shooting or a Newton energy solve to polish it to high accuracy.
+use shooting or a Newton solve of the discrete equations to polish it to high accuracy.
 
 ---
 
@@ -331,10 +330,10 @@ re-relaxing finishes the job.
 - **Line search.** A fixed step either crawls or oscillates; backtracking is
   cheap and reliable.
 - **Regularise.** Add $\epsilon I$ to the Hessian if segments collapse.
-- **Check energy/length.** It must decrease monotonically (for gradient
+- **Check the length.** It must decrease monotonically (for gradient
   descent with a proper line search).
 - **Polish.** Once relaxation has found the right basin, use Newton on the
-  discrete energy or shooting on the ODE for high accuracy.
+  discrete equations or shooting on the ODE for high accuracy.
 
 ---
 
@@ -348,7 +347,7 @@ re-relaxing finishes the job.
 3. **Gradient of length.** Derive
    $\nabla_{q_i}L=J(q_i)^{\mathsf T}(\tau_i^{-}-\tau_i^{+})$
    from the chord-length formula.
-4. **Dirichlet energy.** Show that in Cartesian coordinates the gradient
+4. **Dirichlet functional.** Show that in Cartesian coordinates the gradient
    descent update for $E=\sum\frac12|\Delta q_i|^2$ is
    $q_i\leftarrow q_i+\varepsilon(q_{i-1}-2q_i+q_{i+1})$.
 5. **Ladder path.** On a cylinder, start with a path that winds around the

@@ -164,16 +164,17 @@ For geodesics:
   the total path length.
 - Check convergence by halving the step; a well-resolved RK4 solution changes
   by a factor of about $16$ in the error.
-- For very long integrations, monitor conserved quantities (energy, angular
-  momentum). A drift is a warning sign.
+- For very long integrations, monitor the conserved quadratic form
+  from Chapter 3. A drift is a warning sign.
 
 ### Adaptive steps and symplectic methods
 
 Production codes often use an embedded RK45 pair: two estimates of different
 order give a local error estimate, and the step is accepted/rejected
-accordingly. For Hamiltonian systems, **symplectic** integrators (Störmer–
+accordingly. For systems with conserved quadratic forms, **symplectic**
+integrators (Störmer–
 Verlet, implicit midpoint, Gauss–Legendre) preserve the phase-space
-structure and show much better long-term energy behaviour.
+structure and show much better long-term conservation of the quadratic form.
 
 ---
 
@@ -202,7 +203,8 @@ error is the RK4 discretisation. The demo reports
 E(0), E(1) = 0.680000, 0.680000
 ```
 
-for the paraboloid, i.e. energy is conserved to the printed precision.
+for the paraboloid, i.e. the conserved quadratic form
+$\tfrac12\,\dot q^{\mathsf T} I\, \dot q$ is conserved to the printed precision.
 
 ### Choosing initial conditions
 
@@ -214,7 +216,8 @@ w=\cos\alpha\,e_1+\sin\alpha\,e_2,
 ```
 
 where $(e_1,e_2)$ is an orthonormal tangent frame (`Geodesic.tangentFrame`).
-Then convert to parameter velocity:
+Then convert to the tangent-basis coordinates $(\dot u, \dot v)$ with the
+normal-equations formula from Chapter 1:
 
 ```math
 \xi=I^{-1}J^{\mathsf T}w
@@ -231,8 +234,8 @@ into a boundary-value solver.
 
 ## 4.6 Preview: the variational equation
 
-For shooting we need to know how the final point changes when the initial
-velocity changes. If $y(s;v)$ solves
+For shooting we need to know how the final point changes when the starting
+direction changes. If $y(s;v)$ solves
 
 ```math
 y'=f(s,y),
@@ -252,7 +255,7 @@ Y'=f_y(s,y(s;v))\,Y,
 \qquad Y(0)=I
 ```
 
-(where $I$ is the identity on the velocity components, and zeros on the
+(where $I$ is the identity on the direction components, and zeros on the
 position components). This is just the chain rule applied to the ODE. It is a
 linear matrix ODE that can be integrated alongside the original one. Chapter 5
 shows how it produces the Jacobian for Newton’s method.
@@ -271,11 +274,12 @@ shows how it produces the Jacobian for Newton’s method.
    approximate boundary of the RK4 stability region. What happens for
    $\lambda h=-3$?
 5. **Energy check.** Integrate the paraboloid geodesic with $h=0.1,0.05,0.025$
-   and compare the energy drift. Estimate the observed order.
+   and compare the drift of the conserved quadratic form. Estimate the
+   observed order.
 6. **Adaptive idea.** Suppose you have two RK4 solutions with steps $h$ and
    $h/2$. How could you estimate the error of the finer one? (This is the
    idea behind Richardson extrapolation.)
 7. **Tangent frame.** Show that `tangentFrame` produces an orthonormal basis
    when $\Phi_u,\Phi_v$ are linearly independent.
-8. **Initial velocity.** Derive $\xi=I^{-1}J^{\mathsf T}w$ from $w=J\xi$ and
+8. **Tangent-basis coordinates.** Derive $\xi=I^{-1}J^{\mathsf T}w$ from $w=J\xi$ and
    $I=J^{\mathsf T}J$.

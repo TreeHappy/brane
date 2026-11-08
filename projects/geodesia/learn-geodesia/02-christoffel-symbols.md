@@ -1,395 +1,264 @@
-# 2️⃣ Christoffel symbols — how a coordinate grid twists
+# 2️⃣ Christoffel symbols — the tangent part of the second derivatives
 
-> **Goal.** See $\Gamma^k_{\;ij}$ as the **tangent part of the derivative of
-> the basis vectors**, derive the metric formula without magic, and recognise
-> the same symbols as the “fictitious forces” of polar coordinates.
-
----
-
-## 2.1 The problem: vectors live in different tangent planes
-
-On a flat plane in Cartesian coordinates, differentiating a vector field is
-easy: the basis $e_x,e_y$ is the same everywhere, so you differentiate the
-components.
-
-On a surface, or even on a plane in curvilinear coordinates, the basis
-**changes from point to point**. The polar basis
-
-```math
-e_r=(\cos\theta,\sin\theta,0),\qquad
-e_\theta=(-r\sin\theta,r\cos\theta,0)
-```
-
-rotates as you move. If you differentiate a vector field
-$V=V^r e_r+V^\theta e_\theta$ naively, you get
-
-```math
-\partial_\theta V
-=(\partial_\theta V^r)e_r+(\partial_\theta V^\theta)e_\theta
-+V^r\,\partial_\theta e_r+V^\theta\,\partial_\theta e_\theta.
-```
-
-The last two terms are the **change of the basis itself**. Christoffel
-symbols are exactly the coefficients of that change.
+> **Goal.** Understand $\Gamma^k_{\;ij}$ as pure vector algebra: the
+> coefficients you get when you express each second-derivative arrow
+> $\Phi_{uu}, \Phi_{uv}, \Phi_{vv}$ in the tangent basis
+> $\{\Phi_u,\Phi_v\}$, plus the dot-product formula that computes them.
 
 ---
 
-## 2.2 The moving-frame definition
+## 2.1 The problem: the basis arrows change from point to point
 
-Write the coordinate basis vectors as
+In the $xy$-plane the basis arrows $e_1=(1,0)$, $e_2=(0,1)$ are the same
+everywhere, so differentiating a vector field is a component-wise operation.
+On a surface — or even in the plane using *other* coordinates — the basis
+arrows themselves depend on where you are.
 
-```math
-e_i=\Phi_i=\frac{\partial\Phi}{\partial q^i}.
-```
-
-Their derivative in the $j$-direction is the second derivative of the
-embedding:
-
-```math
-D_j e_i = \partial_j\Phi_i = \Phi_{ij}.
-```
-
-Now decompose $\Phi_{ij}$ into a **tangent part** and a **normal part**:
-
-```math
-\boxed{\;\Phi_{ij}=\Gamma^k_{\;ij}\,e_k+II_{ij}\,n\;}
-\tag{Gauss formula}
-```
-
-- The normal coefficient is forced: dot with $n$ gives
-  $II_{ij}=\langle n,\Phi_{ij}\rangle$.
-- The tangent coefficients are the **Christoffel symbols of the second kind**:
-
-```math
-\Gamma^k_{\;ij}
-=\langle \Phi_{ij},e_\ell\rangle\,g^{\ell k}.
-```
-
-This is the geometric definition used by the code:
-`Surface.d2Phi` supplies $\Phi_{ij}$, and `Surface.christoffel` projects it
-onto the tangent basis using the inverse metric.
-
-In words:
-
-> $\Gamma^k_{\;ij}$ is **how much of $e_k$ appears when you move $e_i$ in the
-> $j$-direction**. It measures the twisting of the coordinate grid, not the
-> bending of the surface. The bending is $II$.
-
-This is why the Gauss formula is the best single picture of the subject:
-
-```math
-\underbrace{\Phi_{ij}}_{\text{second derivative}}
-=
-\underbrace{\Gamma^k_{\;ij}e_k}_{\text{grid twist}}
-+
-\underbrace{II_{ij}n}_{\text{bending}}.
-```
-
----
-
-## 2.3 First kind and the metric formula
-
-Define the **Christoffel symbols of the first kind**
-
-```math
-\Gamma_{kij}=\langle \Phi_{ij},\Phi_k\rangle.
-```
-
-They are symmetric in $i,j$ because mixed partials commute. The second kind
-is obtained by raising the first index with the inverse metric:
-
-```math
-\Gamma^k_{\;ij}=g^{k\ell}\Gamma_{\ell ij}.
-```
-
-### Deriving the metric formula
-
-Start from the metric and differentiate:
-
-```math
-\partial_i g_{jk}
-=\partial_i\langle \Phi_j,\Phi_k\rangle
-=\langle \Phi_{ij},\Phi_k\rangle+\langle \Phi_j,\Phi_{ik}\rangle
-=\Gamma_{kij}+\Gamma_{jik}.
-```
-
-Now write the same identity with the indices cyclically permuted:
-
-```math
-\partial_i g_{jk}=\Gamma_{kij}+\Gamma_{jik},
-```
-
-```math
-\partial_j g_{ik}=\Gamma_{kji}+\Gamma_{ijk},
-```
-
-```math
-\partial_k g_{ij}=\Gamma_{jki}+\Gamma_{ijk}.
-```
-
-Because $\Gamma_{kij}=\Gamma_{kji}$ (symmetry in the last two indices),
-add the first two and subtract the third:
-
-```math
-\partial_i g_{jk}+\partial_j g_{ik}-\partial_k g_{ij}
-=2\Gamma_{kij}.
-```
-
-Therefore
+Recall from Chapter 1 that the tangent basis is made of the two columns of
+the Jacobian, $\Phi_u$ and $\Phi_v$. Differentiate these arrows: each
+derivative is again a 3-D arrow, and we can split it into a part inside the
+tangent plane and a part along the unit normal $n$:
 
 ```math
 \boxed{\;
-\Gamma_{kij}
-=\frac12\bigl(\partial_i g_{jk}+\partial_j g_{ik}-\partial_k g_{ij}\bigr)
+\Phi_{uu} = \Gamma^u_{\;\color{red}{uu}}\,\Phi_u
+          + \Gamma^v_{\;uu}\,\Phi_v + II_{11}\,n,
+\qquad
+\Phi_{uv} = \Gamma^u_{\;uv}\,\Phi_u + \Gamma^v_{\;uv}\,\Phi_v + II_{12}\,n,
+\qquad
+\Phi_{vv} = \Gamma^u_{\;vv}\,\Phi_u + \Gamma^v_{\;vv}\,\Phi_v + II_{22}\,n.
 \;}
 ```
 
-and
+The normal pieces are exactly the entries of $II$ from Chapter 1 (just dot
+with $n$ to see it). The tangent pieces, expressed in the basis
+$\{\Phi_u,\Phi_v\}$, are the **Christoffel symbols** $\Gamma^k_{\;ij}$:
 
-```math
-\boxed{\;
-\Gamma^k_{\;ij}
-=\frac12\,g^{k\ell}
-\bigl(\partial_i g_{j\ell}+\partial_j g_{i\ell}-\partial_\ell g_{ij}\bigr).
-\;}
-```
+> $\Gamma^k_{\;ij}$ = the coefficient of the basis arrow $\Phi_k$ in the
+> tangent-plane part of the second-derivative arrow $\Phi_{ij}$.
 
-This is the formula in `Curvature.lean`. It is the only formula you need to
-compute geodesics from a metric alone. The code computes
-$\partial_i g_{jk}$ **exactly** from the stored second partials:
-
-```math
-\partial_i g_{jk}
-=\langle \Phi_{ij},\Phi_k\rangle+\langle \Phi_j,\Phi_{ik}\rangle,
-```
-
-via `dMetricEntry`.
-
-### Why the tangent projection is the right correction
-
-If $V=V^k e_k$ is a vector field, then
-
-```math
-D_i V
-=\partial_i(V^k e_k)
-=(\partial_i V^k)e_k+V^k\Phi_{ik}
-=\bigl(\partial_i V^k+\Gamma^k_{\;ij}V^j\bigr)e_k
-+II_{ik}V^k n.
-```
-
-The **covariant derivative** is the tangent part:
-
-```math
-\boxed{\;\nabla_i V^k=\partial_i V^k+\Gamma^k_{\;ij}V^j\;}
-```
-
-The extra $\Gamma$ term subtracts the rotation of the basis. This is exactly
-the “connection” that lets you compare vectors in neighbouring tangent
-planes.
-
-The metric is compatible with this derivative:
-
-```math
-\nabla_k g_{ij}=0,
-```
-
-which is another way to derive the formula above: impose
-$\nabla_k g_{ij}=0$ and solve for $\Gamma$.
+In words: "how much of the $\Phi_u$ arrow reproduces itself when I move
+$\Phi_u$ in the $u$-direction", and so on. It measures the turning of the
+basis arrows (a coordinate effect), *not* the bending of the surface (that
+is $II$).
 
 ---
 
-## 2.4 The Jacobian/directional-derivative view
+## 2.2 Computing the coefficients by dot products
 
-Let $J=[\Phi_u\ \Phi_v]$. Moving in the parameter direction $j$ changes the
-Jacobian:
+How do you find the coefficients of an arrow expressed in a basis? You take
+dot products with the basis arrows and invert the Gram matrix — the same
+least-squares move as in Chapter 1.
 
-```math
-D_j J
-=\bigl[\Phi_{uj}\ \ \Phi_{vj}\bigr].
-```
-
-The Gauss formula says each column of this “derivative of the Jacobian” is
+Write the unknown expansion $\Phi_{ij} = a\,\Phi_u + b\,\Phi_v + II_{ij}\,n$.
+Dot with $\Phi_u$ and $\Phi_v$ (the $n$ term drops out because
+$n\perp\Phi_u,\Phi_v$):
 
 ```math
-D_j\Phi_i
-=\Gamma^k_{\;ij}\Phi_k+II_{ij}n.
+\Phi_u\cdot\Phi_{ij} = a\,(\Phi_u\cdot\Phi_u) + b\,(\Phi_v\cdot\Phi_u),\qquad
+\Phi_v\cdot\Phi_{ij} = a\,(\Phi_u\cdot\Phi_v) + b\,(\Phi_v\cdot\Phi_v).
 ```
 
-So:
+That is a $2\times 2$ linear system whose matrix is $I = J^{\mathsf T}J$:
 
-- **$\Gamma$** is the tangential part of $D J$;
-- **$II$** is the normal part of $D J$.
+```math
+\boxed{\;
+\Gamma^k_{\;ij} = \bigl(I^{-1}\bigr)^{k\ell}\,
+\bigl(\Phi_\ell\cdot\Phi_{ij}\bigr).\;}
+```
 
-If you only remember one sentence: *the Christoffel symbols are the
-directional derivative of the tangent basis, projected back onto the tangent
-plane.*
+This is the cleanest definition: *invert the tangent-basis Gram matrix and
+multiply by the dot products of the second-derivative arrows with the basis
+arrows.*
+
+### The Gram-derivative formula
+
+There is a second formula, computable from $I$ alone. Differentiate the dot
+products that make up $I$:
+
+```math
+\frac{\partial}{\partial u}\,(\Phi_j\cdot\Phi_k)
+= \Phi_{uj}\cdot\Phi_k + \Phi_j\cdot\Phi_{uk}.
+```
+
+Every $\Phi_{\bullet\bullet}\cdot\Phi_\bullet$ on the right is a
+"first-kind" coefficient. Combine the three such differentiated identities
+(cyclically in $i,j,k$) and eliminate the shared terms:
+
+```math
+\boxed{\;
+\Phi_m\cdot\Phi_{ij}
+= \tfrac12\Bigl(
+\frac{\partial}{\partial u_i}\,(\Phi_j\cdot\Phi_m)
++ \frac{\partial}{\partial u_j}\,(\Phi_i\cdot\Phi_m)
+- \frac{\partial}{\partial u_m}\,(\Phi_i\cdot\Phi_j)\Bigr)\;}
+```
+
+where $u_1=u$, $u_2=v$. Combining with the boxed formula above gives the
+all-metric version
+
+```math
+\Gamma^k_{\;ij}
+= \tfrac12 \bigl(I^{-1}\bigr)^{k\ell}
+\Bigl(
+\partial_i\, I_{j\ell} + \partial_j\, I_{i\ell}
+- \partial_\ell\, I_{ij}\Bigr),
+```
+
+with $I_{ij} = \Phi_i\cdot\Phi_j$. This is the formula implemented in
+`Curvature.lean`, and it needs no normals at all — only the Gram matrix and
+its derivatives. The code computes the $\partial I$ terms **exactly** from
+stored second partials:
+
+```math
+\partial_u\,(\Phi_j\cdot\Phi_k)
+= \Phi_{uj}\cdot\Phi_k + \Phi_j\cdot\Phi_{uk},
+```
+
+see `Surface.dMetricEntry`.
+
+### Both formulas agree
+
+Because $\Phi_\ell \cdot (\Phi_{ij} - (\text{tangent part})) = 0$ by
+construction, the two routes — "project the arrow" and "differentiate the
+Gram matrix" — produce the same numbers. Use whichever is convenient;
+Chapter 1's `Surface.christoffel` can be read through either lens.
+
+---
+
+## 2.3 How symbols turn into a corrected derivative
+
+Take a surface vector field $V = V^u\,\Phi_u + V^v\,\Phi_v$ (two scalar
+coefficient functions plus basis arrows). Differentiate in the $i$-th
+parameter direction:
+
+```math
+\frac{\partial V}{\partial u_i}
+= \frac{\partial V^k}{\partial u_i}\,\Phi_k
++ V^k\,\Phi_{ki}
+= \Bigl(\frac{\partial V^k}{\partial u_i}
++ \Gamma^k_{\;ij}\,V^j\Bigr)\Phi_k
++ (\text{normal terms}).
+```
+
+The normal terms are discarded (they are $II$'s business). What remains,
+with the correction term added back in, is the **covariant tangent part**:
+
+```math
+\boxed{\;\nabla_i V^k = \frac{\partial V^k}{\partial u_i}
++ \Gamma^k_{\;ij}\,V^j.\;}
+```
+
+Read it as: the honest rate of change of the arrows, minus the part caused
+merely by the basis arrows themselves rotating. On the flat plane in
+standard coordinates the $\Gamma$ all vanish — and indeed no correction is
+needed there. In curved coordinates the same plane needs corrections; a
+sphere needs them everywhere. This is the correction that lets
+neighboring tangent planes be compared.
+
+---
+
+## 2.4 The Jacobian / directional derivative view
+
+Collect everything into matrices. The derivative of the Jacobian in the
+$i$-th parameter direction is a new $3\times 2$ matrix
+$[\,\Phi_{ui}\;\ \Phi_{vi}\,]$, and each column of it splits:
+
+```math
+(\text{column } j)\ = \
+\Gamma^u_{\;ij}\,\Phi_u + \Gamma^v_{\;ij}\,\Phi_v + II_{j i}\,n.
+```
+
+So
+
+- $I$, $II$ and $\Gamma$ are all read off the **same object**, the derivative
+  of the Jacobian;
+- $\Gamma$ is its tangent-plane projection written back in the tangent basis,
+  $II$ is its normal part.
+
+If you remember one sentence: *the Christoffel symbols are the tangent-plane
+shadow of the second derivatives of the surface, written in the tangent
+basis.*
 
 ---
 
 ## 2.5 Example: the flat plane in polar coordinates
 
-This is the most important example, because it separates **coordinate
-twist** from **curvature**. The plane is flat ($K=0$), yet the polar
-Christoffel symbols are not zero.
+This example separates **coordinate twist** from genuine curvature, because
+the surface is just a flat plane.
 
 ```math
-\Phi(r,\theta)=(r\cos\theta,r\sin\theta,0).
+\Phi(r,\theta) = (r\cos\theta,\ r\sin\theta,\ 0).
 ```
 
-Basis:
+The basis arrows are
 
 ```math
-e_r=(\cos\theta,\sin\theta,0),\qquad
-e_\theta=(-r\sin\theta,r\cos\theta,0).
-```
-
-Derivatives:
-
-```math
-\partial_r e_r=0,\qquad
-\partial_\theta e_r=(-r\sin\theta,r\cos\theta,0)=\frac1r e_\theta,
-```
-
-```math
-\partial_r e_\theta=(-\sin\theta,\cos\theta,0)=\frac1r e_\theta,
+\Phi_r = (\cos\theta,\ \sin\theta,\ 0),
 \qquad
-\partial_\theta e_\theta=(-r\cos\theta,-r\sin\theta,0)=-r\,e_r.
+\Phi_\theta = (-r\sin\theta,\ r\cos\theta,\ 0),
 ```
 
-Therefore the nonzero symbols are
+and their Gram matrix is diagonal:
+$I = \begin{bmatrix}1&0\\0&r^2\end{bmatrix}$. Differentiate the arrows:
 
 ```math
-\Gamma^\theta_{\;\theta r}
-=\Gamma^\theta_{\;r\theta}=\frac1r,
+\frac{\partial\Phi_r}{\partial\theta} = \frac1r\,\Phi_\theta,
 \qquad
-\Gamma^r_{\;\theta\theta}=-r.
-```
-
-Metric and inverse:
-
-```math
-g=\begin{bmatrix}1&0\\0&r^2\end{bmatrix},
+\frac{\partial\Phi_\theta}{\partial r} = \frac1r\,\Phi_\theta,
 \qquad
-g^{-1}=\begin{bmatrix}1&0\\0&1/r^2\end{bmatrix}.
+\frac{\partial\Phi_\theta}{\partial\theta} = -r\,\Phi_r.
 ```
 
-Check with the metric formula: the only nonzero metric derivative is
-$\partial_r g_{\theta\theta}=2r$, hence
+Reading off the coefficients in the basis $\{\Phi_r,\Phi_\theta\}$:
 
 ```math
-\Gamma^r_{\;\theta\theta}
-=\tfrac12 g^{rr}(-\partial_r g_{\theta\theta})
-=-r,
-```
-
-and
-
-```math
-\Gamma^\theta_{\;r\theta}
-=\tfrac12 g^{\theta\theta}(\partial_r g_{\theta\theta})
-=\frac1r.
-```
-
-### Geodesic equations and the centrifugal force
-
-The geodesic equation is
-
-```math
-\ddot q^k+\Gamma^k_{\;ij}\dot q^i\dot q^j=0.
-```
-
-In polar coordinates:
-
-```math
-\ddot r-r\dot\theta^2=0,
+\Gamma^\theta_{\;\theta r} = \Gamma^\theta_{\;r\theta} = \frac1r,
 \qquad
-\ddot\theta+\frac{2}{r}\dot r\dot\theta=0.
+\Gamma^r_{\;\theta\theta} = -r.
 ```
 
-The first equation is the familiar **centrifugal term**: to stay on a
-straight line, a particle in polar coordinates needs an inward coordinate
-acceleration $-r\dot\theta^2$. The second equation says
+Cross-check with the Gram-derivative formula: the only nonzero Gram
+derivative is $\partial_r\, (\Phi_\theta\cdot\Phi_\theta) = 2r$, and
+$\tfrac12 (I^{-1})^{rr} (\partial_r I_{\theta\theta}) \ldots$ reproduces
+exactly the same two symbols. Good — the formulas agree, as they must.
 
-```math
-\frac{d}{ds}(r^2\dot\theta)
-=r^2\Bigl(\ddot\theta+\frac{2}{r}\dot r\dot\theta\Bigr)=0,
-```
-
-i.e. **conservation of angular momentum**. Straight lines in the plane are
-the geodesics; the Christoffel terms are coordinate effects, not curvature.
-Indeed the Riemann curvature of the plane is zero.
-
-> **Lesson.** Nonzero $\Gamma$ does **not** mean the surface is curved. It
-> means the coordinates are curved. Curvature is a combination of derivatives
-> of $\Gamma$ (the Riemann tensor).
+As a first sanity check that this is coordinate machinery, not bending: the
+plane is flat ($K=0$ from Chapter 1), yet its polar symbols are nonzero.
+The symbols record that the *basis arrows* rotate as you walk; they say
+nothing about the *plane itself* being bent — it isn't.
 
 ---
 
-## 2.6 Example: the unit sphere
+## 2.6 Example: the sphere
 
-Use polar coordinates on the sphere:
-
-```math
-\Phi(\theta,\varphi)
-=(\sin\theta\cos\varphi,\ \sin\theta\sin\varphi,\ \cos\theta).
-```
-
-Metric:
+For the unit sphere
+$\Phi(\theta,\varphi) = (\sin\theta\cos\varphi,\ \sin\theta\sin\varphi,\ \cos\theta)$,
+the tangent
+arrows have Gram matrix
+$I = \begin{bmatrix}1&0\\0&\sin^2\theta\end{bmatrix}$, and computing the
+second derivatives gives
 
 ```math
-g=
-\begin{bmatrix}
-1&0\\
-0&\sin^2\theta
-\end{bmatrix}.
-```
-
-The nonzero metric derivative is
-$\partial_\theta g_{\varphi\varphi}=2\sin\theta\cos\theta$.
-The nonzero symbols are
-
-```math
-\Gamma^\theta_{\;\varphi\varphi}
-=-\sin\theta\cos\theta,
+\Gamma^\theta_{\;\varphi\varphi} = -\sin\theta\cos\theta,
 \qquad
 \Gamma^\varphi_{\;\theta\varphi}
-=\Gamma^\varphi_{\;\varphi\theta}
-=\cot\theta.
+= \Gamma^\varphi_{\;\varphi\theta} = \cot\theta.
 ```
 
-The geodesic equations are
-
-```math
-\ddot\theta-\sin\theta\cos\theta\,\dot\varphi^2=0,
-```
-
-```math
-\ddot\varphi+2\cot\theta\,\dot\theta\dot\varphi=0.
-```
-
-The second equation gives
-
-```math
-\frac{d}{ds}\bigl(\sin^2\theta\,\dot\varphi\bigr)=0,
-```
-
-conservation of angular momentum about the polar axis. Solutions are great
-circles: set $\varphi=\text{const}$ to get a meridian
-($\ddot\theta=0$), or set $\theta=\pi/2$ to get the equator
-($\ddot\varphi=0$). The sphere is genuinely curved: $K=1$.
+Their role: a curve that keeps $\varphi$ fixed is automatically a geodesic
+(its second-derivative arrow is purely along $n$, no tangent part); a curve
+with $\theta = \pi/2$ is one too; general great circles follow from combining
+the two.
 
 ---
 
 ## 2.7 Example: the paraboloid
 
-For $z=0.3(x^2+y^2)$, the metric at $(x,y)$ is
+For $z = 0.3(x^2+y^2)$ the Gram matrix of the tangent arrows is
 
 ```math
-I=
-\begin{bmatrix}
-1+0.36x^2 & 0.36xy\\
-0.36xy & 1+0.36y^2
-\end{bmatrix}.
+I = \begin{bmatrix}1+0.36x^2 & 0.36xy\\ 0.36xy & 1+0.36y^2\end{bmatrix}.
 ```
 
 At $(1,0)$ the code prints
@@ -402,67 +271,73 @@ I=\begin{bmatrix}1.36&0\\0&1\end{bmatrix},
 \Gamma^u_{\;vv}=0.2647,
 ```
 
-and all $\Gamma^v_{\;ij}=0$. The nonzero $\Gamma^u_{\;vv}$ is a good check of
-the geometric picture: the $v$-coordinate line $x=\text{const}$ does not look
-“straight” in the tilted tangent basis at $(1,0)$, so its second derivative
-has a component along $\Phi_u$. The normal part of that same second
-derivative is the bending $II_{vv}$.
+and all $\Gamma^v_{\;ij}=0$. Why is $\Gamma^u_{\;vv}$ nonzero? The
+$v$-coordinate curve $x = \text{const}$ has second-derivative arrow
+$(0,0,0.6)$ at that point, which is not parallel to $n=(\,-0.6,0,1)/\sqrt{1.36}$;
+its tangent-plane component therefore has a piece along the
+$\Phi_u=(1,0,0.6)$ arrow — the coefficient of that piece is
+$\Gamma^u_{\;vv} = 0.2647$. The normal part of the very same arrow is the
+$II_{22}$ entry from Chapter 1. One arrow, two projections — that repeating
+pattern is the whole subject.
 
 ---
 
 ## 2.8 How the code computes $\Gamma$
 
 ```lean
-Surface.dPhi  s i x y   -- Φ_i
-Surface.d2Phi s i j x y -- Φ_ij
+Surface.dPhi  s i x y   -- the basis arrows Φ_i
+Surface.d2Phi s i j x y -- the second-derivative arrows Φ_ij
 Surface.dMetricEntry s u i j x y
-                        -- ∂_u g_ij, exact
+                        -- exact Gram-matrix derivative ∂_u (Φ_i·Φ_j)
 Surface.christoffel s x y
-                        -- Γ^k_ij as a Fin 2 → Fin 2 → Fin 2 → Float
-Surface.metricI s x y   -- I
+                        -- Γ^k_ij : Fin 2 → Fin 2 → Fin 2 → Float
+Surface.metricI s x y   -- the Gram matrix I
 ```
 
-`christoffel` is a literal transcription of
+`christoffel` is a literal transcription of the Gram-derivative formula:
 
 ```math
 \Gamma^k_{\;ij}
-=\tfrac12 g^{k0}
-\bigl(\partial_i g_{j0}+\partial_j g_{i0}-\partial_0 g_{ij}\bigr)
-+\tfrac12 g^{k1}
-\bigl(\partial_i g_{j1}+\partial_j g_{i1}-\partial_1 g_{ij}\bigr).
+= \tfrac12 \bigl(I^{-1}\bigr)^{k0}
+\bigl(\partial_i I_{j0} + \partial_j I_{i0} - \partial_0 I_{ij}\bigr)
++ \tfrac12 \bigl(I^{-1}\bigr)^{k1}
+\bigl(\partial_i I_{j1} + \partial_j I_{i1} - \partial_1 I_{ij}\bigr).
 ```
 
-Because `Smooth2` stores exact partials, no finite differences are involved.
-`Geodesic.accel` then forms
-$-\Gamma^k_{\;ij}\dot q^i\dot q^j$.
+Because `Smooth2` stores exact partials, no finite differences are
+involved. `Geodesic.accel` then forms
+$-\Gamma^k_{\;ij}\,d^i d^j$ for a direction vector $d=(\dot u,\dot v)$ —
+see the next chapter.
 
 ---
 
 ## 2.9 Exercises
 
-1. **Polar from the metric.** Derive
-   $\Gamma^r_{\;\theta\theta}=-r$ and
-   $\Gamma^\theta_{\;r\theta}=1/r$ from
-   $g=\mathrm{diag}(1,r^2)$ alone. Then check the basis-derivative
-   computation in §2.5.
-2. **Cartesian flatness.** Show that all $\Gamma^k_{\;ij}=0$ for the plane in
-   Cartesian coordinates. Why does this not contradict the nonzero polar
-   symbols?
-3. **First-kind identity.** Prove
-   $\partial_k g_{ij}=\Gamma_{ijk}+\Gamma_{jik}$ and use it to re-derive the
-   first-kind formula.
-4. **Cylinder.** Compute the Christoffel symbols for the cylinder
-   $\Phi(\theta,z)=(R\cos\theta,R\sin\theta,z)$. Which are nonzero? Is the
-   cylinder curved in the Gaussian sense?
-5. **Sphere check.** Starting from
-   $g=\mathrm{diag}(1,\sin^2\theta)$, derive
+1. **Polar, both ways.** Compute $\Gamma^r_{\;\theta\theta} = -r$ and
+   $\Gamma^\theta_{\;r\theta}=1/r$ from the basis-derivative arrows in
+   §2.5, and check them using the Gram-derivative formula with
+   $I=\mathrm{diag}(1,r^2)$.
+2. **Standard coordinates.** Show that every
+   $\Gamma^k_{\;ij}=0$ for the plane in standard $(x,y)$ coordinates. Why
+   does this not contradict the nonzero polar symbols?
+3. **Symmetry.** Use $\Phi_{uv}=\Phi_{vu}$ to explain why
+   $\Gamma^k_{\;ij}=\Gamma^k_{\;ji}$ always holds.
+4. **First-kind identity.** Prove that
+   $\partial_k\,(\Phi_i\cdot\Phi_j) = \Phi_{ik}\cdot\Phi_j + \Phi_i\cdot\Phi_{jk}$,
+   and use it to derive the boxed "Gram-derivative formula" of §2.2.
+5. **Cylinder.** Compute the basis-arrow derivatives for
+   $\Phi(\theta,z)=(R\cos\theta,R\sin\theta,z)$ and show that only
+   $\Gamma^z_{\;\theta\theta}$-type symbols could exist — and actually all
+   of them vanish. Is that consistent with the cylinder being flat?
+6. **Sphere check.** With $I=\mathrm{diag}(1,\sin^2\theta)$, derive
    $\Gamma^\theta_{\;\varphi\varphi}=-\sin\theta\cos\theta$ and
-   $\Gamma^\varphi_{\;\theta\varphi}=\cot\theta$.
-6. **Angular momentum.** Show that the polar geodesic equation implies
-   $r^2\dot\theta=\text{const}$, and interpret this physically.
-7. **Coordinate artifact.** Explain why $\Gamma$ is not a tensor. (Hint: in
-   Cartesian coordinates it vanishes, but a tensor that vanishes in one
-   coordinate system must vanish in all.)
-8. **Code experiment.** Use `Surface.christoffel` on the paraboloid at
-   $(0,0)$ and at $(2,0)$. Which symbols vanish/change? Relate the change to
-   the metric entries.
+   $\Gamma^\varphi_{\;\theta\varphi}=\cot\theta$ from the
+   Gram-derivative formula.
+7. **Conserved quantity.** Show that on the sphere the combination
+   $\sin^2\theta\,\dot\varphi$ stays constant along any curve obeying the
+   geodesic equations of Chapter 3. (Hint: differentiate
+   $\sin^2\theta\,\dot\varphi$ with respect to $s$ and substitute the two
+   geodesic equations.)
+8. **Code experiment.** Evaluate `Surface.christoffel` on the paraboloid at
+   $(0,0)$ and at $(2,0)$. Which symbols change, and can you predict the
+   change from the Gram-matrix entries?
