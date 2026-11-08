@@ -1,7 +1,7 @@
 /-!
 # Geodesia — vectors
 
-Small Float vector layer so the rest of the library reads like differential
+Small `Float` vector layer so the rest of the library reads like differential
 geometry, not like index manipulations.
 -/
 
@@ -20,11 +20,14 @@ structure Vec3 where
 
 namespace Vec2
 
+instance : ToString Vec2 := ⟨fun v => s!"({v.x}, {v.y})"⟩
+
 def add (u v : Vec2) : Vec2 := ⟨u.x + v.x, u.y + v.y⟩
 def sub (u v : Vec2) : Vec2 := ⟨u.x - v.x, u.y - v.y⟩
 def smul (a : Float) (u : Vec2) : Vec2 := ⟨a * u.x, a * u.y⟩
 def dot (u v : Vec2) : Float := u.x * v.x + u.y * v.y
-def norm : Vec2 → Float := fun u => Float.sqrt u.dot u
+def norm (u : Vec2) : Float := Float.sqrt (u.dot u)
+def normalize (u : Vec2) : Vec2 := smul (1 / u.norm) u
 
 /-- Explicit coordinate access as an indexed family (nice for Christoffel code). -/
 def comp (v : Vec2) : Fin 2 → Float :=
@@ -36,11 +39,14 @@ end Vec2
 
 namespace Vec3
 
+instance : ToString Vec3 := ⟨fun v => s!"({v.x}, {v.y}, {v.z})"⟩
+
 def add (u v : Vec3) : Vec3 := ⟨u.x + v.x, u.y + v.y, u.z + v.z⟩
 def sub (u v : Vec3) : Vec3 := ⟨u.x - v.x, u.y - v.y, u.z - v.z⟩
 def smul (a : Float) (u : Vec3) : Vec3 := ⟨a * u.x, a * u.y, a * u.z⟩
 def dot (u v : Vec3) : Float := u.x * v.x + u.y * v.y + u.z * v.z
-def norm : Vec3 → Float := fun u => Float.sqrt u.dot u
+def norm (u : Vec3) : Float := Float.sqrt (u.dot u)
+def normalize (u : Vec3) : Vec3 := smul (1 / u.norm) u
 
 /-- The cross product — the one nonplanar operation we need, for normals. -/
 def cross (u v : Vec3) : Vec3 :=

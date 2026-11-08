@@ -1,67 +1,78 @@
+import Geodesia.Diff
+import Geodesia.Vec
+
 /-!
 # Geodesia — height fields and surfaces
 
 Two levels of the tower:
 
-* a *height field* `h : Float → Float → Float` is the `ℝ² → ℝ` case:
-  map the domain `(x, y)` to a scalar (height / potential / temperature).
-* a *surface* is the `ℝ² → ℝ³` case: an embedding `Φ` from the parameter plane
-  into ambient space. The canonical trick in this library is the *terrain
-  embedding* of a height field:
+* a *height field* `h : Smooth2` is the `ℝ² → ℝ` case: map the domain
+  `(x, y)` to a scalar (height / potential / temperature).
+* a *surface* is the `ℝ² → ℝ³` case: an embedding `Φ` from the parameter
+  plane into ambient space. The canonical trick in this library is the
+  *terrain embedding* of a height field:
       Φ(x, y) = (x, y, h(x, y))
   so every height map is a bent sheet in 3-space, ready for surface geometry.
 
-Everything numeric is exact-for-the-Float-example and Differentiable in spirit:
-the surface functions are C² (indeed C^∞), so all derivatives below exist.
-The library approximates them with central finite differences.
+`Smooth2` carries the derivatives as data, so `Φ_u`, `Φ_v`, `Φ_uu`, … below
+are exact whenever the height/surface was built from the `Diff` combinators.
+A finite-difference fallback is available via `Smooth2.ofFiniteDiff`, but the
+rest of the library never needs an `ε`.
 -/
-
-import Geodesia.Vec
 
 namespace Geodesia
 
-/-- A height field over the parameter plane: `(x, y) ↦ h(x, y)`. -/
-abbrev Height := Float → Float → Float
+/-- A height field over the parameter plane, with exact partial derivatives. -/
+abbrev Height := Smooth2
 
-/-- A surface (parametrized patch): two parameters, three coordinates. -/
+/-- A surface (parametrized patch): two parameters, three coordinate
+functions, each carrying its own partial derivatives. -/
 structure Surface where
-  sx : Float → Float → Float
-  sy : Float → Float → Float
-  sz : Float → Float → Float
+  sx : Smooth2
+  sy : Smooth2
+  sz : Smooth2
 
 /-- The canonical terrain embedding: a height field lifted to a surface. -/
 def Surface.ofHeight (h : Height) : Surface :=
-  ⟨fun x _ => x, fun _ y => y, h⟩
+  ⟨Smooth2.coordX, Smooth2.coordY, h⟩
 
 namespace Surface
 
-attribute [local simp] Vec3.add Vec3.sub Vec3.smul
+/-! ## Point and partial derivatives of `Φ`. -/
 
-/-! ## Central finite differences.
+/-- The ambient point `Φ(u, v)`. -/
+def point (s : Surface) (u v : Float) : Vec3 :=
+  ⟨s.sx.f u v, s.sy.f u v, s.sz.f u v⟩
 
-`d/du f(u) ≈ (f(u + ε) - f(u - ε)) / 2ε`, second derivative via the standard
-3-point stencil. The step is tiny enough for smooth functions to look
-"exact" in Float output.
--/
+/-- `∂Φ/∂u` (`i = 0`) or `∂Φ/∂v` (`i = 1`). -/
+def dPhi (s : Surface) (i : Fin 2) (u v : Float) : Vec3 :=
+  match i with
+  | 0 => ⟨s.sx.fx u v, s.sy.fx u v, s.sz.fx u v⟩
+  | 1 => ⟨s.sx.fy u v, s.sy.fy u v, s.sz.fy u v⟩
 
-def eps : Float := 1e-5
+/-- `∂²Φ/∂i∂j`, using the exact second partials stored in `Smooth2`. -/
+def d2Phi (s : Surface) (i j : Fin 2) (u v : Float) : Vec3 :=
+  match i, j with
+  | 0, 0 => ⟨s.sx.fxx u v, s.sy.fxx u v, s.sz.fxx u v⟩
+  | 0, 1 => ⟨s.sx.fxy u v, s.sy.fxy u v, s.sz.fxy u v⟩
+  | 1, 0 => ⟨s.sx.fxy u v, s.sy.fxy u v, s.sz.fxy u v⟩
+  | 1, 1 => ⟨s.sx.fyy u v, s.sy.fyy u v, s.sz.fyy u v⟩
 
-/-- First partial with respect to the first parameter, for a unary profile. -/
-def dd (f : Float → Float) (u : Float) : Float :=
-  (f (u + eps) - f (u - eps)) / (2 * eps)
-
-/-- Second partial for a unary profile (convexity of a cross-section). -/
-def ddd (f : Float → Float) (u : Float) : Float :=
-  (f (u + eps) - 2 * f u + f (u - eps)) / (eps * eps)
+/-! ## Height-field helpers. -/
 
 /-- First partials of the height field. -/
-def hx (h : Height) (x y : Float) : Float := dd (fun u => h u y) x
-def hy (h : Height) (x y : Float) : Float := dd (fun v => h x v) y
+def hx (h : Height) (x y : Float) : Float := h.fx x y
+def hy (h : Height) (x y : Float) : Float := h.fy x y
+
 /-- Second pure partials (height field version of the Hessian diagonal). -/
-def hxx (h : Height) (x y : Float) : Float := ddd (fun u => h u y) x
-def hyy (h : Height) (x y : Float) : Float := ddd (fun v => h x v) y
+def hxx (h : Height) (x y : Float) : Float := h.fxx x y
+def hyy (h : Height) (x y : Float) : Float := h.fyy x y
+
 /-- The mixed partial, read off the height field. -/
-def hxy (h : Height) (x y : Float) : Float := dd (fun u => hy h u y) x
+def hxy (h : Height) (x y : Float) : Float := h.fxy x y
+
+/-- Gradient `∇h = (h_x, h_y)` — direction of steepest climb. -/
+def grad (h : Height) (x y : Float) : Vec2 := ⟨hx h x y, hy h x y⟩
 
 /-! ## Tangents and normal of a height field. -/
 
@@ -71,14 +82,19 @@ def tangentX (h : Height) (x y : Float) : Vec3 := ⟨1, 0, hx h x y⟩
 /-- Tangent along increasing `y` on the surface: `∂Φ/∂y`. -/
 def tangentY (h : Height) (x y : Float) : Vec3 := ⟨0, 1, hy h x y⟩
 
-/-- Upward unit normal: `n = Φx × Φy / |Φx × Φy|`. -/
-def normal (h : Height) (x y : Float) : Vec3 :=
-  let c := (tangentX h x y).cross (tangentY h x y)
+/-- Unit normal of a general surface: `n = Φ_u × Φ_v / |Φ_u × Φ_v|`. -/
+def normalAt (s : Surface) (u v : Float) : Vec3 :=
+  let c := (dPhi s 0 u v).cross (dPhi s 1 u v)
   Vec3.smul (1 / c.norm) c
+
+/-- Upward unit normal of a height field. -/
+def normal (h : Height) (x y : Float) : Vec3 :=
+  normalAt (ofHeight h) x y
 
 /-- Slope magnitude `|∇h|` at a point — how steep the terrain is. -/
 def slope (h : Height) (x y : Float) : Float :=
-  Float.sqrt ((hx h x y) ^ 2 + (hy h x y) ^ 2)
+  let g := grad h x y
+  g.norm
 
 end Surface
 

@@ -22,6 +22,7 @@
 | Project | What's explored | Docs entry point |
 |---|---|---|
 | 🎲 [`metropolis`](projects/metropolis) | Probabilistic programming & MCMC: random-walk Metropolis, a generic `Solver` architecture, log-space math, and Lean proofs of why the normalizing constant cancels | 📖 [`learn-metropolis/index.md`](projects/metropolis/learn-metropolis/index.md) |
+| 🌐 [`geodesia`](projects/geodesia) | Exact differential geometry in Lean: first/second fundamental forms, Christoffel symbols, curvature, geodesic ODEs, RK4, shooting and relaxation on parameterized surfaces | 📖 [`learn-geodesia/index.md`](projects/geodesia/learn-geodesia/index.md) |
 
 *(🚧 next topics* — e.g. complex analysis, group theory, information theory —
 *join here as new `projects/<topic>` folders.)*

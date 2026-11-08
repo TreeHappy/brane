@@ -1,3 +1,7 @@
 **/.lake
 *.olean
 mise-oci/
+
+# Python
+__pycache__/
+*.pyc
