@@ -45,9 +45,10 @@ sub-regions they understand.
 
 ### 2.1 Gibbs sampling
 
-**Idea.** If, for each coordinate `i`, you can *draw exactly* from the full
-conditional `p(θᵢ | θ₋ᵢ, data)`, cycle through coordinates. No proposals, no
-coin flips, no rejections — every move is accepted by construction.
+**Idea.** If, for each coordinate $i$, you can *draw exactly* from the full
+conditional $p(\theta_i \mid \theta_{-i}, \text{data})$, cycle through
+coordinates. No proposals, no coin flips, no rejections — every move is
+accepted by construction.
 
 ```mermaid
 flowchart LR
@@ -58,9 +59,9 @@ flowchart LR
 ```
 
 **Why nice.** Zero tuning, zero rejections, and typically excellent mixing
-per coordinate. For our normal-mean model (`μ ~ N(0, 25)`, `xᵢ ~ N(μ,1)`)
-the posterior is `N(..., ...)` in closed form — one Gibbs draw is a whole
-"good sample".
+per coordinate. For our normal-mean model ($\mu \sim \mathcal N(0, 25)$,
+$x_i \sim \mathcal N(\mu, 1)$) the posterior is $\mathcal N(\cdot,\cdot)$ in
+closed form — one Gibbs draw is a whole "good sample".
 
 **Why not always.** (i) Most real models *don't* have conjugate conditionals;
 there it degrades to "Metropolis-within-Gibbs", i.e. nested Metropolis steps
@@ -94,23 +95,29 @@ compass. This is the family that modern PPLs (Stan, PyMC, NumPyro) default to.
 
 ### 3.1 MALA (Metropolis-adjusted Langevin algorithm)
 
-**Idea.** Propose `θ' = θ + h·∇logp(θ) + √(2h)·ε` — drift uphill by `h`
-(a known *Euler step on the Langevin SDE*), noise for exploration. Keep the
-Ch. 1 coin flip, but with a *Hastings correction* because the proposal is now
+**Idea.** Propose $\theta' = \theta + h\,\nabla \log p(\theta) + \sqrt{2h}\,\varepsilon$
+— drift uphill by `h` (a known *Euler step on the Langevin SDE*), noise for
+exploration. Keep the Ch. 1 coin flip, but with a *Hastings correction* because the proposal is now
 asymmetric: the forward and reverse proposal densities differ, so accept with
 
-```
-min(1, exp( logp(θ') − logp(θ) + log q(θ | θ') − log q(θ' | θ) ))
-```
+(asymmetric: the forward and reverse proposal densities differ, so accept
+with)
 
-where `q(θ' | θ) = N(θ + h·∇logp(θ), 2h)` — i.e. the Ch. 1 `Δ` plus two
-correction terms from the drifted proposal. The math rests on the same
-shift-invariance story as Ch. 1 §5 — the `Z` argument carries over verbatim.
+$$
+\min\Bigl(1,\ \exp\bigl(\log p(\theta') - \log p(\theta)
++ \log q(\theta \mid \theta') - \log q(\theta' \mid \theta)\bigr)\Bigr)
+$$
 
-**Why nice.** Better dimension scaling: random-walk Metropolis needs ~O(d)
-transitions to traverse the posterior in `d` dimensions (optimal-scaling
-result); MALA mixing drops to ~O(d^(1/3)) because the drift does the
-long-haul work toward high probability instead of blind diffusion.
+where $q(\theta' \mid \theta) = \mathcal N(\theta + h\,\nabla \log p(\theta),\, 2h)$
+— i.e. the Ch. 1 `Δ` plus two correction terms from the drifted proposal. The
+math rests on the same shift-invariance story as Ch. 1 §5 — the $Z$ argument
+carries over verbatim.
+
+**Why nice.** Better dimension scaling: random-walk Metropolis needs
+$\sim O(d)$ transitions to traverse the posterior in $d$ dimensions
+(optimal-scaling result); MALA mixing drops to $\sim O(d^{1/3})$ because the
+drift does the long-haul work toward high probability instead of blind
+diffusion.
 
 **Why not always.** One Euler step per proposal is short-sighted; to move you
 must either take small steps (slow mixing) or specialize (Ch. 3, HMC fixes
@@ -119,9 +126,15 @@ this by chaining many steps).
 ### 3.2 HMC (Hamiltonian Monte Carlo)
 
 **Idea.** Introduce a momentum `p` and simulate *Hamiltonian dynamics* on the
-landscape `L(θ) = logp(θ) - p·M⁻¹p/2` for `L` leapfrog steps, then Metropolis
-flip on total energy error. Physically: a ball rolling on the *negative*
-log-density surface, with momentum carrying it through flat regions.
+landscape
+
+$$
+L(\theta) = \log p(\theta) - \tfrac{1}{2}\, p^{\\!\\top} M^{-1} p
+$$
+
+for `L` leapfrog steps, then Metropolis flip on total energy error.
+Physically: a ball rolling on the *negative* log-density surface, with
+momentum carrying it through flat regions.
 
 **Why nice.** Per-move acceptance ~1, moves hundreds of step-sizes per
 proposal, dramatically lower autocorrelation — for smooth posteriors this is
@@ -157,8 +170,8 @@ in the picture.
 
 | Method | Idea | What it's uniquely good at | Main trap |
 |---|---|---|---|
-| **Importance sampling** | draw θ from a convenient `q`, weight by `w = p(θ)/q(θ)`; estimate expectations as `Σ wᵢθᵢ / Σ wᵢ` | parallel-friendly, streaming-friendly, gives you the *evidence* `Z` as a byproduct `mean(w)` (Ch. 1 §5 proved MCMC can't get this!) | weights degenerate in high dimension — ESS ∝ effective diversity of `q`, which collapses quickly |
-| **Rejection sampling** | sample θ ∼ q, accept iff `u < p(θ) / (M q(θ))` | *i.i.d. exact* samples, no burn-in at all, `Z` knowable from the acceptance rate | requires knowing the ratio `p ≤ M` — impossible for general unnormalized models without a bound |
+| **Importance sampling** | draw $\theta$ from a convenient $q$, weight by $w = p(\theta)/q(\theta)$; estimate expectations as $\sum_i w_i \theta_i / \sum_i w_i$ | parallel-friendly, streaming-friendly, gives you the *evidence* $Z$ as a byproduct $\mathrm{mean}(w)$ (Ch. 1 §5 proved MCMC can't get this!) | weights degenerate in high dimension — ESS $\propto$ effective diversity of $q$, which collapses quickly |
+| **Rejection sampling** | sample $\theta \sim q$, accept iff $u < p(\theta) / (M\, q(\theta))$ | *i.i.d. exact* samples, no burn-in at all, $Z$ knowable from the acceptance rate | requires knowing the ratio $p \le M$ — impossible for general unnormalized models without a bound |
 | **SMC (sequential MC)** | population of particles, reweighted + resampled + moved (each "move" is a few MCMC steps) through annealed targets | model comparison, streaming data, and *evidence estimates built-in*; embarrassingly parallel | resampling and badly spaced annealing collapse particle diversity | |
 
 SMC deserves a note: it uses MCMC *as an inner loop* ("the same Ch. 1 solver") and inherits the whole `Solver` interface — good demonstration of the
@@ -173,7 +186,7 @@ architecture paying off.
 | gradients needed | no | no | yes | yes | yes | no | optional |
 | tuning burden | low | low | step size `h` | `L` + `h` | none (auto-tunes) | a good `q` | particles + schedule |
 | typical accept rate | n/a (no accept) | n/a (no accept) | ~0.57 (opt.) | ~1 | ~1 | n/a | n/a |
-| dimension scaling | coordinate-correlated | coordinate-correlated | ~O(d^(1/3)) | ~O(√d) | ~O(√d) | collapses | ok w/ moves |
+| dimension scaling | coordinate-correlated | coordinate-correlated | $\sim O(d^{1/3})$ | $\sim O(\sqrt d)$ | $\sim O(\sqrt d)$ | collapses | ok w/ moves |
 | our `Solver` interface fit | natural (`step`) | natural (`step`) | natural (`step`) | natural (multi-step `step`) | harder (recursive) | not a chain | loop of loops |
 | best for | conjugate models | 1–5 dims, no tuning | cheap gradient models | smooth, moderate-d | "just works" defaults | evidence `Z`, streaming | evidence, parallel, streaming |
 

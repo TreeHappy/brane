@@ -171,28 +171,33 @@ rate, and sample count.
 
 The true likelihood is a *product* of small numbers:
 
-```text
-p(data | μ) = ∏ᵢ N(xᵢ | μ, 1)  =  (2π)^(-25) · exp(-½ Σ (xᵢ - μ)²)
-```
+$$
+p(\text{data} \mid \mu)
+= \prod_{i=1}^{50} \mathcal N(x_i \mid \mu, 1)
+= (2\pi)^{-25} \exp\!\Big(-\tfrac{1}{2}\sum_i (x_i - \mu)^2\Big).
+$$
 
-For 50 data points, `p(data | μ)` is on the order of `10⁻⁴⁰` — and for a big
-dataset (`10⁶` points) it dips below `10⁻⁴⁰⁰⁰⁰⁰`. IEEE `Float` can represent
-numbers only down to about `10⁻³⁰⁸`: the likelihood **underflows to exactly
-0.0**, with no way to tell "goes to zero smoothly" from "was zero all along" —
-which destroys any ratio or difference you might compute.
+For 50 data points, $p(\text{data} \mid \mu)$ is on the order of $10^{-40}$ —
+and for a big dataset ($10^6$ points) it dips below $10^{-400000}$. IEEE
+`Float` can represent numbers only down to about $10^{-308}$: the likelihood
+**underflows to exactly 0.0**, with no way to tell "goes to zero smoothly"
+from "was zero all along" — which destroys any ratio or difference you might
+compute.
 
 The fix is to work in **log space**, because the log of a product is a sum of
 logs:
 
-```text
-log p(data | μ) = Σᵢ log N(xᵢ | μ, 1)
-              = -25·log(2π) - ½ Σ (xᵢ - μ)²
-```
+$$
+\log p(\text{data} \mid \mu)
+= \sum_{i=1}^{50} \log \mathcal N(x_i \mid \mu, 1)
+= -25 \log(2\pi) - \tfrac{1}{2}\sum_i (x_i - \mu)^2.
+$$
 
-Each term is a modest negative number (`-0.5 * (xᵢ - μ)²` is tens or hundreds),
-and the sum stays representable no matter how many observations there are. Look
-at the code in `../Solver.lean` / `../Main.lean`: everything is a *sum* of logs
-(`prior + ll` where `ll` is a fold over `- 0.5 * (x - μ) * (x - μ)`).
+Each term is a modest negative number ($-0.5 (x_i - \mu)^2$ is tens or
+hundreds), and the sum stays representable no matter how many observations
+there are. Look at the code in `../Solver.lean` / `../Main.lean`: everything
+is a *sum* of logs (`prior + ll` where `ll` is a fold over
+`- 0.5 * (x - μ) * (x - μ)`).
 
 Two extra payoffs, for free:
 
@@ -205,29 +210,32 @@ Two extra payoffs, for free:
 
 The Metropolis accept probability is
 
-```text
-α = min(1, exp(Δ))    where Δ = logp(θ′) - logp(θ)
-```
+$$
+\alpha = \min\bigl(1, \exp(\Delta)\bigr),
+\qquad \Delta = \log p(\theta') - \log p(\theta).
+$$
 
-We would love to just sample `w ~ Uniform(0,1)` and accept iff `w < α`. But
-computing α means evaluating `exp(Δ)` — and when Δ is a large negative number
-(e.g. `-700`), `exp(-700) = 0.0` in Float, so α underflows to 0 for *any*
-downhill proposal, and every bad proposal would be rejected forever. So we run
-the whole comparison in log space:
+We would love to just sample $w \sim \mathrm{Uniform}(0,1)$ and accept iff
+$w < \alpha$. But computing $\alpha$ means evaluating $\exp(\Delta)$ — and
+when $\Delta$ is a large negative number (e.g. $-700$),
+$\exp(-700) = 0.0$ in `Float`, so $\alpha$ underflows to $0$ for *any*
+downhill proposal, and every bad proposal would be rejected forever. So we
+run the whole comparison in log space:
 
 ```lean
 let (u, g) := randFloat g          -- u ~ Uniform(0, 1)
 let accept := Float.log u < Δ      -- instead of: u < exp(Δ)
 ```
 
-Why is `Float.log u < Δ` the same test? Because `log` is **strictly increasing**:
+Why is `Float.log u < Δ` the same test? Because `log` is **strictly
+increasing**:
 
-```text
-u < exp(Δ)   ⟺   log u < log(exp Δ) = Δ
-```
+$$
+u < \exp(\Delta) \quad\Longleftrightarrow\quad \log u < \log(\exp \Delta) = \Delta.
+$$
 
-`⟺` holds only because log preserves `<`; that's the monotonicity from 4.1
-pulling its weight. So we never evaluate `exp` at all — no underflow, and the
+The equivalence holds only because log preserves `<`; that's the monotonicity
+from 4.1 pulling its weight. So we never evaluate `exp` at all — no underflow, and the
 two quantities being compared (`log u`, which is in `[-∞, 0)`, and `Δ`, which
 is a moderate number) live comfortably in Float range.
 
@@ -247,9 +255,9 @@ Two practical details worth knowing:
    - `Δ < 0` (downhill move): accepted only if `log u` is *even more negative*
      than Δ, which happens with probability `exp(Δ)` — exactly the α you wanted.
 
-Quick sanity check: a proposal that is `Δ = -2.3` worse should be accepted with
-probability `exp(-2.3) ≈ 0.1`. And indeed `log u < -2.3` means `u < e⁻²·³`;
-since `u` is uniform, that has probability `e⁻²·³ ≈ 0.1`. ✓
+Quick sanity check: a proposal that is $\Delta = -2.3$ worse should be accepted
+with probability $\exp(-2.3) \approx 0.1$. And indeed $\log u < -2.3$ means
+$u < e^{-2.3}$; since $u$ is uniform, that has probability $e^{-2.3} \approx 0.1$. ✓
 
 ### 4.3 The whole picture
 
@@ -379,7 +387,8 @@ where the effort goes, in roughly the order you'd meet it in practice:
    - **Metropolis within-Gibbs** — cycle coordinate-wise *exact* draws when
      a full conditional is available in closed form (our normal-mean model
      with conjugate priors admits one).
-   - **MALA** — propose `θ' = θ + h·∇ + √(2h)·ε`: drift *toward* higher
+   - **MALA** — propose $\theta' = \theta + h\,\nabla\log p(\theta)
+     + \sqrt{2h}\,\varepsilon$: drift *toward* higher
      probability instead of a blind random walk. Needs the gradient of the
      log-posterior (finite differences, or AD in Lean via SciLean later).
    - **HMC / NUTS** — simulate Hamiltonian dynamics on the log-posterior
@@ -445,23 +454,34 @@ cancellation stated for density *ratios* rather than log differences.
 
 ### The math in three lines
 
-```text
-posterior(θ | D) = p(D | θ) p(θ) / Z        where Z = ∫ p(D | θ) p(θ) dθ
-log posterior(θ) = logU(θ) - log Z          where logU = log-likelihood + log-prior
-Δ = log posterior(θ') - log posterior(θ)
-  = (logU(θ') - log Z) - (logU(θ) - log Z)
-  = logU(θ') - logU(θ)                      -- log Z cancels
-```
+$$
+\text{posterior}(\theta \mid D) = \frac{p(D \mid \theta)\, p(\theta)}{Z},
+\qquad Z = \int p(D \mid \theta)\, p(\theta)\, d\theta,
+$$
+
+$$
+\log \text{posterior}(\theta) = \log U(\theta) - \log Z,
+\qquad \log U = \text{log-likelihood} + \text{log-prior},
+$$
+
+$$
+\Delta = \log \text{posterior}(\theta') - \log \text{posterior}(\theta)
+\;=\; \bigl(\log U(\theta') - \log Z\bigr) - \bigl(\log U(\theta) - \log Z\bigr)
+\;=\; \log U(\theta') - \log U(\theta),
+$$
+
+with the last step being exactly the cancellation of $\log Z$.
 
 The same cancellation happens at the level of the acceptance probability:
 
-```text
-α(θ → θ') = min(1, posterior(θ') / posterior(θ))
-          = min(1, (unnorm(θ') / Z) / (unnorm(θ) / Z))
-          = min(1, unnorm(θ') / unnorm(θ))  -- Z cancels
-```
+$$
+\alpha(\theta \to \theta')
+= \min\!\Bigl(1,\ \frac{\text{posterior}(\theta')}{\text{posterior}(\theta)}\Bigr)
+= \min\!\Bigl(1,\ \frac{\text{unnorm}(\theta') / Z}{\text{unnorm}(\theta) / Z}\Bigr)
+= \min\!\Bigl(1,\ \frac{\text{unnorm}(\theta')}{\text{unnorm}(\theta)}\Bigr).
+$$
 
-`Z` is a single number that does not depend on `θ`, so it is the *same*
+$Z$ is a single number that does not depend on $\theta$, so it is the *same*
 constant in numerator and denominator. That is the entire reason MCMC can
 work with unnormalized densities.
 

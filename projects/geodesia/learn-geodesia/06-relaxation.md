@@ -99,11 +99,8 @@ temporary array, then copied back; the endpoints never move.
 ### Stability and resolution
 
 - The scheme is explicit, so it is conditionally stable. A good rule of
-  thumb is to keep
-  $$
-  \frac{\Delta t}{(\Delta s)^2}
-  $$
-  small; halve $\Delta t$ when you halve $\Delta s$.
+  thumb is to keep $\dfrac{\Delta t}{(\Delta s)^2}$ small; halve $\Delta t$
+  when you halve $\Delta s$.
 - If neighbouring points drift far apart, $\Delta s$ no longer represents
   the geodesic distance between them. **Resample** the polyline (insert
   points or redistribute by arc length) when segments become too long.

@@ -35,7 +35,8 @@ What one MCMC sampler is, and *why it is allowed to work*:
 | §6–§9 | Exercises, Lean pitfalls, next steps, file map |
 
 Key invariant established in Ch. 1 (proved in `Proofs.lean`):
-`Δ = logU(θ′) − logU(θ)` is all the sampler ever needs — `Z` never computed.
+$\Delta = \log U(\theta') - \log U(\theta)$ is all the sampler ever needs —
+$Z$ never computed.
 
 ## 2️⃣ Chapter 2 — The sampler zoo ([SAMPLERS.md](SAMPLERS.md)) → **next up** 👀
 

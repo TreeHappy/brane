@@ -516,8 +516,15 @@ never differentiates numerically.
 2. **Determinant identity.** Show
    $\det I=\det(J^{\mathsf T}J)=|\Phi_u\times\Phi_v|^2$.
 3. **Graph curvature.** Starting from
-   $I=\begin{bmatrix}1+f_x^2&f_xf_y\\f_xf_y&1+f_y^2\end{bmatrix}$ and
-   $II=\operatorname{Hess}f/\sqrt{1+|\nabla f|^2}$, derive
+
+   $$
+   I=\begin{bmatrix}1+f_x^2&f_xf_y\\f_xf_y&1+f_y^2\end{bmatrix}
+   \qquad\text{and}\qquad
+   II=\operatorname{Hess}f/\sqrt{1+|\nabla f|^2},
+   $$
+
+   derive
+
    $$
    K=\frac{f_{xx}f_{yy}-f_{xy}^2}{(1+f_x^2+f_y^2)^2}.
    $$
