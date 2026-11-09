@@ -21,7 +21,15 @@ I=\begin{bmatrix}1&0\\0&r^2\end{bmatrix},
 I^{-1}=\begin{bmatrix}1&0\\0&1/r^2\end{bmatrix}.
 ```
 
-### Christoffel symbols
+### Tangent parts of the second-derivative arrows (vector view)
+
+```math
+\partial_\theta\Phi_r=\frac{1}{r}\Phi_\theta,\qquad
+\partial_\theta\Phi_\theta=-r\,\Phi_r,
+```
+
+— the polar basis arrows rotate; the plane does not bend. The textbook
+symbols for the same data are:
 
 ```math
 \Gamma^r_{\;\theta\theta}=-r,
@@ -54,11 +62,12 @@ both are satisfied. The conserved quantity is
 r^2\dot\theta=\text{const},
 ```
 
-this is the pairing $p_\\theta=\\Phi_\\theta\\cdot\\gamma'$ of Chapter 3 — the
+this is the pairing $p_\theta=\Phi_\theta\cdot\gamma'$ of Chapter 3 — the
 projection of the (constant) straight-line direction arrow onto the rotating
-$\\Phi_\\theta$ arrow, whose length is $r$. This is the cleanest example of
-**nonzero Christoffel symbols on a flat surface**: the symbols encode the
-rotation of the polar basis, not curvature.
+$\Phi_\theta$ arrow, whose length is $r$. This is the cleanest example of
+the *arrows turning while the surface stays flat*: the tangent parts of the
+second-derivative arrows are nonzero (the polar basis rotates) even though
+the curvature $K$ is zero.
 
 ---
 
@@ -267,7 +276,11 @@ II_{ij}=\langle n,\Phi_{ij}\rangle
 n=\frac{\Phi_u\times\Phi_v}{|\Phi_u\times\Phi_v|}.
 ```
 
-### Christoffel
+### Tangent-part coordinates (Christoffels, for reference)
+
+The vector-first statement lives above: $T\Phi_{ij}$ is the arrow; here are
+its coefficient formulas, useful when computing with component arrays (the
+`Surface.christoffel` routine):
 
 ```math
 \Gamma_{kij}
@@ -276,20 +289,32 @@ n=\frac{\Phi_u\times\Phi_v}{|\Phi_u\times\Phi_v|}.
 \Gamma^k_{\;ij}=\bigl(I^{-1}\bigr)^{k\ell}\Gamma_{\ell ij}.
 ```
 
-### Gauss formula
+### Gauss formula (arrow form first)
 
 ```math
-\Phi_{ij}=\Gamma^k_{\;ij}\Phi_k+II_{ij}n.
+\Phi_{ij}=\;T\Phi_{ij}\;+\;II_{ij}\,n,
+\qquad T w = w-(w\cdot n)\,n,
 ```
+
+with the coordinate expansion of the tangent part
+$T\Phi_{ij}=\Gamma^k_{\;ij}\Phi_k$ (the symbols). Splitting one arrow,
+getting $II$ and the covariant data in one sweep.
 
 ### Covariant derivative and geodesic
 
 ```math
-\nabla_i V^k=\partial_i V^k+\Gamma^k_{\;ij}V^j,
+\nabla_v w \;=\; T(D_v w) \;=\; d_v w-\bigl((d_vw)\cdot n\bigr)\,n,
 ```
 
 ```math
-\ddot q^k+\Gamma^k_{\;ij}\dot q^i\dot q^j=0.
+\nabla_i V^k=\partial_i V^k+\Gamma^k_{\;ij}V^j
+\quad\text{(coordinate form)},
+```
+
+```math
+I\,\ddot q+g=0,
+\quad
+g_k=\Phi_k\cdot\bigl(\text{the }\dot u^2\Phi_{uu}+2\dot u\dot v\,\Phi_{uv}+\dot v^2\Phi_{vv}\text{ arrow}\bigr),
 ```
 
 ### Length functional
@@ -340,8 +365,9 @@ R(v)=q(L;a,v)-b.
 
 ### Exercise 1 — cone
 
-$\Phi(r,\theta)=(r\cos\theta,r\sin\theta,r)$. Compute $I$, $II$, $K$ and the
-Christoffel symbols. Show that unrolling the cone turns geodesics into
+$\Phi(r,\theta)=(r\cos\theta,r\sin\theta,r)$. Compute $I$, $II$, $K$ and
+the tangent parts of the second-derivative arrows (their coordinates, if
+you want numbers). Show that unrolling the cone turns geodesics into
 straight lines.
 
 *Hint:* $I=\mathrm{diag}(2,r^2)$ if the cone has slope $1$. The cone is
@@ -350,8 +376,8 @@ developable, so $K=0$.
 ### Exercise 2 — cylinder geodesics
 
 $\Phi(\theta,z)=(R\cos\theta,R\sin\theta,z)$. Show that geodesics are helices
-(including circles and vertical lines as degenerate cases). Which
-Christoffel symbols are nonzero?
+(including circles and vertical lines as degenerate cases). Which tangent parts
+are nonzero (hence which coordinate symbols)?
 
 *Hint:* $I=\mathrm{diag}(R^2,1)$, and the geodesic equations are
 $\ddot\theta=0$, $\ddot z=0$.
@@ -364,7 +390,7 @@ $r^2\dot\theta=\text{const}$ along a geodesic.
 
 *Hint:* the Gram matrix $I$ does not depend on $\theta$ (each tangent
 arrow is unchanged when $\theta$ changes), so the pairing
-$p_\\theta=\\Phi_\\theta\\cdot\\gamma'$ of Chapter 3 is conserved —
+$p_\theta=\Phi_\theta\cdot\gamma'$ of Chapter 3 is conserved —
 differentiate it and use the geodesic equations.
 
 ### Exercise 4 — sphere antipodes

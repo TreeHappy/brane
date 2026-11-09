@@ -19,18 +19,34 @@ Everything else is built from two derivatives of $\Phi$:
 | Jacobian | $J = [\Phi_u\ \ \Phi_v]$ | turns a 2-D parameter direction into the actual 3-D arrow |
 | First fundamental form | $I = J^{\mathsf T}J$ | lengths, angles, area — the *ruler* |
 | Second fundamental form | $II = [\,n\cdot\Phi_{ij}\,]$ | how the surface bends — the *bending* |
-| Christoffel symbols | tangent part of $\Phi_{ij}$ | how the coordinate grid twists |
-| Geodesic | zero tangent part of $\gamma''$ | locally straightest / shortest path |
+| Tangential projection | $T w = w-(w\!\cdot\! n)\,n$ | the *surface part* of any 3-D arrow |
+| Geodesic | $T\gamma'' = 0$ | locally straightest / shortest path |
 
-The one equation that ties it all together is the **Gauss formula**
+The one equation that ties it all together is the **Gauss split** — an
+everyday fact about one arrow in three parts:
 
 ```math
-\boxed{\;\Phi_{ij} = \Gamma^k_{\;ij}\,\Phi_k + II_{ij}\,n\;}
+\boxed{\;\Phi_{ij} \;=\; \underbrace{T\,\Phi_{ij}}_{\text{tangent part (turning)}} \;+\; \underbrace{II_{ij}\,n}_{\text{normal part (bending)}}\;}
 ```
 
-The second derivative of the embedding has a **tangent part** (the Christoffel
-symbols) and a **normal part** (the second fundamental form). Geodesics keep
-only the tangent part and set it to zero.
+The second derivative of the embedding has a **tangent part** — an honest
+3-D arrow, the *covariant derivative* of Chapter 2 — and a **normal part**
+(the second fundamental form). Geodesics keep only the tangent part and set
+it to zero. Should you ever want the tangent part *in numbers*, expand it in
+the basis $\{\Phi_u,\Phi_v\}$; those expansion coefficients are what
+textbooks call **Christoffel symbols** — a coordinate bookkeeping of one
+projection, not the subject itself (see Ch. 2 §2.2 for why the literature
+leads with them).
+
+> **Why vector calculus first?** Christoffels dominate the classical
+> literature because intrinsic geometry (relativity, abstract manifolds) has
+> *no ambient space to project onto* — coefficients and their must-track
+> corrections are all you get. Here we always have the embedding $\Phi$, so
+> every derivative is an ordinary $\mathbb{R}^3$ arrow and every correction
+> is one subtraction (`T w = w - (w·n)n`). Fewer symbols, no index
+> gymnastics, and the geometry stays visible in the object itself. Christoffels
+> reappear only where they are genuinely useful: intrinsic-only data, and as
+> the arrays the Lean code stores to feed ODEs.
 
 ---
 
@@ -39,7 +55,7 @@ only the tangent part and set it to zero.
 ```mermaid
 flowchart TD
     A["Ch. 1 — Fundamental forms<br/>Jacobian J, I = JᵀJ, II, shape operator"]
-    B["Ch. 2 — Christoffel symbols<br/>moving frame, Γ from I, polar & sphere"]
+    B["Ch. 2 — Turning tangent arrows<br/>covariant derivative via projection, polar & sphere"]
     C["Ch. 3 — Geodesics<br/>zero tangent part of γ″, length functional, conserved pairings"]
     D["Ch. 4 — ODEs & RK4<br/>state space, Runge–Kutta, stability"]
     E["Ch. 5 — Shooting<br/>BVP → IVP, Newton, variational equations"]
@@ -96,7 +112,7 @@ source for the algorithms.
 | `Geodesia/Vec.lean` | `Vec2`, `Vec3`, dot/cross/norm. |
 | `Geodesia/Surface.lean` | `Surface`, `ofHeight`, exact `dPhi`, `d2Phi`, normals. |
 | `Geodesia/Calculus.lean` | gradient, Hessian, Laplacian, divergence, curl, Jacobian determinant, directional derivative along a curve. |
-| `Geodesia/Curvature.lean` | `I`, `II`, Christoffel symbols, shape operator, `K`, `H`, principal curvatures. |
+| `Geodesia/Curvature.lean` | `I`, `II`, tangent-part coordinates (`Surface.christoffel`), shape operator, `K`, `H`, principal curvatures. |
 | `Geodesia/Geodesic.lean` | geodesic RHS, RK4, energy, tangent frame, `shoot`. |
 | `Main.lean` | a small exact demo on a paraboloid and the unit sphere. |
 
@@ -132,7 +148,7 @@ A useful dictionary in the other direction (older books use these):
 | first fundamental form $E, F, G$ | the Gram matrix entries $I_{ij}=\Phi_i\cdot\Phi_j$ |
 | second fundamental form $e, f, g$ | the normal dot products $II_{ij}=n\cdot\Phi_{ij}$ |
 | metric tensor | the Gram matrix $I=J^{\mathsf T}J$ |
-| Christoffel $\Gamma^k_{\;ij}$ | tangent-basis coordinates of $\Phi_{ij}$ |
+| Christoffel $\Gamma^k_{\;ij}$ | coordinates of the *tangent part* $T\Phi_{ij}$ (a derived view of one projection) |
 | covariant derivative | derivative corrected for the rotating basis arrows |
 | shape operator | the linear map $S=I^{-1}II$ |
 
@@ -146,11 +162,12 @@ A useful dictionary in the other direction (older books use these):
 2. **The bending.** $II$ is what an outside observer sees: how fast the
    normal tilts as you walk, or equivalently how much the surface leaves its
    tangent plane.
-3. **The twist.** $\Gamma$ is what makes a *coordinate grid* curve. On a flat
-   plane in polar coordinates the grid lines are straight in space, yet the
-   basis vectors $e_r,e_\theta$ rotate as you move — $\Gamma$ records exactly
-   that rotation. A geodesic is a curve whose own acceleration is pure
-   bending, with no “grid twist” left over.
+3. **The twist.** What makes a *coordinate grid* tricky: on a flat plane in
+   polar coordinates the grid lines are straight in space, yet the basis
+   arrows rotate as you move — the tangent parts of the second-derivative
+   arrows (equivalently, their coordinate bookkeeping $\Gamma$) record
+   exactly that rotation. A geodesic is a curve whose own acceleration is
+   pure bending, with no “grid twist” left over.
 
 Chapters 1–2 make pictures 1–3 precise. Chapters 3–6 turn them into
 algorithms.

@@ -95,7 +95,10 @@ error) Jacobian. This is the standard algorithm in Eberly §2.1.
 
 ### The geodesic variational equation explicitly
 
-For
+Recall what $F$ is doing, from Chapter 3's vector statement
+$I\ddot q + g = 0$ with $g_k = \Gamma_{kij}\,d^id^j$ the coordinate recipe of
+the tangent parts: $F$ is that equation solved for $\ddot q$ (then
+multiplied through by $I^{-1}$). In coordinates:
 
 ```math
 F^i(q,q')=-\Gamma^i_{\;jk}(q)\,q'^j q'^k,
@@ -120,12 +123,13 @@ Therefore each column $Y_{\cdot j}$ of $Y$ satisfies
 \;}
 ```
 
-In vector notation this is
-$Y''+2\Gamma(q)[q',Y']+(\partial\Gamma(q)[q',q'])Y=0$, where the brackets
-denote the obvious contractions. This is the **Jacobi equation** in disguise. Its solutions are **Jacobi
-fields**: they measure how a nearby geodesic separates from the original one.
-The columns of $DR$ are precisely Jacobi fields with initial data
-$Y(0)=0$, $Y'(0)=I$.
+Geometrically this is the *linearization of the tangential-projection
+equation*: perturb the curve slightly and ask how the residual $T\gamma''$
+then reads in coordinates — the Jacobi equation is what the arrow-and-
+projection condition says about a pencil of nearby geodesics. Its solutions
+are **Jacobi fields**: they measure how a nearby geodesic separates from the
+original one. The columns of $DR$ are precisely Jacobi fields with initial
+data $Y(0)=0$, $Y'(0)=I$.
 
 ---
 
@@ -332,9 +336,11 @@ host script) is the other half.
 1. **Variational equation.** Derive
    $Y''=F_qY+F_{q'}Y'$ from $q''=F(q,q')$ by differentiating with respect to
    the initial direction. What are $Y(0)$ and $Y'(0)$?
-2. **Jacobi equation.** Substitute
-   $F^i=-\Gamma^i_{\;jk}q'^jq'^k$ and derive the explicit second-order
-   equation for $Y$ in §5.2.
+2. **Jacobi equation.** Substitute the coordinate recipe
+   $F^i=-\Gamma^i_{\;jk}q'^jq'^k$ (Chapter 2 §2.8 / Chapter 3: the
+   coordinates of $T\gamma''$'s acceleration) and derive the explicit
+   second-order equation for $Y$ in §5.2. Then sanity-check it geometrically:
+   the linearization must say "vanishing tangent projection stays vanishing".
 3. **1-D shooting.** Fix $L$ and target a curve (e.g. the circle
    $u^2+v^2=1$). Reduce the residual to one scalar equation and implement
    bisection or secant. Why is no 2-D Jacobian needed?

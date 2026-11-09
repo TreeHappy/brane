@@ -344,18 +344,20 @@ plane plus $n$. Split each one accordingly:
 ```
 
 The normal coefficients are precisely the entries of $II$ — dotting with $n$
-reads them straight off. The tangent-plane parts are expressed in the basis
-$\{\Phi_u, \Phi_v\}$; the coefficients of that expansion are the Christoffel
-symbols, the subject of the next chapter. So the whole chapter-1 picture is:
-**take the second-derivative arrows and project them onto the tangent basis
-and the normal** — two matrices, $II$ and $\Gamma$, out of one geometric
-operation.
+reads them straight off. The tangent parts are honest surface-bound arrows;
+*coefficients* for those arrows in the basis $\{\Phi_u,\Phi_v\}$ are what
+textbooks record as Christoffel symbols, but Chapter 2 shows the entire
+story can be run on the arrows themselves — with the projected arrows
+$T\,\Phi_{ij}$, not their coordinates, as the primary object. So the whole
+chapter-1 picture is: **take the second-derivative arrows and project them
+onto the tangent basis and the normal** — two pieces, $II$ and
+$T\Phi_{ij}$, out of one geometric operation.
 
 > **One sentence summary.** $J$'s columns are the tangent arrows;
 > $I = J^{\mathsf T}J$ is their Gram matrix (the ruler); the curvature
 > arrows dotted with $n$ form $II$ (the bending); and splitting each
-> curvature arrow into a tangent part and an $n$-part delivers both $II$ and
-> the Christoffel symbols in one sweep.
+> curvature arrow into a tangent part and an $n$-part delivers both $II$
+> and the "turning" part — the covariant-derivative data — in one sweep.
 
 ---
 

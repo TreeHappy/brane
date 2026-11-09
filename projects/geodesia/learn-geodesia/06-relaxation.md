@@ -224,13 +224,17 @@ Minimise $L(m)$ by steepest descent:
 m\leftarrow m-r\,\nabla L(m),
 ```
 
-with a one-dimensional line search for $r$. The gradient is Eberly’s eq. 36;
-it involves the Gram-matrix derivatives $\partial_k I_{ij}$ and the same
-Christoffel identity
+with a one-dimensional line search for $r$. The gradient is Eberly's eq. 36;
+it involves the Gram-matrix derivatives $\partial_k I_{ij}$, which are also
+pure-vector quantities: the derivative identity behind them is
 
 ```math
-\partial_\ell I_{ij}=\Gamma_{i\ell j}+\Gamma_{j\ell i}.
+\partial_\ell\,(\Phi_i\cdot\Phi_j)
+= \Phi_{i\ell}\cdot\Phi_j + \Phi_i\cdot\Phi_{j\ell},
 ```
+
+i.e. the same first-kind identity the tangent-part coordinates rest on
+(Chapter 2, §2.8).
 
 ### The multiscale loop
 

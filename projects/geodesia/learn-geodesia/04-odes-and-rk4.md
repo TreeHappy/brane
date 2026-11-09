@@ -184,7 +184,7 @@ structure and show much better long-term conservation of the quadratic form.
 
 ```lean
 def accel (s : Surface) (st : GeoState) : Vec2 :=
-  -- u'' = -Γ^u_ij du^i du^j,  v'' = -Γ^v_ij du^i du^j
+  -- u'' + g_u/I-terms = 0, in vector form: I·q'' = -g (tangent parts only)
 
 def rhs (s : Surface) (st : GeoState) : GeoState :=
   -- (du, dv, u'', v'')
@@ -196,8 +196,10 @@ def integrate (s : Surface) (h : Float) (n : Nat) (st : GeoState) : GeoState :=
   -- n steps of size h
 ```
 
-Because `Surface.christoffel` uses exact derivatives, the only numerical
-error is the RK4 discretisation. The demo reports
+Because the tangent-part coefficients (`Surface.christoffel`, which is the
+coordinate form of the vector projection of Chapter 2) use exact
+derivatives, the only numerical error is the RK4 discretisation. The demo
+reports
 
 ```
 E(0), E(1) = 0.680000, 0.680000
