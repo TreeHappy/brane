@@ -89,10 +89,6 @@ struggle the same way Gibbs does).
 
 ## §3 Gradient samplers — making moves *informed*
 
-> 🧩 The same material is re-examined in the geometric-algebra side view:
-> [`GA_VIEW.md`](GA_VIEW.md) §3–§5 (gradient as a vector-valued derivative,
-> symplecticity as a preserved blade).
-
 The log-posterior defines a landscape; `∇ logp(θ)` is the uphill direction.
 Ch. 1's sampler explores like a drunkard's walk; gradient samplers walk with a
 compass. This is the family that modern PPLs (Stan, PyMC, NumPyro) default to.

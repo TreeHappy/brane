@@ -78,6 +78,12 @@ Suggested paths:
 - **“I want the variational view.”**
   Read Ch. 3 (length functional and conserved pairings) and Ch. 6 (discrete
   minimisation).
+- **“I want the vectors made into honest algebra.”**
+  Read [**GA_VIEW.md**](GA_VIEW.md) — a side supplement, no chapter: the same
+  surfaces in the geometric algebra $\mathrm{Cl}_3$, where the tangential
+  projection is half a sandwich product, the tangent plane is one blade, the
+  geodesic test is a single wedge $\gamma''\wedge n = 0$, and Darboux
+  scalars are the coefficients of one rotor's rate. Read it after Ch. 3.
 
 ---
 

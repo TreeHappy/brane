@@ -19,12 +19,6 @@ time a chapter introduces a new sampler, the goal is: **same `Model`, same
 `Solver` interface, same `runChain` loop** — only the `step` changes. That is
 the theme of the whole course.
 
-> **Side view.** [`GA_VIEW.md`](GA_VIEW.md) is a *supplement*, part of no
-> chapter: the same samplers re-read through **geometric algebra** —
-> gradients as grade-1 vectors, reparameterization Jacobians as
-> pseudoscalar coefficients, HMC's symplecticity as a preserved
-> 2-blade. Read it any time after Chapter 2.
-
 ---
 
 ## 1️⃣ Chapter 1 — Metropolis core ([TUTORIAL.md](TUTORIAL.md)) ✅ done
