@@ -5,7 +5,7 @@
 > ordinary vector math: a surface is a function, its derivatives are vectors,
 > and the two forms are just dot products between those vectors.
 
-![The tangent vectors, the normal, and the split of a curve's second derivative into a tangent-plane part and a normal part.](images/fundamental-forms.png)
+![The paraboloid with its parameter grid; at one point the tangent plane (dashed outline) carrying the tangent arrows Φu, Φv and the normal n, plus a curve γ(s) whose second derivative γ″ splits into a tangent-plane part Tγ″ and a normal part II(d,d)n.](images/fundamental-forms.png)
 
 ---
 
@@ -45,11 +45,27 @@ derivatives, and between their derivatives and a normal.
 
 ### What $J$ does to a direction
 
-Take a curve in the parameter plane, $s \mapsto (u(s), v(s))$, run it through
-$\Phi$, and differentiate by the chain rule:
+Introduce a real parameter $s \in \mathbb{R}$ and a differentiable
+**parameter-plane curve**
 
 ```math
-\frac{d\gamma}{ds}
+c(s) := \bigl(u(s),\, v(s)\bigr) \in \mathbb{R}^2,
+```
+
+where $u(s), v(s) \in \mathbb{R}$ are the parameter coordinates along the
+curve. Composing with $\Phi$ gives the corresponding **surface curve**
+
+```math
+\gamma(s) := \Phi\!\bigl(c(s)\bigr) = \Phi\!\bigl(u(s),\, v(s)\bigr) \in \mathbb{R}^3.
+```
+
+Write derivatives with respect to $s$ using a prime,
+$u'(s) := \frac{du}{ds}$, $v'(s) := \frac{dv}{ds}$, and
+$\gamma'(s) := \frac{d\gamma}{ds}$. Differentiating $\gamma$ by the chain
+rule gives
+
+```math
+\gamma'(s) = \frac{d\gamma}{ds}
 = \Phi_u\, u'(s) + \Phi_v\, v'(s)
 = J \begin{bmatrix}u'(s)\\ v'(s)\end{bmatrix}.
 ```
@@ -220,26 +236,31 @@ n\cdot\Phi_{uv} & n\cdot\Phi_{vv}
 
 ### What the normal dot products buy you
 
-**The bending of a curve.** Take a curve on the surface obtained from a
-parameter-plane path $s \mapsto (u(s), v(s))$ and differentiate twice:
+**The bending of a curve.** Take the same surface curve
+$\gamma(s) = \Phi(u(s), v(s)) \in \mathbb{R}^3$ and differentiate it twice
+with respect to $s$, writing $u''(s) := \frac{d^2u}{ds^2}$,
+$v''(s) := \frac{d^2v}{ds^2}$, and
+$\gamma''(s) := \frac{d^2\gamma}{ds^2}$:
 
 ```math
-\frac{d^2\gamma}{ds^2}
-= \Phi_u\, u'' + \Phi_v\, v''
-+ \Phi_{uu}\,u'^2 + 2\,\Phi_{uv}\,u'v' + \Phi_{vv}\,v'^2.
+\gamma''(s) = \frac{d^2\gamma}{ds^2}
+= \Phi_u\, u''(s) + \Phi_v\, v''(s)
++ \Phi_{uu}\,u'(s)^2 + 2\,\Phi_{uv}\,u'(s)v'(s) + \Phi_{vv}\,v'(s)^2.
 ```
 
 Dot this with the normal $n$. The $\Phi_u$, $\Phi_v$ terms die because
 $n\perp\Phi_u,\Phi_v$, and what survives is
 
 ```math
-\boxed{\;n\cdot\frac{d^2\gamma}{ds^2}
-= \bigl(u',v'\bigr)^{\mathsf T} II\, \bigl(u',v'\bigr)\;}
+\boxed{\;n\cdot\gamma''(s) = n\cdot\frac{d^2\gamma}{ds^2}
+= \begin{bmatrix}u'(s) & v'(s)\end{bmatrix} II \begin{bmatrix}u'(s)\\ v'(s)\end{bmatrix}\;}
 ```
 
-a quadratic form again. So $II(d,d)$ is the normal component of the second
-derivative when you move in surface direction $d$. Dividing by the speed
-$|J\, d|^2$ normalizes it: that ratio is the **normal curvature**
+a quadratic form again. Let $d := \begin{bmatrix}u'(s)\\ v'(s)\end{bmatrix} \in \mathbb{R}^2$
+be the parameter-plane velocity (a surface direction). So $II(d,d)$ is the
+normal component of the second derivative when you move in surface direction
+$d$. Dividing by the squared speed $|J\, d|^2$ normalizes it: that ratio is
+the **normal curvature**
 
 ```math
 \kappa(d) = \frac{II(d,d)}{|J\, d|^2}.
@@ -249,6 +270,8 @@ It answers, in plain vector terms: *if I walk across the surface in the
 direction of arrow $J d$, how fast does my arrow bend away from the tangent
 plane?* The sign depends on which way $n$ points, but the product of the two
 principal curvatures below does not.
+
+![One point of the paraboloid, two principal normal sections: the blue section along Φu and the peach section along Φv bend at different rates κu and κv (arrow lengths proportional to the bending); the polar plot sweeps κ(θ) over all parameter directions, its extremes being the principal curvatures.](images/normal-curvature.png)
 
 **Local height above the tangent plane.** Put a point at the origin, make
 the tangent plane the $xy$-plane so $n = (0,0,1)$. Then the third coordinate
@@ -301,6 +324,8 @@ you slide in direction $\xi$:
 \qquad \bigl(a,b\bigr)\ \text{a parameter direction}.
 ```
 
+![Sliding along the two principal directions ξ1 (red arrows) and ξ2 (teal arrows), the sampled unit normals tip at different rates; the dashed tracks of the arrow tips are exactly the turns that −Sξ measures.](images/shape-operator.png)
+
 $S$ is a $2\times 2$ matrix acting on tangent directions, so it has two
 eigenvalues, the **principal curvatures** $\kappa_1, \kappa_2$, and two
 eigendirections — the directions of greatest and least bending. And its two
@@ -327,6 +352,8 @@ The eigenvalues come back from the trace/determinant pair:
 - $K=0$: at least one direction is straight (plane, cylinder, cone).
 - $H=0$: the two bendings cancel (soap films).
 
+![The three sign regimes of the Gaussian curvature K: a bowl bends the same way in both principal directions (K>0), a saddle bends oppositely (K<0), and a cylinder has one straight direction (K=0); each panel shows the unit normal n and the two principal directions ξ1, ξ2 at one point, with the κ1, κ2, K readout.](images/curvature-signatures.png)
+
 ---
 
 ## 1.5 Splitting each curvature vector into tangent + normal parts
@@ -344,11 +371,21 @@ plane plus $n$. Split each one accordingly:
 ```
 
 The normal coefficients are precisely the entries of $II$ — dotting with $n$
-reads them straight off. The tangent parts are honest surface-bound arrows;
-*coefficients* for those arrows in the basis $\{\Phi_u,\Phi_v\}$ are what
+reads them straight off. Define the tangent-plane projection operator $T : \mathbb{R}^3 \to \mathbb{R}^3$
+by
+
+```math
+T(v) := v - (v \cdot n)\, n, \qquad v \in \mathbb{R}^3,
+```
+
+which removes the normal component and keeps only the part lying in the
+tangent plane. The tangent parts above are therefore the honest
+surface-bound arrows $T\Phi_{uu}$, $T\Phi_{uv}$, and $T\Phi_{vv}$ (with
+indices $i,j \in \{u,v\}$, written collectively as $T\Phi_{ij}$).
+*Coefficients* for those arrows in the basis $\{\Phi_u,\Phi_v\}$ are what
 textbooks record as Christoffel symbols, but Chapter 2 shows the entire
 story can be run on the arrows themselves — with the projected arrows
-$T\,\Phi_{ij}$, not their coordinates, as the primary object. So the whole
+$T\Phi_{ij}$, not their coordinates, as the primary object. So the whole
 chapter-1 picture is: **take the second-derivative arrows and project them
 onto the tangent basis and the normal** — two pieces, $II$ and
 $T\Phi_{ij}$, out of one geometric operation.

@@ -7,6 +7,9 @@ The surface is the same paraboloid used in the Lean demo:
     Phi(u, v) = (u, v, 0.3 (u^2 + v^2)).
 Everything is computed with small explicit RK4 / gradient-descent loops so the
 figures can be reproduced without SciPy.
+
+Figures for chapter 1 are rendered in a book-illustration style using the
+Catppuccin Latte palette.
 """
 
 from __future__ import annotations
@@ -19,6 +22,30 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import cm
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+
+# Catppuccin Latte palette (https://github.com/catppuccin/catppuccin).
+LATTE = {
+    "rosewater": "#dc8a78", "flamingo": "#dd7878", "pink": "#ea76cb",
+    "mauve": "#8839ef",     "red": "#d20f39",      "maroon": "#e64553",
+    "peach": "#fe640b",     "yellow": "#df8e1d",   "green": "#40a02b",
+    "teal": "#179299",      "sky": "#04a5e5",      "sapphire": "#209fb5",
+    "blue": "#1e66f5",      "lavender": "#7287fd",
+    "text": "#4c4f69",      "subtext1": "#5c5f77", "subtext0": "#6c6f85",
+    "overlay2": "#7c7f93",  "overlay1": "#8c8fa1", "overlay0": "#9ca0b0",
+    "surface2": "#acb0be",  "surface1": "#bcc0cc", "surface0": "#ccd0da",
+    "base": "#eff1f5",      "mantle": "#e6e9ef",   "crust": "#dce0e8",
+}
+
+# Book-style rendering: LaTeX-flavoured serif labels on Latte canvases.
+matplotlib.rcParams.update({
+    "mathtext.fontset": "cm",
+    "font.family": "serif",
+    "axes.unicode_minus": False,
+    "figure.facecolor": LATTE["base"],
+    "axes.facecolor": LATTE["base"],
+    "savefig.facecolor": LATTE["base"],
+})
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 C = 0.3  # z = C (u^2 + v^2)
@@ -260,58 +287,189 @@ def arrow(ax, p, d, color, label=None, scale=0.55):
 
 
 # ---------------------------------------------------------------------------
+# Catppuccin Latte + book-style helpers: off-white canvas, shaded translucent
+# surface with parameter grid-lines, round-shaft arrows with cone heads,
+# matte point markers, dashed construction lines, serif math labels.
+# ---------------------------------------------------------------------------
+SURF = lambda U, V: np.stack([U, V, C * (U * U + V * V)])
+DOMU = (-0.08, 2.02)
+DOMV = (-1.06, 1.06)
+
+
+def style3d(ax, xlim, ylim, zlim, elev=22, azim=-125, aspect=(1, 1, 0.62)):
+    ax.set_proj_type("ortho")
+    ax.set_xlim(*xlim)
+    ax.set_ylim(*ylim)
+    ax.set_zlim(*zlim)
+    ax.view_init(elev=elev, azim=azim)
+    ax.set_box_aspect(aspect)
+    ax.set_facecolor(LATTE["base"])
+    ax.set_axis_off()
+    ax.computed_zorder = False   # draw strictly in our zorder handoff
+
+
+def shaded_surface(ax, S, ulim, vlim, color=LATTE["crust"], alpha=0.96,
+                   n=90):
+    U = np.linspace(*ulim, n)
+    V = np.linspace(*vlim, n)
+    uu, vv = np.meshgrid(U, V)
+    X, Y, Z = S(uu, vv)
+    pc = ax.plot_surface(X, Y, Z, color=color, alpha=alpha, shade=True,
+                         linewidth=0, antialiased=True)
+    pc.set_zorder(1)      # sit behind everything drawn after it
+    return pc
+
+
+def iso_lines(ax, S, ulim, vlim, nu=10, nv=9, color=LATTE["overlay0"],
+              lw=0.8, alpha=0.35):
+    for u0 in np.linspace(*ulim, nu):
+        V = np.linspace(*vlim, 80)
+        U = np.full_like(V, u0)
+        X, Y, Z = S(U, V)
+        ax.plot(X, Y, Z, color=color, lw=lw, alpha=alpha, zorder=2)
+    for v0 in np.linspace(*vlim, nv):
+        U = np.linspace(*ulim, 80)
+        V = np.full_like(U, v0)
+        X, Y, Z = S(U, V)
+        ax.plot(X, Y, Z, color=color, lw=lw, alpha=alpha, zorder=2)
+
+
+def rim_lines(ax, S, ulim, vlim, color=LATTE["surface2"], lw=1.1, alpha=0.9):
+    """Crisp outline along the four boundary curves of the patch."""
+    U = np.linspace(*ulim, 90)
+    V = np.linspace(*vlim, 90)
+    for v0 in (vlim[0], vlim[1]):
+        X, Y, Z = S(U, np.full_like(U, v0))
+        ax.plot(X, Y, Z, color=color, lw=lw, alpha=alpha, zorder=3)
+    for u0 in (ulim[0], ulim[1]):
+        X, Y, Z = S(np.full_like(V, u0), V)
+        ax.plot(X, Y, Z, color=color, lw=lw, alpha=alpha, zorder=3)
+
+
+def _perp_basis(u):
+    h = np.array([0.0, 0.0, 1.0])
+    if abs(u @ h) > 0.9:
+        h = np.array([0.0, 1.0, 0.0])
+    e1 = np.cross(u, h)
+    e1 /= np.linalg.norm(e1)
+    e2 = np.cross(u, e1)
+    return e1, e2
+
+
+def fancy_arrow(ax, base, vec, color, lw=2.2, head=None, alpha=1.0):
+    """A book-style arrow: round-capped shaft + filled cone head."""
+    base = np.asarray(base, float)
+    vec = np.asarray(vec, float)
+    L = np.linalg.norm(vec)
+    if L < 1e-9:
+        return base
+    u = vec / L
+    if head is None:
+        head = min(0.15, 0.28 * max(L, 1e-9))
+    shaft_end = base + vec - head * u
+    ax.plot([base[0], shaft_end[0]], [base[1], shaft_end[1]],
+            [base[2], shaft_end[2]], color=color, lw=lw, alpha=alpha,
+            solid_capstyle="round", zorder=6)
+    e1, e2 = _perp_basis(u)
+    apex = base + vec
+    ring = (shaft_end[None, :]
+            + (0.5 * head) * (np.outer(np.cos(np.linspace(0, 2 * np.pi, 5)), e1)
+                              + np.outer(np.sin(np.linspace(0, 2 * np.pi, 5)), e2)))
+    tris = [[apex, ring[i], ring[i + 1]] for i in range(4)]
+    ax.add_collection3d(Poly3DCollection(
+        tris, facecolors=color, edgecolors="none", alpha=alpha, zorder=7))
+    return apex
+
+
+def ball(ax, p, s=36, color=LATTE["text"]):
+    ax.scatter([p[0]], [p[1]], [p[2]], s=s, color=color, depthshade=False,
+               edgecolors=LATTE["base"], linewidths=0.9, zorder=9)
+
+
+def mlabel(ax, tip, text, color=None, offset=(0.10, -0.06, 0.08),
+           fontsize=11.5):
+    ax.text(tip[0] + offset[0], tip[1] + offset[1], tip[2] + offset[2],
+            text, color=color or LATTE["text"], fontsize=fontsize, zorder=10)
+
+
+# ---------------------------------------------------------------------------
 # Figure 1: fundamental forms
 # ---------------------------------------------------------------------------
 def fig_fundamental_forms():
-    fig = plt.figure(figsize=(8.2, 6.4))
+    """The chapter's anchor picture: surface with parameter grid, tangent
+    plane, the tangent/normal arrows, and a curve whose acceleration is
+    split into a normal (bending) and tangent (turning) part."""
+    fig = plt.figure(figsize=(8.8, 6.8))
     ax = fig.add_subplot(111, projection="3d")
-    draw_surface(ax, (-0.05, 1.95), (-1.0, 1.0), alpha=0.28)
+    style3d(ax, (-0.20, 2.12), (-1.24, 1.24), (-0.04, 1.75),
+            elev=22, azim=-125, aspect=(1, 1, 0.60))
+    shaded_surface(ax, SURF, DOMU, DOMV)
+    iso_lines(ax, SURF, DOMU, DOMV)
+    rim_lines(ax, SURF, DOMU, DOMV)
 
     p = np.array([1.0, 0.0])
     P = phi(p)
     eu, ev = ju(p), jv(p)
     n = normal(p)
+    wu, wv = eu / np.linalg.norm(eu), ev / np.linalg.norm(ev)
 
-    # tangent plane patch
-    s = np.linspace(-0.55, 0.55, 2)
-    t = np.linspace(-0.55, 0.55, 2)
-    ss, tt = np.meshgrid(s, t)
-    patch = (P[:, None, None]
-             + ss[None, :, :] * eu[:, None, None] / np.linalg.norm(eu)
-             + tt[None, :, :] * ev[:, None, None])
-    ax.plot_surface(patch[0], patch[1], patch[2], color="#8ecae6",
-                    alpha=0.35, linewidth=0)
+    # tangent plane: translucent patch + dashed outline
+    combos = [(-0.55, -0.55), (0.55, -0.55), (0.55, 0.55), (-0.55, 0.55)]
+    pts = [P + a * wu + b * wv for a, b in combos]
+    ax.add_collection3d(Poly3DCollection([pts], facecolors=LATTE["lavender"],
+                                         edgecolors="none", alpha=0.16,
+                                         zorder=5))
+    ring = pts + [pts[0]]
+    ax.plot([q[0] for q in ring], [q[1] for q in ring],
+            [q[2] for q in ring], color=LATTE["blue"], lw=1.0,
+            ls=(0, (3, 2)), alpha=0.75, zorder=5)
 
-    arrow(ax, P, eu / np.linalg.norm(eu), "#1d3557", r"$\Phi_u$", 0.75)
-    arrow(ax, P, ev / np.linalg.norm(ev), "#1d3557", r"$\Phi_v$", 0.75)
-    arrow(ax, P, n, "#e63946", r"$n$", 0.85)
+    # non-geodesic curve through P, and its acceleration split
+    ts = np.linspace(-0.85, 0.85, 200)
+    r = 0.75
+    qs = np.column_stack([1.0 + r * (np.cos(ts) - 1.0), r * np.sin(ts)])
+    plot_path(ax, qs, color=LATTE["mauve"], linewidth=2.8, zorder=5)
 
-    # A non-geodesic curve through P, with its acceleration split into
-    # normal (bending) and tangential (geodesic curvature) parts.
-    ts = np.linspace(-0.9, 0.9, 160)
-    qs = np.column_stack([1.0 + 0.4 * (np.cos(ts) - 1.0), 0.4 * np.sin(ts)])
-    plot_path(ax, qs, color="#ff006e", linewidth=2.8, label="curve")
+    qdot = np.array([0.0, r])
+    qddot = np.array([-r, 0.0])
+    gamma2 = (qddot[0] * eu + qddot[1] * ev
+              + qdot[0] ** 2 * np.array([0, 0, 2 * C])
+              + qdot[1] ** 2 * np.array([0, 0, 2 * C]))
+    pn = (gamma2 @ n) * n
+    tang = gamma2 - pn
 
-    q = np.array([1.0, 0.0])
-    qdot = np.array([0.0, 0.4])
-    qddot = np.array([-0.4, 0.0])
-    gamma_ddot = (qddot[0] * ju(q) + qddot[1] * jv(q)
-                  + qdot[0] ** 2 * np.array([0, 0, 2 * C])
-                  + 2 * qdot[0] * qdot[1] * np.zeros(3)
-                  + qdot[1] ** 2 * np.array([0, 0, 2 * C]))
-    normal_part = np.dot(gamma_ddot, n) * n
-    tangential_part = gamma_ddot - normal_part
+    split = 1.35
+    tip2 = fancy_arrow(ax, P, split * gamma2, LATTE["text"], lw=2.2)
+    tipn = fancy_arrow(ax, P, split * pn, LATTE["teal"], lw=2.2)
+    tipt = fancy_arrow(ax, P, split * tang, LATTE["peach"], lw=2.2)
+    for a_, b_ in ((tip2, tipn), (tip2, tipt), (tipn, tipt)):
+        ax.plot([a_[0], b_[0]], [a_[1], b_[1]], [a_[2], b_[2]],
+                color=LATTE["overlay1"], lw=0.9, ls=(0, (2, 2.2)),
+                alpha=0.85, zorder=4)
 
-    arrow(ax, P, gamma_ddot, "black", r"$\gamma''$", 0.9)
-    arrow(ax, P, normal_part, "#0077b6", r"$II(\xi,\xi)n$", 2.5)
-    arrow(ax, P, tangential_part, "#f77f00", r"$\kappa_g$ part", 1.1)
-    ax.scatter(*P, color="black", s=35, depthshade=False)
+    fancy_arrow(ax, P, 0.78 * wu, LATTE["blue"], lw=2.2)
+    fancy_arrow(ax, P, 0.78 * wv, LATTE["blue"], lw=2.2)
+    fancy_arrow(ax, P, 0.92 * n, LATTE["red"], lw=2.2)
+    ball(ax, P, s=70)
 
-    ax.set_title("First and second fundamental forms\n"
-                 r"$I=J^{\mathrm{T}}J$ (ruler),  $II_{ij}=\langle n,\Phi_{ij}\rangle$ (bending)",
-                 fontsize=11)
-    ax.legend(loc="upper left", fontsize=9)
-    ax.set_box_aspect((1, 1, 0.65))
+    mlabel(ax, P + 0.78 * wu, r"$\Phi_u$", LATTE["blue"],
+           offset=(0.10, 0.05, 0.06))
+    mlabel(ax, P + 0.78 * wv, r"$\Phi_v$", LATTE["blue"],
+           offset=(-0.30, -0.06, 0.02))
+    mlabel(ax, P + 0.92 * n, r"$n$", LATTE["red"], offset=(0.08, 0.00, 0.10))
+    mlabel(ax, tip2, r"$\gamma''$", LATTE["text"], offset=(0.05, 0.12, 0.04))
+    mlabel(ax, tipn, r"$II(d,d)\,n$", LATTE["teal"],
+           offset=(0.16, 0.06, 0.16))
+    mlabel(ax, tipt, r"$T\,\gamma''$", LATTE["peach"],
+           offset=(-0.06, -0.22, -0.02))
+    i_mid = int(np.argmin(np.abs(ts - 0.75)))     # upper tail of the arc
+    mlabel(ax, phi(qs[i_mid]), r"$\gamma(s)$", LATTE["mauve"],
+           offset=(-0.26, 0.02, -0.02), fontsize=10.5)
+
+    ax.set_title("The two fundamental forms at one point\n"
+                 r"$I=J^{\mathrm{T}}J$ measures in the tangent plane,"
+                 r"  $II=\langle n,\Phi_{ij}\rangle$ up along $n$",
+                 fontsize=11, color=LATTE["text"])
     fig.tight_layout()
     for ext in ("png", "svg"):
         fig.savefig(os.path.join(HERE, f"fundamental-forms.{ext}"),
@@ -402,8 +560,306 @@ def fig_relaxation():
     plt.close(fig)
 
 
+# ---------------------------------------------------------------------------
+# Figure 4: normal curvature — κ(d) depends on the direction you walk
+# ---------------------------------------------------------------------------
+def fig_normal_curvature():
+    """Left: the two principal sections of the paraboloid through one point,
+    with their normal-bending arrows (lengths proportional to κ).
+    Right: κ(θ) = II(d,d)/|Jd|² swept over all parameter directions; the
+    extremes of the curve are the principal curvatures."""
+    fig = plt.figure(figsize=(12.4, 5.4))
+    ax = fig.add_subplot(121, projection="3d")
+    style3d(ax, (-0.20, 2.12), (-1.24, 1.24), (-0.04, 1.75),
+            elev=22, azim=-125, aspect=(1, 1, 0.60))
+    shaded_surface(ax, SURF, DOMU, DOMV)
+    iso_lines(ax, SURF, DOMU, DOMV)
+    rim_lines(ax, SURF, DOMU, DOMV)
+
+    p = np.array([1.0, 0.0])
+    P = phi(p)
+    eu, ev = ju(p), jv(p)
+    n = normal(p)
+    wu = eu / np.linalg.norm(eu)
+    wv = ev / np.linalg.norm(ev)
+
+    # I, II and the direction-resolved normal curvature at P
+    I_ = metric(p)
+    b = n @ np.array([0.0, 0.0, 2 * C])   # n·Φuu = n·Φvv at this symmetric point
+    II_ = np.array([[b, 0.0], [0.0, b]])
+    k_u = b / I_[0, 0]                    # κ for d ∥ e_u  (along Φ_u)
+    k_v = b / I_[1, 1]                    # κ for d ∥ e_v  (along Φ_v)
+
+    # the two principal sections of the surface through P
+    ts_u = np.linspace(0.25, 1.72, 160)
+    plot_path(ax, np.column_stack([ts_u, np.zeros_like(ts_u)]),
+              color=LATTE["blue"], linewidth=1.8)
+    ts_v = np.linspace(-0.88, 0.88, 160)
+    plot_path(ax, np.column_stack([np.ones_like(ts_v), ts_v]),
+              color=LATTE["peach"], linewidth=1.8)
+
+    # normal-bending arrows II(d,d) n — same direction, different lengths;
+    # each κ arrow is fanned slightly off P along its own section so the
+    # three parallel shafts stay legible, while n itself stays anchored at P
+    base_u = P + 0.20 * wu
+    base_v = P + 0.20 * wv
+    tipu = fancy_arrow(ax, base_u, k_u * 2.8 * n, LATTE["blue"], lw=2.2)
+    tipv = fancy_arrow(ax, base_v, k_v * 2.8 * n, LATTE["peach"], lw=2.2)
+    tipn = fancy_arrow(ax, P, 1.05 * n, LATTE["red"], lw=2.2)
+    ball(ax, P, s=70)
+    mlabel(ax, tipn, r"$n$", LATTE["red"], offset=(0.18, 0.08, 0.02))
+    mlabel(ax, tipu, r"$\kappa_u$", LATTE["blue"],
+           offset=(0.16, -0.10, -0.02), fontsize=10.5)
+    mlabel(ax, tipv, r"$\kappa_v$", LATTE["peach"],
+           offset=(0.02, 0.16, 0.06), fontsize=10.5)
+
+    ax.text2D(0.02, 0.98,
+              "arrows: normal bending $II(d,d)\\,n$ for the two sections\n"
+              rf"$\kappa_u={k_u:.4f}$ along $\Phi_u$ (blue),"
+              rf"  $\kappa_v={k_v:.4f}$ along $\Phi_v$ (peach)",
+              transform=ax.transAxes, va="top", fontsize=8.5,
+              color=LATTE["subtext1"])
+    ax.set_title("One point, two directions,\ntwo different bending rates",
+                 fontsize=10.5, color=LATTE["text"])
+
+    # polar sweep of κ(θ): rotate d=(cosθ, sinθ) through all directions
+    ax2 = fig.add_subplot(122, projection="polar")
+    th = np.linspace(0.0, 2.0 * np.pi, 480)
+    kap = np.array([
+        (np.array([c, s]) @ II_ @ np.array([c, s]))
+        / (np.array([c, s]) @ I_ @ np.array([c, s]))
+        for c, s in zip(np.cos(th), np.sin(th))
+    ])
+    H = np.mean(np.linalg.eigvalsh(np.linalg.solve(I_, II_)))
+    ax2.plot(th, kap, color=LATTE["text"], linewidth=2.6,
+             label=r"$\kappa(\theta)$", zorder=5)
+    ax2.plot(th, np.full_like(th, H), "--", color=LATTE["overlay0"],
+             linewidth=1.3, label=rf"mean  $H={H:.4f}$")
+    ax2.scatter([0.0, np.pi], [k_u, k_u], s=42, color=LATTE["blue"], zorder=6)
+    ax2.scatter([np.pi / 2, 3 * np.pi / 2], [k_v, k_v], s=42,
+                color=LATTE["peach"], zorder=6)
+    ax2.annotate(rf"$\kappa_u={k_u:.3f}$", xy=(0.0, k_u), xytext=(9, 15),
+                 textcoords="offset points", fontsize=9, color=LATTE["blue"])
+    ax2.annotate(rf"$\kappa_v={k_v:.3f}$", xy=(np.pi / 2, k_v), xytext=(9, 15),
+                 textcoords="offset points", fontsize=9, color=LATTE["peach"])
+    ax2.set_xticks([0.0, np.pi / 2, np.pi, 3 * np.pi / 2])
+    ax2.set_xticklabels([r"along $\Phi_u$", r"along $\Phi_v$",
+                         r"along $-\Phi_u$", r"along $-\Phi_v$"],
+                        fontsize=9, color=LATTE["subtext1"])
+    ax2.set_ylim(0.30, 0.58)
+    ax2.set_yticks([0.35, 0.45, 0.55])
+    ax2.set_yticklabels(["0.35", "0.45", "0.55"])
+    ax2.tick_params(colors=LATTE["subtext0"], labelsize=7)
+    ax2.grid(color=LATTE["surface0"], lw=0.8)
+    ax2.spines["polar"].set_color(LATTE["surface1"])
+    ax2.set_facecolor(LATTE["base"])
+    ax2.set_title(r"$\kappa(\theta)=\dfrac{II(d,d)}{|J\,d|^2}$ swept over"
+                  " all directions —\nextremes are the principal curvatures",
+                  fontsize=10.5, pad=22, color=LATTE["text"])
+    ax2.legend(loc="lower left", bbox_to_anchor=(-0.10, -0.18), fontsize=8,
+               frameon=False, labelcolor=LATTE["subtext1"])
+    fig.tight_layout()
+    for ext in ("png", "svg"):
+        fig.savefig(os.path.join(HERE, f"normal-curvature.{ext}"),
+                    dpi=170, bbox_inches="tight")
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Figure 5: the shape operator — the normal tips as you slide
+# ---------------------------------------------------------------------------
+def fig_shape_operator():
+    """Slide along the two principal directions through a point and sample
+    the unit normal: how fast the arrow tips is exactly what −Sξ encodes."""
+    fig = plt.figure(figsize=(8.8, 6.8))
+    ax = fig.add_subplot(111, projection="3d")
+    style3d(ax, (-0.20, 2.12), (-1.24, 1.24), (-0.04, 1.75),
+            elev=22, azim=-125, aspect=(1, 1, 0.60))
+    shaded_surface(ax, SURF, DOMU, DOMV)
+    iso_lines(ax, SURF, DOMU, DOMV)
+    rim_lines(ax, SURF, DOMU, DOMV)
+
+    p = np.array([1.0, 0.0])
+    P = phi(p)
+    eu, ev = ju(p), jv(p)
+    n = normal(p)
+    I_ = metric(p)
+
+    # unit tangent arrows for the two principal directions at this point,
+    # converted to parameter directions by the chapter's own formula
+    # ξ = I⁻¹ Jᵀ w   (the §1.2 "normal equations" box)
+    w1 = eu / np.linalg.norm(eu)
+    w2 = ev / np.linalg.norm(ev)
+    xi1 = np.linalg.solve(I_, jac(p).T @ w1)
+    xi2 = np.linalg.solve(I_, jac(p).T @ w2)
+
+    fancy_arrow(ax, P, 0.78 * w1, LATTE["blue"], lw=2.2)
+    fancy_arrow(ax, P, 0.78 * w2, LATTE["blue"], lw=2.2)
+    fancy_arrow(ax, P, 1.00 * n, LATTE["red"], lw=2.2)
+
+    scale = 0.34
+    for xi, color in ((xi1, LATTE["red"]), (xi2, LATTE["teal"])):
+        ts = np.linspace(-0.9, 0.9, 7)
+        ts = ts[np.abs(ts) > 0.18]           # keep the center arrows unique
+        plot_path(ax, np.column_stack([p[0] + ts * xi[0],
+                                       p[1] + ts * xi[1]]),
+                  color=LATTE["blue"], linewidth=1.0, alpha=0.45)
+        track = np.linspace(-0.9, 0.9, 120)
+        tips = np.array([phi(p + t * xi) + scale * normal(p + t * xi)
+                         for t in track])
+        ax.plot(tips[:, 0], tips[:, 1], tips[:, 2], color=color,
+                linewidth=1.0, alpha=0.6, ls=(0, (2, 2.2)))
+        for t in ts:
+            Q = phi(p + t * xi)
+            fancy_arrow(ax, Q, scale * normal(p + t * xi), color,
+                        lw=1.5, alpha=0.88)
+    ball(ax, P, s=70)
+
+    mlabel(ax, P + 0.78 * w1, r"$\xi_1$", LATTE["blue"],
+           offset=(0.10, 0.05, 0.06))
+    mlabel(ax, P + 0.78 * w2, r"$\xi_2$", LATTE["blue"],
+           offset=(-0.30, -0.06, 0.02))
+    mlabel(ax, P + 0.92 * n, r"$n$", LATTE["red"], offset=(0.08, 0.00, 0.10))
+    ax.text2D(0.02, 0.98,
+              r"sampled unit normals $n(q)$ while sliding along $\xi_1$ (red)"
+              "\n" r"and $\xi_2$ (teal); the dashed tip track is the turn"
+              "\n" r"that $-S\xi$ measures",
+              transform=ax.transAxes, va="top", fontsize=8.5,
+              color=LATTE["subtext1"])
+    ax.set_title("Shape operator $S = I^{-1}II$: slide along $\\xi$,\n"
+                 r"and the normal arrow tips at rate $-S\xi$",
+                 fontsize=10.5, color=LATTE["text"])
+    fig.tight_layout()
+    for ext in ("png", "svg"):
+        fig.savefig(os.path.join(HERE, f"shape-operator.{ext}"),
+                    dpi=170, bbox_inches="tight")
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Figure 6: the sign of K on three surfaces
+# ---------------------------------------------------------------------------
+def _signature_panel(ax, surf, q0, domain, title, zlim, elev, azim, aspect,
+                     legend=False):
+    """One panel in book style: shaded surface with parameter grid-lines,
+    point P, unit normal, the two principal directions, plus a κ/K readout.
+    surf is a vectorized (u, v) -> stack of arrays function; derivatives
+    are central differences of surf itself (h = 1e-5)."""
+    ulim, vlim = domain
+    h = 1e-5
+    q1, q2 = q0
+
+    def PH(u, v):
+        return np.asarray(surf(np.asarray(u, dtype=float),
+                               np.asarray(v, dtype=float)))
+
+    P = PH(q1, q2)
+    du = (PH(q1 + h, q2) - PH(q1 - h, q2)) / (2 * h)
+    dv = (PH(q1, q2 + h) - PH(q1, q2 - h)) / (2 * h)
+    duu = (PH(q1 + h, q2) - 2 * P + PH(q1 - h, q2)) / h**2
+    dvv = (PH(q1, q2 + h) - 2 * P + PH(q1, q2 - h)) / h**2
+    duv = (PH(q1 + h, q2 + h) - PH(q1 + h, q2 - h)
+           - PH(q1 - h, q2 + h) + PH(q1 - h, q2 - h)) / (4 * h**2)
+
+    n = np.cross(du, dv)
+    n /= np.linalg.norm(n)
+    I_ = np.array([[du @ du, du @ dv], [dv @ du, dv @ dv]])
+    II_ = np.array([[n @ duu, n @ duv], [n @ duv, n @ dvv]])
+    S = np.linalg.solve(I_, II_)
+    vals, vecs = np.linalg.eigh(S)
+    K = np.linalg.det(II_) / np.linalg.det(I_)
+
+    pad = 0.14
+    style3d(ax, (ulim[0] - pad, ulim[1] + pad),
+            (vlim[0] - pad, vlim[1] + pad), zlim, elev=elev, azim=azim,
+            aspect=aspect)
+    shaded_surface(ax, surf, ulim, vlim)
+    iso_lines(ax, surf, ulim, vlim, nu=6, nv=5, alpha=0.28)
+    rim_lines(ax, surf, ulim, vlim, lw=0.9)
+
+    # normal + principal-direction arrows at P
+    fancy_arrow(ax, P, 0.62 * n, LATTE["red"], lw=2.2)
+    for idx in (0, 1):
+        w = du * vecs[0, idx] + dv * vecs[1, idx]
+        fancy_arrow(ax, P, 0.56 * w / np.linalg.norm(w), LATTE["blue"],
+                    lw=2.0)
+    ball(ax, P, s=70)
+
+    mlabel(ax, P + 0.62 * n, r"$n$", LATTE["red"], offset=(0.06, 0.02, 0.07))
+    w_tip1 = du * vecs[0, 0] + dv * vecs[1, 0]
+    w_tip2 = du * vecs[0, 1] + dv * vecs[1, 1]
+    mlabel(ax, P + 0.56 * w_tip1 / np.linalg.norm(w_tip1), r"$\xi_1$",
+           LATTE["blue"], offset=(0.05, -0.02, 0.07), fontsize=10.5)
+    mlabel(ax, P + 0.56 * w_tip2 / np.linalg.norm(w_tip2), r"$\xi_2$",
+           LATTE["blue"], offset=(0.05, 0.04, 0.07), fontsize=10.5)
+
+    k1, k2 = vals
+    if abs(K) < 1e-9:
+        stats = rf"$\kappa_1={k1:+.2f}$  $\kappa_2={k2:+.2f}$" "\n" r"$K=0$"
+    else:
+        stats = rf"$\kappa_1={k1:+.2f}$  $\kappa_2={k2:+.2f}$" f"\n$K={K:+.2f}$"
+    ax.text2D(0.03, 0.96, stats, transform=ax.transAxes, va="top",
+              fontsize=9, color=LATTE["subtext1"])
+    ax.set_title(title, fontsize=10.5, color=LATTE["text"])
+
+    if legend:
+        from matplotlib.lines import Line2D
+        handles = [
+            Line2D([0], [0], color=LATTE["red"], lw=2,
+                   label=r"unit normal $n$"),
+            Line2D([0], [0], color=LATTE["blue"], lw=2,
+                   label=r"principal directions $\xi_1,\xi_2$"),
+        ]
+        ax.legend(handles=handles, loc="lower left", fontsize=8,
+                  frameon=False, labelcolor=LATTE["subtext1"])
+
+
+def fig_signatures():
+    fig = plt.figure(figsize=(13.8, 5.4))
+    R = 0.7
+
+    # bowl: z = 0.35 (u² + v²)
+    ax1 = fig.add_subplot(131, projection="3d")
+    _signature_panel(
+        ax1,
+        lambda U, V: np.stack([U, V, 0.35 * (U * U + V * V)]),
+        (0.62, 0.28), ((-1.05, 1.05), (-1.05, 1.05)),
+        "bowl — $K>0$: same-way bending",
+        zlim=(-0.02, 0.80), elev=25, azim=-125, aspect=(1, 1, 0.6),
+        legend=True)
+
+    # saddle: z = 0.5 (u² − v²)
+    ax2 = fig.add_subplot(132, projection="3d")
+    _signature_panel(
+        ax2,
+        lambda U, V: np.stack([U, V, 0.5 * (U * U - V * V)]),
+        (0.6, 0.3), ((-1.0, 1.0), (-1.0, 1.0)),
+        "saddle — $K<0$: opposite bending",
+        zlim=(-0.62, 0.62), elev=25, azim=-125, aspect=(1, 1, 0.6))
+
+    # cylinder of radius R: (θ, y) ↦ (R cosθ, y, −R sinθ); the minus sign
+    # makes Φ_θ × Φ_y point outward, so κ₁ = −1/R and κ₂ = 0
+    ax3 = fig.add_subplot(133, projection="3d")
+    _signature_panel(
+        ax3,
+        lambda U, V: np.stack([R * np.cos(U), V, -R * np.sin(U)]),
+        (2.4, 0.0), ((0.25, 4.35), (-0.5, 0.5)),
+        "cylinder — $K=0$: one straight direction",
+        zlim=(-0.80, 0.80), elev=16, azim=-75, aspect=(1, 1, 0.7))
+
+    fig.tight_layout()
+    for ext in ("png", "svg"):
+        fig.savefig(os.path.join(HERE, f"curvature-signatures.{ext}"),
+                    dpi=170, bbox_inches="tight")
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     fig_fundamental_forms()
     fig_shooting()
     fig_relaxation()
-    print("wrote fundamental-forms, shooting, relaxation (png + svg)")
+    fig_normal_curvature()
+    fig_shape_operator()
+    fig_signatures()
+    print("wrote fundamental-forms, shooting, relaxation, normal-curvature, "
+          "shape-operator, curvature-signatures (png + svg)")
