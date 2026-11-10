@@ -22,6 +22,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import cm
+from matplotlib.collections import LineCollection
+from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.lines import Line2D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 # Catppuccin Latte palette (https://github.com/catppuccin/catppuccin).
@@ -854,6 +857,172 @@ def fig_signatures():
     plt.close(fig)
 
 
+# ---------------------------------------------------------------------------
+# Figure 7: shooting a fan of geodesics around a Gaussian hill
+#
+# The Jacobi metric of a unit-mass particle in a potential V is
+#     g_ij = 2 (E - V) delta_ij.
+# Its geodesics are the spatial trajectories of the mechanical system, so we
+# can shoot them by integrating q'' = -grad V with the initial speed fixed by
+# the energy.  A fan of equal-angle shots is the forward map of Chapter 5.
+# ---------------------------------------------------------------------------
+HILL_A = 1.0
+HILL_SIGMA = 0.70
+HILL_E = 1.10
+HILL_Q0 = np.array([1.50, 1.50])
+HILL_DOM = 2.80
+HILL_NRAY = 40
+
+
+def hill_potential(q):
+    return HILL_A * np.exp(-np.sum(q * q, axis=-1) / (2 * HILL_SIGMA ** 2))
+
+
+def hill_grad(q):
+    return -hill_potential(q)[..., None] * q / (HILL_SIGMA ** 2)
+
+
+def _hill_rhs(q, p):
+    return p, -hill_grad(q)
+
+
+def _hill_rk4(q, p, h):
+    k1q, k1p = _hill_rhs(q, p)
+    k2q, k2p = _hill_rhs(q + 0.5 * h * k1q, p + 0.5 * h * k1p)
+    k3q, k3p = _hill_rhs(q + 0.5 * h * k2q, p + 0.5 * h * k2p)
+    k4q, k4p = _hill_rhs(q + h * k3q, p + h * k3p)
+    return (q + h / 6 * (k1q + 2 * k2q + 2 * k3q + k4q),
+            p + h / 6 * (k1p + 2 * k2p + 2 * k3p + k4p))
+
+
+def shoot_hill_fan(alphas, h=0.0025, tmax=40.0, rmax=HILL_DOM, lmax=10.0):
+    """One geodesic shot per launch angle, integrated in the time parameter.
+
+    The spatial curve is the same as the Jacobi geodesic; only its
+    parameterisation differs.  Each path is stopped when it leaves the
+    plotting square or exceeds a generous arc-length cap.
+    """
+    alphas = np.asarray(alphas, float)
+    n = len(alphas)
+    q = np.tile(HILL_Q0, (n, 1))
+    speed = np.sqrt(np.maximum(2 * (HILL_E - hill_potential(q)), 0.0))
+    p = speed[:, None] * np.stack([np.cos(alphas), np.sin(alphas)], axis=1)
+    nsteps = int(tmax / h)
+    traj = np.empty((nsteps + 1, n, 2))
+    traj[0] = q
+    arc = np.zeros(n)
+    alive = np.ones(n, bool)
+    death = np.full(n, nsteps + 1)
+    for step in range(nsteps):
+        qn, pn = _hill_rk4(q, p, h)
+        qn[~alive] = q[~alive]
+        pn[~alive] = p[~alive]
+        arc += np.linalg.norm(qn - q, axis=1)
+        q, p = qn, pn
+        traj[step + 1] = q
+        done = alive & ((np.linalg.norm(q, axis=1) > rmax) | (arc > lmax))
+        death[done] = step + 1
+        alive &= ~done
+        if not alive.any():
+            break
+    return [traj[:death[i], i, :] for i in range(n)]
+
+
+def fig_jacobi_fan():
+    """A fan of shortest paths near a Gaussian potential hill.
+
+    The shots are geodesics of g = 2(E-V) delta.  With E above the summit,
+    every shot can cross the hill, but the hill deflects most of them; the
+    shot aimed at the summit is the only one that reaches the shadow behind
+    the hill.  The figure is the forward map whose Jacobian Chapter 5
+    differentiates.
+    """
+    cmap = LinearSegmentedColormap.from_list(
+        "latte_hill", [LATTE["base"], LATTE["crust"], LATTE["surface0"],
+                       LATTE["surface1"], LATTE["yellow"], LATTE["peach"]])
+    fig, ax = plt.subplots(figsize=(8.6, 7.8))
+
+    g = np.linspace(-HILL_DOM, HILL_DOM, 620)
+    X, Y = np.meshgrid(g, g)
+    Z = HILL_A * np.exp(-(X * X + Y * Y) / (2 * HILL_SIGMA ** 2))
+    ax.imshow(np.ma.masked_less(Z, 0.08), origin="lower",
+              extent=[-HILL_DOM, HILL_DOM, -HILL_DOM, HILL_DOM],
+              cmap=cmap, vmin=0.08, vmax=HILL_A, alpha=0.90,
+              interpolation="bilinear", zorder=0)
+    ax.contour(X, Y, Z, levels=[0.08], colors=[LATTE["surface2"]],
+               linewidths=0.8, alpha=0.70, zorder=2)
+    ax.contour(X, Y, Z, levels=np.linspace(0.12, 0.92, 9),
+               colors=LATTE["overlay0"], linewidths=0.45, alpha=0.30,
+               zorder=2)
+
+    alphas = 2 * np.pi * np.arange(HILL_NRAY) / HILL_NRAY
+    paths = shoot_hill_fan(alphas)
+    alpha_c = math.atan2(-HILL_Q0[1], -HILL_Q0[0]) % (2 * np.pi)
+    ic = int(np.argmin(np.abs((alphas - alpha_c + np.pi)
+                             % (2 * np.pi) - np.pi)))
+    segs = [p for j, p in enumerate(paths) if j != ic]
+    ax.add_collection(LineCollection(
+        segs, colors=LATTE["blue"], linewidths=0.9, alpha=0.55,
+        zorder=4, capstyle="round"))
+
+    p_c = paths[ic]
+    ax.plot(p_c[:, 0], p_c[:, 1], color=LATTE["mauve"], lw=2.4,
+            alpha=0.98, zorder=6, solid_capstyle="round")
+
+    ax.scatter(0, 0, s=30, color=LATTE["text"], edgecolors=LATTE["base"],
+               linewidths=0.8, zorder=8)
+    ax.annotate(r"$V=A$", (0, 0), xytext=(10, 8),
+                textcoords="offset points", fontsize=10,
+                color=LATTE["text"], zorder=9)
+    ax.scatter(*HILL_Q0, s=80, color=LATTE["red"], edgecolors=LATTE["base"],
+               linewidths=0.9, zorder=8)
+    ax.annotate(r"$q_0$", HILL_Q0, xytext=(8, 6),
+                textcoords="offset points", fontsize=14,
+                color=LATTE["red"], zorder=9)
+
+    ax.set_xlim(-HILL_DOM, HILL_DOM)
+    ax.set_ylim(-HILL_DOM, HILL_DOM)
+    ax.set_aspect("equal")
+    ax.set_xticks([-2, 0, 2])
+    ax.set_yticks([-2, 0, 2])
+    ax.set_xlabel(r"$x$", fontsize=12)
+    ax.set_ylabel(r"$y$", fontsize=12)
+    ax.tick_params(colors=LATTE["subtext0"], labelsize=8.5)
+    for s in ax.spines.values():
+        s.set_color(LATTE["surface2"])
+        s.set_linewidth(0.8)
+    ax.set_title(r"Shooting a fan of shortest paths near a Gaussian hill",
+                 fontsize=13.5, color=LATTE["text"], pad=8)
+
+    handles = [Line2D([], [], color=LATTE["blue"], lw=1.2, alpha=0.75,
+                      label=r"geodesic shot"),
+               Line2D([], [], color=LATTE["mauve"], lw=2.0,
+                      label=r"shot through the summit")]
+    ax.legend(handles=handles, loc="upper center",
+              bbox_to_anchor=(0.5, -0.095), ncol=2, frameon=False,
+              fontsize=8.5, handlelength=2.0, columnspacing=1.6,
+              labelcolor=LATTE["subtext0"])
+    ax.text(0.025, 0.975,
+            rf"$A={HILL_A:.2f}$, $\sigma={HILL_SIGMA:.2f}$" "\n"
+            rf"$E={HILL_E:.2f}>V_{{\max}}={HILL_A:.2f}$" "\n"
+            rf"{HILL_NRAY} shots, equal angles",
+            transform=ax.transAxes, va="top", ha="left", fontsize=8.5,
+            color=LATTE["subtext0"], zorder=10,
+            bbox=dict(boxstyle="round,pad=0.34", fc=LATTE["base"],
+                      ec=LATTE["surface2"], alpha=0.9))
+    ax.text(0.5, -0.155,
+            r"$g_{ij}=2(E-V)\,\delta_{ij}$,   "
+            r"$V(x,y)=A\,e^{-(x^2+y^2)/2\sigma^2}$",
+            transform=ax.transAxes, ha="center", va="top", fontsize=10.5,
+            color=LATTE["subtext0"])
+
+    fig.tight_layout()
+    for ext in ("png", "svg"):
+        fig.savefig(os.path.join(HERE, f"jacobi-fan.{ext}"),
+                    dpi=180, bbox_inches="tight")
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     fig_fundamental_forms()
     fig_shooting()
@@ -861,5 +1030,6 @@ if __name__ == "__main__":
     fig_normal_curvature()
     fig_shape_operator()
     fig_signatures()
+    fig_jacobi_fan()
     print("wrote fundamental-forms, shooting, relaxation, normal-curvature, "
-          "shape-operator, curvature-signatures (png + svg)")
+          "shape-operator, curvature-signatures, jacobi-fan (png + svg)")

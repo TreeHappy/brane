@@ -331,7 +331,70 @@ host script) is the other half.
 
 ---
 
-## 5.8 Exercises
+## 5.8 A fan of shots: the Jacobi metric
+
+The metric need not be inherited from an embedding. A large family comes from
+mechanics. For a unit-mass particle at energy $E$ moving in a potential
+$V(q)$, the spatial trajectories of
+
+```math
+q''=-\nabla V(q)
+```
+
+are the unparameterised geodesics of the **Jacobi metric**
+
+```math
+\boxed{\,g_{ij}=2\bigl(E-V(q)\bigr)\,\delta_{ij}\,}.
+```
+
+The parameter is different, but the curves are the same; energy conservation
+fixes the speed along them:
+
+```math
+\tfrac12|q'|^2+V(q)=E
+\quad\Longrightarrow\quad
+|q'(0)|=\sqrt{2\bigl(E-V(q_0)\bigr)}.
+```
+
+Take a Gaussian hill
+
+```math
+V(x,y)=A\,e^{-(x^2+y^2)/2\sigma^2},
+```
+
+with height $A$, width $\sigma$, and energy $E>V_{\max}=A$. Then $E-V>0$
+everywhere and every shot is defined.
+
+Shooting is now a fan. Fix a source $q_0$ and $N$ launch angles
+
+```math
+\alpha_k=\frac{2\pi k}{N},\qquad k=0,1,\dots,N-1.
+```
+
+For each $k$, integrate the IVP
+
+```math
+q_k(0)=q_0,\qquad
+q_k'(0)=\sqrt{2\bigl(E-V(q_0)\bigr)}\,
+(\cos\alpha_k,\sin\alpha_k),
+```
+
+and draw the spatial curve $q_k(t)$ until it leaves the plotting square. The
+initial speed is not a free parameter: it is determined by the energy.
+
+![Shooting a fan of geodesics of the Jacobi metric $g=2(E-V)\delta$ near a Gaussian hill $V=A e^{-(x^2+y^2)/2\sigma^2}$ with $A=1$, $\sigma=0.70$, $E=1.10>V_{\max}$. Forty shots leave $q_0=(1.50,1.50)$ at equal angles, with speed fixed by the energy. The hill deflects most shots; the single shot aimed at the summit (mauve) is the only one that reaches the lower-left shadow behind the hill.](images/jacobi-fan.png)
+
+The hill bends every shot that passes near it, and because $q_0$ is off-centre
+the fan is not symmetric. Most shots are deflected around the hill. The region
+behind the hill (lower-left in the figure) receives only the shot aimed at the
+summit (mauve). That empty region is a **shadow**, not a caustic: the forward
+map $\alpha\mapsto q_k(\text{exit})$ is still monotone here, but the hill has
+swept a whole interval of launch angles away from it. A caustic appears only
+when that map folds, which is the failure mode of §5.6.
+
+---
+
+## 5.9 Exercises
 
 1. **Variational equation.** Derive
    $Y''=F_qY+F_{q'}Y'$ from $q''=F(q,q')$ by differentiating with respect to
