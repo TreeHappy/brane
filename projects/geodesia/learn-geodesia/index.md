@@ -61,10 +61,12 @@ flowchart TD
     E["Ch. 5 — Shooting<br/>BVP → IVP, Newton, variational equations"]
     F["Ch. 6 — Relaxation<br/>deform a whole path, PDE & hierarchical methods"]
     G["Ch. 7 — Worked examples & exercises"]
+    H["Ch. 8 — Why intrinsic?<br/>Γ from I alone, tensors, Theorema Egregium"]
     A --> B --> C --> D --> E
     C --> F
     E --> G
     F --> G
+    G --> H
 ```
 
 Suggested paths:
@@ -84,6 +86,9 @@ Suggested paths:
   projection is half a sandwich product, the tangent plane is one blade, the
   geodesic test is a single wedge $\gamma''\wedge n = 0$, and Darboux
   scalars are the coefficients of one rotor's rate. Read it after Ch. 3.
+- **“Why do textbooks insist on Christoffel symbols and tensors?”**
+  Read Ch. 8 — it audits what breaks when the ambient space is taken away
+  and rebuilds vector calculus from the ruler $I$ alone.
 
 ---
 
@@ -157,6 +162,7 @@ A useful dictionary in the other direction (older books use these):
 | Christoffel $\Gamma^k_{\;ij}$ | coordinates of the *tangent part* $T\Phi_{ij}$ (a derived view of one projection) |
 | covariant derivative | derivative corrected for the rotating basis arrows |
 | shape operator | the linear map $S=I^{-1}II$ |
+| Riemann tensor (2-D) | the one curvature number $R_{1212}=K\,\det I$, built from $\Gamma$ alone (Ch. 8) |
 
 ---
 
@@ -176,4 +182,7 @@ A useful dictionary in the other direction (older books use these):
    pure bending, with no “grid twist” left over.
 
 Chapters 1–2 make pictures 1–3 precise. Chapters 3–6 turn them into
-algorithms.
+algorithms. Chapter 8 explains why the intrinsic, coefficients-first
+viewpoint (Christoffel symbols, tensors, curvature from $I$ alone) exists
+at all — by auditing exactly what breaks when the ambient space is taken
+away.
