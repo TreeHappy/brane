@@ -356,45 +356,21 @@ The eigenvalues come back from the trace/determinant pair:
 
 ---
 
-## 1.5 Splitting each curvature vector into tangent + normal parts
+## 1.5 The Gauss split
 
-Every curvature vector is a 3-D arrow, and 3-space is spanned by the tangent
-plane plus $n$. Split each one accordingly:
+Define the tangential projection $T$ and recall $II_{ij} := n\cdot \Phi_{ij}$:
 
 ```math
 \boxed{\;
 \begin{aligned}
-\Phi_{uu} &= (\text{tangent-plane part}) + (n\cdot\Phi_{uu})\, n,\\
-\Phi_{uv} &= (\text{tangent-plane part}) + (n\cdot\Phi_{uv})\, n,\\
-\Phi_{vv} &= (\text{tangent-plane part}) + (n\cdot\Phi_{vv})\, n.
+T &: \mathbb{R}^3 \to \mathbb{R}^3, & T(w) &:= w - (w\cdot n)\,n, \qquad w \in \mathbb{R}^3,\\[6pt]
+&& \Phi_{ij} &= T(\Phi_{ij}) + II_{ij}\,n, \qquad i,j \in \{u,v\}.
 \end{aligned}\;}
 ```
 
-The normal coefficients are precisely the entries of $II$ — dotting with $n$
-reads them straight off. Define the tangent-plane projection operator $T : \mathbb{R}^3 \to \mathbb{R}^3$
-by
+The second line is the **Gauss split**: $T(\Phi_{ij})$ is the tangent (turning) part and $II_{ij}\,n$ the normal (bending) part. Expanding $T(\Phi_{ij})$ in the basis $\{\Phi_u,\Phi_v\}$ yields the coefficients textbooks call Christoffel symbols; Chapter 2 works with the arrows $T(\Phi_{ij})$ directly.
 
-```math
-T(v) := v - (v \cdot n)\, n, \qquad v \in \mathbb{R}^3,
-```
-
-which removes the normal component and keeps only the part lying in the
-tangent plane. The tangent parts above are therefore the honest
-surface-bound arrows $T\Phi_{uu}$, $T\Phi_{uv}$, and $T\Phi_{vv}$ (with
-indices $i,j \in \{u,v\}$, written collectively as $T\Phi_{ij}$).
-*Coefficients* for those arrows in the basis $\{\Phi_u,\Phi_v\}$ are what
-textbooks record as Christoffel symbols, but Chapter 2 shows the entire
-story can be run on the arrows themselves — with the projected arrows
-$T\Phi_{ij}$, not their coordinates, as the primary object. So the whole
-chapter-1 picture is: **take the second-derivative arrows and project them
-onto the tangent basis and the normal** — two pieces, $II$ and
-$T\Phi_{ij}$, out of one geometric operation.
-
-> **One sentence summary.** $J$'s columns are the tangent arrows;
-> $I = J^{\mathsf T}J$ is their Gram matrix (the ruler); the curvature
-> arrows dotted with $n$ form $II$ (the bending); and splitting each
-> curvature arrow into a tangent part and an $n$-part delivers both $II$
-> and the "turning" part — the covariant-derivative data — in one sweep.
+> **One sentence summary.** $J=[\Phi_u\;\Phi_v]$, $I=J^{\mathsf T}J$ (ruler), $II_{ij}=n\cdot\Phi_{ij}$ (bending), and $\Phi_{ij}=T(\Phi_{ij})+II_{ij}n$ delivers the turning data $T(\Phi_{ij})$ in the same sweep.
 
 ---
 
