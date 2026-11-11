@@ -41,6 +41,29 @@ The dictionary that the whole chapter keeps re-deriving:
 | $\xi = I^{-1}J^{\mathsf T}w$ | `Geodesic.tangentVecToParams` | `Geodesia/Geodesic.lean` |
 | exact derivative arrows | `Smooth2` + its combinators | `Geodesia/Diff.lean` |
 
+**The notation bridge.** The Lean code uses short identifiers where the text
+uses math symbols. Every occurrence is translatable by this table — and each
+**Signature** block below is followed by the implementation and its
+vector-calculus reading, so any formula can be checked against the code:
+
+| Lean notation | Vector-calculus meaning |
+|---|---|
+| `s.sx`, `s.sy`, `s.sz` | the coordinate functions $x(u,v)$, $y(u,v)$, $z(u,v)$ of $\Phi$ |
+| `i : Fin 2` with values `0`, `1` | the parameter index: $0 \leftrightarrow u$, $1 \leftrightarrow v$ |
+| `u v : Float` | the point $(u, v)$ of the parameter plane |
+| `Surface.dPhi s i u v` | the arrow $\Phi_i(u,v)$ |
+| `Surface.d2Phi s i j u v` | the arrow $\Phi_{ij}(u,v)$ |
+| `v.dot w`, `v.cross w`, `v.norm` | $v\cdot w$, $v\times w$, $\lvert v\rvert$ |
+| `Vec3.smul a v` | the scaled arrow $a\,v$ |
+| `Mat2` with fields `a`, `b`, `c` | the symmetric matrix $\begin{bmatrix}a & b\\ b & c\end{bmatrix}$ |
+| `metricI` / `metricII` | $I = J^{\mathsf T}J$ / $II = [\,n\cdot\Phi_{ij}\,]$ |
+| `firstForm` / `secondForm` | the quadratic forms $I(w,w) = w^{\mathsf T}Iw$ / $II(w,w) = w^{\mathsf T}II\,w$ |
+| `Surface.christoffel s x y k i j` | the coefficient $\Gamma^k_{\;ij}$ |
+| `GeoState` fields `u v du dv` | $q(s) = (u,v)$ and $q'(s) = (u',v')$ along a curve |
+
+(Implementations are shown verbatim from the sources, with the fully
+qualified names they get from their `namespace`.)
+
 ![The paraboloid with its parameter grid; at one point the tangent plane (dashed outline) carrying the tangent arrows Φu, Φv and the normal n, plus a curve γ(s) whose second derivative γ″ splits into a tangent-plane part Tγ″ and a normal part II(d,d)n.](images/fundamental-forms.png)
 
 ---
@@ -105,6 +128,46 @@ def Surface.d2Phi (s : Surface) (i j : Fin 2) (u v : Float) : Vec3
     -- Φ_ij: the curvature arrows
 ```
 
+**Implementation.** The arrows are built component-wise from the exact
+partials stored in `Smooth2`:
+
+```lean
+def Surface.point (s : Surface) (u v : Float) : Vec3 :=
+  ⟨s.sx.f u v, s.sy.f u v, s.sz.f u v⟩
+
+def Surface.dPhi (s : Surface) (i : Fin 2) (u v : Float) : Vec3 :=
+  match i with
+  | 0 => ⟨s.sx.fx u v, s.sy.fx u v, s.sz.fx u v⟩
+  | 1 => ⟨s.sx.fy u v, s.sy.fy u v, s.sz.fy u v⟩
+
+def Surface.d2Phi (s : Surface) (i j : Fin 2) (u v : Float) : Vec3 :=
+  match i, j with
+  | 0, 0 => ⟨s.sx.fxx u v, s.sy.fxx u v, s.sz.fxx u v⟩
+  | 0, 1 => ⟨s.sx.fxy u v, s.sy.fxy u v, s.sz.fxy u v⟩
+  | 1, 0 => ⟨s.sx.fxy u v, s.sy.fxy u v, s.sz.fxy u v⟩
+  | 1, 1 => ⟨s.sx.fyy u v, s.sy.fyy u v, s.sz.fyy u v⟩
+```
+
+**Vector-calculus reading.** Component $k$ of `dPhi s i` is $\partial_i x_k$:
+e.g. $\Phi_u = (\partial_u x,\ \partial_u y,\ \partial_u z)$, the displayed
+matrix column by column. Both mixed-partial rows read the same field `fxy`
+because $\Phi_{uv} = \Phi_{vu}$ (Clairaut's theorem). Note what is *absent*:
+the code never materializes the $3\times 2$ Jacobian $J$ itself. Multiplying
+it out,
+
+```math
+J^{\mathsf T}J \;=\;
+\begin{bmatrix}
+\Phi_u\cdot\Phi_u & \Phi_u\cdot\Phi_v\\
+\Phi_v\cdot\Phi_u & \Phi_v\cdot\Phi_v
+\end{bmatrix},
+```
+
+every entry is a single dot product between two stored columns — the Gram
+matrix is cheaper to build entrywise than the matrix product suggests, and
+that is exactly what §1.2's `metricEntry` computes. (Curves $\gamma$ are
+carried by `GeoState` $= (q, q')$ and integrated in Chapter 4.)
+
 #### What $J$ does to a direction
 
 Introduce a real parameter $s \in \mathbb{R}$ and a differentiable
@@ -154,6 +217,20 @@ and the two tangent vectors are
 ```
 
 This is the surface built by `Surface.ofHeight` in the code.
+
+**Implementation.** The terrain embedding, and the two graph tangent arrows —
+literally the displayed matrices:
+
+```lean
+def Surface.ofHeight (h : Height) : Surface :=
+  ⟨Smooth2.coordX, Smooth2.coordY, h⟩       -- Φ(x, y) = (x, y, h(x, y))
+
+def Surface.tangentX (h : Height) (x y : Float) : Vec3 := ⟨1, 0, hx h x y⟩
+def Surface.tangentY (h : Height) (x y : Float) : Vec3 := ⟨0, 1, hy h x y⟩
+```
+
+i.e. $\Phi_x = (1, 0, f_x)$ and $\Phi_y = (0, 1, f_y)$, with $f_x$, $f_y$ the
+exact partials of $h$.
 
 **The running example.** Most checked examples in this chapter use the
 paraboloid $z = 0.3\,(x^2+y^2)$, built from exact `Smooth2` combinators in
@@ -237,6 +314,39 @@ def Surface.firstForm (s : Surface) (x y : Float) (w : Vec2) : Float
     -- the quadratic form I(w, w)
 ```
 
+**Implementation.** The symmetric matrix is stored as three `Float`s, and
+every entry of the boxed matrix is one `metricEntry` dot product:
+
+```lean
+def Mat2.det (M : Mat2) : Float := M.a * M.c - M.b * M.b
+    -- det [[a, b], [b, c]] = ac − b²
+
+def Mat2.inv (M : Mat2) : Mat2 :=
+  let d := M.det
+  ⟨M.c / d, -M.b / d, M.a / d⟩
+    -- Cramer's rule: I⁻¹ = (1/det I) [[c, −b], [−b, a]]
+
+def Surface.metricEntry (s : Surface) (u v : Float) : Fin 2 → Fin 2 → Float :=
+  fun i j => (dPhi s i u v).dot (dPhi s j u v)
+
+def Surface.metricI (s : Surface) (u v : Float) : Mat2 :=
+  ⟨metricEntry s u v 0 0, metricEntry s u v 0 1, metricEntry s u v 1 1⟩
+```
+
+**Vector-calculus reading.** `metricEntry s u v i j` is one entry of the
+boxed matrix, $I_{ij} = \Phi_i\cdot\Phi_j$; `metricI` stacks the three
+independent ones ($b = I_{12} = \Phi_u\cdot\Phi_v = I_{21}$ by symmetry of
+the dot product). `Mat2.inv` is the closed-form inverse of a symmetric
+$2\times 2$ matrix,
+
+```math
+I^{-1} = \frac{1}{\det I}\begin{bmatrix}c & -b\\ -b & a\end{bmatrix},
+```
+
+so every use of $I^{-1}$ below (the shape operator, the Christoffel symbols,
+the $I^{-1}J^{\mathsf T}w$ solve) is four divisions — no linear-algebra
+library anywhere.
+
 #### What the dot products buy you
 
 **Squared length on the surface.** A direction $(a,b)$ in the parameter
@@ -252,6 +362,22 @@ so $I$ is the **ruler**: it turns parameter-plane directions into true
 lengths on the bent surface. Notice how the formula is pure expansion of a
 dot product.
 
+**Implementation.** The quadratic form is that expansion, written out entry
+by entry:
+
+```lean
+def Surface.firstForm (s : Surface) (x y : Float) (w : Vec2) : Float :=
+  let I := metricI s x y
+  I.a * w.x * w.x + 2 * I.b * w.x * w.y + I.c * w.y * w.y
+```
+
+i.e. for $w = (w_x, w_y)$:
+
+```math
+I(w, w) \;=\; a\,w_x^2 \,+\, 2\,b\,w_x w_y \,+\, c\,w_y^2
+\;=\; w^{\mathsf T} I\, w.
+```
+
 **Angles.** Two surface directions $\xi$, $\eta$ (both 2-vectors) meet at
 the angle of their arrows $J\xi$, $J\eta$:
 
@@ -259,6 +385,44 @@ the angle of their arrows $J\xi$, $J\eta$:
 \cos\theta = \frac{(J\xi)\cdot(J\eta)}{|J\xi|\,|J\eta|}
 = \frac{\xi^{\mathsf T} I\, \eta}{\sqrt{\xi^{\mathsf T} I\, \xi}\;\sqrt{\eta^{\mathsf T} I\, \eta}}.
 ```
+
+**Checked example.** No dedicated function computes $\cos\theta$, but both
+routes of the boxed formula are checkable with the library's pieces. Take
+$\xi = (1,0)$, $\eta = (1,1)$ at $(1,0)$ on the paraboloid. The **arrow
+route** forms $J\xi = \Phi_x$ and $J\eta = \Phi_x + \Phi_y$ and uses plain
+dot products; the **ruler route** recovers the bilinear form by polarizing
+the quadratic form, $\xi^{\mathsf T}I\eta = \tfrac12\bigl(I(\xi{+}\eta,\xi{+}\eta) - I(\xi,\xi) - I(\eta,\eta)\bigr)$,
+using `firstForm` from above:
+
+```lean
+#eval show IO Unit from do
+  -- the arrows: J ξ = Φ_x, J η = Φ_x + Φ_y for ξ = (1, 0), η = (1, 1)
+  let Jxi : Vec3 := Surface.dPhi surf 0 1 0
+  let Jeta : Vec3 := Vec3.add (Surface.dPhi surf 0 1 0) (Surface.dPhi surf 1 1 0)
+  IO.println s!"cos θ (arrows) = {(Jxi.dot Jeta) / (Jxi.norm * Jeta.norm)}"
+  -- the ruler route via polarization of I(w, w) = wᵀ I w
+  let q : Vec2 → Float := fun w => Surface.firstForm surf 1 0 w
+  let xi : Vec2 := ⟨1, 0⟩
+  let eta : Vec2 := ⟨1, 1⟩
+  let sum : Vec2 := Vec2.add xi eta
+  let bil := (q sum - q xi - q eta) / 2
+  IO.println s!"cos θ (ruler)   = {bil / (Float.sqrt (q xi) * Float.sqrt (q eta))}"
+  -- the squared-length claim: I(w, w) = |J w|²
+  IO.println s!"I((1,0),(1,0))  = {q xi}"
+  IO.println s!"|Φ_x|²          = {Jxi.dot Jxi}"
+```
+
+**Output:**
+```text
+cos θ (arrows) = 0.759125
+cos θ (ruler)   = 0.759125
+I((1,0),(1,0))  = 1.360000
+|Φ_x|²          = 1.360000
+```
+
+Two boxed formulas verified at once: the angle formula (the two routes
+agree) and the squared-length formula ($I(w,w) = |Jw|^2$: here
+$I((1,0),(1,0)) = 1.36 = |\Phi_x|^2 = 1 + f_x^2$).
 
 **Area.** The two arrows $\Phi_u$, $\Phi_v$ span a parallelogram whose area
 is the norm of their cross product, and that equals the determinant of $I$:
@@ -292,6 +456,23 @@ tangent arrow $w$ and it returns the 2 numbers whose arrows reproduce it:
 def Geodesic.tangentVecToParams (s : Surface) (u v : Float) (w : Vec3) : Vec2
     -- ξ = I⁻¹ Jᵀ w
 ```
+
+**Implementation.** Two dot products form $J^{\mathsf T}w$, then the stored
+Cramer inverse applies $I^{-1}$:
+
+```lean
+def Geodesic.tangentVecToParams (s : Surface) (u v : Float) (w : Vec3) : Vec2 :=
+  let gInv := (Surface.metricI s u v).inv
+  let a := (Surface.dPhi s 0 u v).dot w        -- b₀ = Φ_u · w
+  let b := (Surface.dPhi s 1 u v).dot w        -- b₁ = Φ_v · w
+  ⟨gInv.a * a + gInv.b * b, gInv.b * a + gInv.c * b⟩
+```
+
+**Vector-calculus reading.** With $b := J^{\mathsf T}w =
+\begin{bmatrix}\Phi_u\cdot w\\ \Phi_v\cdot w\end{bmatrix}$, the code returns
+$I^{-1}b$ component-wise: $\xi_1 = (I^{-1})_{11}b_0 + (I^{-1})_{12}b_1$,
+$\xi_2 = (I^{-1})_{21}b_0 + (I^{-1})_{22}b_1$ — the boxed solve
+$\xi = I^{-1}J^{\mathsf T}w$, with no matrix product ever formed.
 
 #### The graph metric again, by dot products
 
@@ -391,6 +572,49 @@ def Surface.normalCurvature (s : Surface) (x y : Float) (w : Vec2) : Float
     -- κ_n = II(w, w) / I(w, w)
 ```
 
+**Implementation.** The normal and the two forms:
+
+```lean
+def Surface.normalAt (s : Surface) (u v : Float) : Vec3 :=
+  let c := (dPhi s 0 u v).cross (dPhi s 1 u v)
+  Vec3.smul (1 / c.norm) c
+
+def Surface.secondFormEntry (s : Surface) (x y : Float) : Fin 2 → Fin 2 → Float :=
+  fun i j => (normalAt s x y).dot (d2Phi s i j x y)
+
+def Surface.metricII (s : Surface) (x y : Float) : Mat2 :=
+  ⟨secondFormEntry s x y 0 0, secondFormEntry s x y 0 1,
+    secondFormEntry s x y 1 1⟩
+```
+
+**Vector-calculus reading.** `cross` is the determinant expansion
+$u\times v = (u_yv_z - u_zv_y,\ u_zv_x - u_xv_z,\ u_xv_y - u_yv_x)$, so
+`normalAt` is the boxed $n = \dfrac{\Phi_u\times\Phi_v}{|\Phi_u\times\Phi_v|}$
+(the `smul (1 / c.norm)` scales to unit length). `secondFormEntry s x y i j`
+is one entry of the boxed bending matrix, $II_{ij} = n\cdot\Phi_{ij}$; the
+quadratic form mirrors §1.2's `firstForm`:
+
+```lean
+def Surface.secondForm (s : Surface) (x y : Float) (w : Vec2) : Float :=
+  let II := metricII s x y
+  II.a * w.x * w.x + 2 * II.b * w.x * w.y + II.c * w.y * w.y
+
+def Surface.normalCurvature (s : Surface) (x y : Float) (w : Vec2) : Float :=
+  secondForm s x y w / firstForm s x y w
+```
+
+That is $II(w,w) = e\,w_x^2 + 2f\,w_xw_y + g\,w_y^2$, and the normal
+curvature is the boxed ratio in one line,
+
+```math
+\kappa(d) \;=\; \frac{II(d,d)}{I(d,d)}
+\;=\; \frac{n\cdot\gamma''(s)}{|J\,d|^2}\qquad (d = \gamma'(s)\ \text{in parameters}),
+```
+
+so `normalCurvature` **is** the $n\cdot\gamma''(s)$ formula of this section,
+normalized — the code never differentiates $\gamma$; it just evaluates the
+two quadratic forms.
+
 #### What the normal dot products buy you
 
 **The bending of a curve.** Take the same surface curve
@@ -455,6 +679,16 @@ II_{12} = -\frac{\partial n}{\partial v}\cdot\Phi_u.
 
 The same holds entry by entry. So $II$ also measures **how fast the normal
 arrow turns as you move** — two ways of seeing the same bending.
+
+> **What stays paper-only here.** The Taylor development
+> $z(u,v) = \tfrac12\,(II_{11}u^2 + 2\,II_{12}uv + II_{22}v^2) + O(3)$ and
+> the Weingarten identity $II_{12} = -(\partial_v n)\cdot\Phi_u$ have no
+> code: the library differentiates the *coordinate functions* (`Smooth2`),
+> never `normalAt` itself, so there is no stored $\partial_v n$ arrow to dot
+> with. Both remain checkable from printed arrows: the Taylor model by
+> comparing `Surface.point` against $\Phi$ plus the quadratic model near the
+> tangency point, the Weingarten sign by finite-differencing
+> `Surface.normalAt`.
 
 **Checked example.** The normal, $II$, and the two normal curvatures along
 the coordinate directions — the two extremes of the polar plot above:
@@ -550,6 +784,61 @@ $\kappa_{1,2} = H \pm \sqrt{H^2-K}$ rather than calling an eigensolver —
 with a $2\times 2$ matrix the eigenvalues come from trace and determinant,
 which is all `Mat2` needs.
 
+**Implementation.** All four curvature numbers are closed-form $2\times 2$
+algebra — no eigensolver, no SVD:
+
+```lean
+def Surface.shapeOperator (s : Surface) (x y : Float) (w : Vec2) : Vec2 :=
+  let II := metricII s x y
+  let gInv := (metricI s x y).inv
+  let b1 := II.a * w.x + II.b * w.y
+  let b2 := II.b * w.x + II.c * w.y
+  ⟨gInv.a * b1 + gInv.b * b2, gInv.b * b1 + gInv.c * b2⟩
+
+def Surface.gaussK (s : Surface) (x y : Float) : Float :=
+  (metricII s x y).det / (metricI s x y).det
+
+def Surface.meanH (s : Surface) (x y : Float) : Float :=
+  let E := MetricI.E s x y
+  let Ff := MetricI.Ff s x y
+  let G := MetricI.G s x y
+  let II := metricII s x y
+  let denom := 2 * (E * G - Ff * Ff)
+  (II.a * G - 2 * II.b * Ff + II.c * E) / denom
+
+def Surface.principalK (s : Surface) (x y : Float) : Float × Float :=
+  let H := meanH s x y
+  let K := gaussK s x y
+  let disc0 := H * H - K
+  let disc := Float.sqrt (if disc0 < 0 then 0 else disc0)
+  (H - disc, H + disc)
+```
+
+**Vector-calculus reading.**
+
+- `shapeOperator` computes $Sw = I^{-1}(II\,w)$ in the two natural steps:
+  first the bending matrix acts on $w$,
+  $b = II\,w = \begin{bmatrix}e\,w_x + f\,w_y\\ f\,w_x + g\,w_y\end{bmatrix}$
+  (`b1`, `b2`), then the metric inverse acts, $Sw = I^{-1}b$ (the same
+  Cramer expansion as §1.2). The defining property $II = IS$ is then
+  automatic: $I\,(Sw) = I\,I^{-1}(II\,w) = II\,w$, which is Exercise 7.
+- `gaussK` is the boxed ratio $K = \det II/\det I$ — one line.
+- `meanH` looks like a different formula because it *is* the trace,
+  expanded. From
+  $I^{-1} = \dfrac{1}{EG-F^2}\begin{bmatrix}G & -F\\ -F & E\end{bmatrix}$:
+
+  ```math
+  \mathrm{tr}\,\bigl(I^{-1}II\bigr)
+  = \frac{G\,e \,-\, 2F\,f \,+\, E\,g}{EG - F^2}
+  \qquad\Longrightarrow\qquad
+  H = \frac{eG - 2fF + gE}{2\,(EG - F^2)},
+  ```
+
+  which is literally the code line — the code never builds the matrix
+  $I^{-1}II$, only its trace.
+- `principalK` is the boxed $\kappa_{1,2} = H \pm \sqrt{H^2 - K}$; the `if`
+  clamps a tiny negative discriminant (a `Float` rounding artifact) to zero.
+
 **Checked example.** $S$ applied to the two coordinate directions, then
 $K$, $H$ and the eigenvalue pair — note $S(1,0)$ and $S(0,1)$ reproduce
 `normalCurvature` from §1.3 (here $S$ is diagonal, so $\Phi_x$, $\Phi_y$
@@ -595,6 +884,39 @@ projection is one subtraction with `Geodesia/Vec.lean` primitives:
 ```lean
 Vec3.sub w (Vec3.smul (w.dot n) n)   -- T w = w − (w·n) n
 ```
+
+**Implementation.** The three primitives it uses, verbatim from
+`Geodesia/Vec.lean` (the `namespace Vec3` supplies the prefix):
+
+```lean
+def Vec3.dot (u v : Vec3) : Float := u.x * v.x + u.y * v.y + u.z * v.z
+def Vec3.smul (a : Float) (u : Vec3) : Vec3 := ⟨a * u.x, a * u.y, a * u.z⟩
+def Vec3.sub (u v : Vec3) : Vec3 := ⟨u.x - v.x, u.y - v.y, u.z - v.z⟩
+```
+
+**Vector-calculus reading.** `dot` is the coordinate expansion of the
+Euclidean product $u\cdot v = u_xv_x + u_yv_y + u_zv_z$, `smul` is scalar
+multiplication $a\,u$, `sub` is the component-wise difference $u - v$. The
+projection line is therefore the boxed formula written coordinate by
+coordinate:
+
+```math
+T(w) = w - (w\cdot n)\,n
+= \begin{bmatrix}w_x\\ w_y\\ w_z\end{bmatrix}
+- (w_xn_x + w_yn_y + w_zn_z)\begin{bmatrix}n_x\\ n_y\\ n_z\end{bmatrix},
+```
+
+and it lands in the tangent plane by construction:
+
+```math
+T(w)\cdot n = w\cdot n - (w\cdot n)\,(n\cdot n) = 0
+\qquad (\text{since } |n| = 1).
+```
+
+No test is needed that the result stays tangent — the algebra forbids
+anything else. The same three primitives build `Surface.normalAt` (§1.3,
+where `smul` rescales the cross product to unit length) and the orthonormal
+shooting frame `Geodesic.tangentFrame` (a Gram–Schmidt step).
 
 **Checked example.** Take the paraboloid's second-derivative arrow in the
 $v$-direction, $\Phi_{vv} = (0, 0, 0.6)$, and project it:
@@ -800,6 +1122,104 @@ implements the chain rule twice, etc. If you only have a bare
 `Float → Float → Float`, use `Smooth2.ofFiniteDiff` as a fallback; that is
 the only place an `ε` appears.
 
+**Implementation.** The product rule, verbatim from `Geodesia/Diff.lean` —
+each of the six fields is one textbook identity:
+
+```lean
+def Smooth2.mul (a b : Smooth2) : Smooth2 :=
+  { f := fun x y => a.f x y * b.f x y
+    fx := fun x y => a.fx x y * b.f x y + a.f x y * b.fx x y
+    fy := fun x y => a.fy x y * b.f x y + a.f x y * b.fy x y
+    fxx := fun x y =>
+      a.fxx x y * b.f x y + 2 * a.fx x y * b.fx x y + a.f x y * b.fxx x y
+    fxy := fun x y =>
+      a.fxy x y * b.f x y + a.fx x y * b.fy x y
+        + a.fy x y * b.fx x y + a.f x y * b.fxy x y
+    fyy := fun x y =>
+      a.fyy x y * b.f x y + 2 * a.fy x y * b.fy x y + a.f x y * b.fyy x y }
+```
+
+**Vector-calculus reading.** With $f, g$ the two factors:
+
+```math
+(fg)_x = f_x\,g + f\,g_x,
+\qquad
+(fg)_{xx} = f_{xx}\,g + 2\,f_x g_x + f\,g_{xx},
+```
+
+```math
+(fg)_{xy} = f_{xy}\,g + f_x\,g_y + f_y\,g_x + f\,g_{xy},
+\qquad
+(fg)_{yy} = f_{yy}\,g + 2\,f_y g_y + f\,g_{yy}.
+```
+
+The `fxy` field differentiates $(fg)_x$ once more in $y$, which is why it has
+**four** summands — the two middle ones, $f_x g_y$ and $f_y g_x$, are the
+cross terms that a single-variable product rule never shows. The chain rule,
+likewise — here $\sin$ composed with an arbitrary arrow field $a(x,y)$:
+
+```lean
+def Smooth2.sin (a : Smooth2) : Smooth2 :=
+  { f := fun x y => Float.sin (a.f x y)
+    fx := fun x y => Float.cos (a.f x y) * a.fx x y
+    fy := fun x y => Float.cos (a.f x y) * a.fy x y
+    fxx := fun x y =>
+      -Float.sin (a.f x y) * a.fx x y * a.fx x y
+        + Float.cos (a.f x y) * a.fxx x y
+    fxy := fun x y =>
+      -Float.sin (a.f x y) * a.fx x y * a.fy x y
+        + Float.cos (a.f x y) * a.fxy x y
+    fyy := fun x y =>
+      -Float.sin (a.f x y) * a.fy x y * a.fy x y
+        + Float.cos (a.f x y) * a.fyy x y }
+```
+
+```math
+(\sin a)_x = \cos(a)\,a_x,
+\qquad
+(\sin a)_{xx} = -\sin(a)\,a_x^2 + \cos(a)\,a_{xx},
+```
+
+```math
+(\sin a)_{xy} = -\sin(a)\,a_xa_y + \cos(a)\,a_{xy},
+\qquad
+(\sin a)_{yy} = -\sin(a)\,a_y^2 + \cos(a)\,a_{yy}.
+```
+
+The sphere of §2.6 is built from exactly these combinators — `sin` and `cos`
+composed with `coordX`/`coordY`, multiplied with `mul` — so its metric and
+Christoffel symbols are exact to the last bit of `Float`. And the fallback,
+with its single `ε`:
+
+```lean
+def Smooth2.eps : Float := 1e-5
+
+def Smooth2.fd1 (g : Float → Float) (t : Float) : Float :=
+  (g (t + eps) - g (t - eps)) / (2 * eps)
+
+def Smooth2.fd2 (g : Float → Float) (t : Float) : Float :=
+  (g (t + eps) - 2 * g t + g (t - eps)) / (eps * eps)
+
+def Smooth2.ofFiniteDiff (f : Float → Float → Float) : Smooth2 :=
+  { f := f
+    fx := fun x y => fd1 (fun u => f u y) x
+    fy := fun x y => fd1 (fun v => f x v) y
+    fxx := fun x y => fd2 (fun u => f u y) x
+    fxy := fun x y => fd1 (fun u => fd1 (fun v => f u v) y) x
+    fyy := fun x y => fd2 (fun v => f x v) y }
+```
+
+i.e. the central differences
+
+```math
+f'(t) \approx \frac{f(t+\varepsilon) - f(t-\varepsilon)}{2\varepsilon},
+\qquad
+f''(t) \approx \frac{f(t+\varepsilon) - 2f(t) + f(t-\varepsilon)}{\varepsilon^2},
+```
+
+with the mixed partial `fxy` built by nesting two `fd1`s. Every other
+declaration in the library differentiates **exactly**.
+
 A general (non-graph) surface is just three `Smooth2` coordinate functions —
 that is how the sphere and the polar plane of Part 2 are built:
 
@@ -993,6 +1413,56 @@ coordinate form of that single projection:
 def Geodesic.accel (s : Surface) (st : GeoState) : Vec2
     -- (u″, v″) = −Γ^k_ij q′ⁱ q′ʲ: the coefficient form of T γ″ = 0
 ```
+
+**Implementation.** Verbatim from `Geodesia/Geodesic.lean`:
+
+```lean
+def Geodesic.accel (s : Surface) (st : GeoState) : Vec2 :=
+  let Γ := Surface.christoffel s st.u st.v
+  let g1uu := Γ 0 0 0
+  let g1uv := Γ 0 0 1
+  let g1vv := Γ 0 1 1
+  let g2uu := Γ 1 0 0
+  let g2uv := Γ 1 0 1
+  let g2vv := Γ 1 1 1
+  let du := st.du
+  let dv := st.dv
+  ⟨-(g1uu * du * du + 2 * g1uv * du * dv + g1vv * dv * dv),
+   -(g2uu * du * du + 2 * g2uv * du * dv + g2vv * dv * dv)⟩
+```
+
+**Vector-calculus reading.** Start from the arrow statement
+$T\gamma''(s) = 0$ and expand it in the basis $\{\Phi_u, \Phi_v\}$, using
+$\gamma'' = u''\,\Phi_u + v''\,\Phi_v + u'^2\,\Phi_{uu} + 2u'v'\,\Phi_{uv} + v'^2\,\Phi_{vv}$
+(§1.3) and $T\Phi_{ij} = \Gamma^k_{\;ij}\,\Phi_k$ (§2.8):
+
+```math
+T\gamma''
+= \Bigl(u'' + \Gamma^1_{\;uu}\,u'^2 + 2\Gamma^1_{\;uv}\,u'v' + \Gamma^1_{\;vv}\,v'^2\Bigr)\Phi_u
++ \Bigl(v'' + \Gamma^2_{\;uu}\,u'^2 + 2\Gamma^2_{\;uv}\,u'v' + \Gamma^2_{\;vv}\,v'^2\Bigr)\Phi_v.
+```
+
+$\Phi_u$ and $\Phi_v$ are independent arrows, so each coefficient must vanish
+on its own — the arrow statement becomes **two scalar ODEs** for the
+coordinates:
+
+```math
+u'' = -\bigl(\Gamma^1_{\;uu}\,p^2 + 2\,\Gamma^1_{\;uv}\,pq + \Gamma^1_{\;vv}\,q^2\bigr),
+\qquad
+v'' = -\bigl(\Gamma^2_{\;uu}\,p^2 + 2\,\Gamma^2_{\;uv}\,pq + \Gamma^2_{\;vv}\,q^2\bigr),
+\qquad (p,q) := (u', v').
+```
+
+The code is exactly this: the six `let`s name the six independent symbols
+(the symmetry $\Gamma^k_{\;ij} = \Gamma^k_{\;ji}$ means $\Gamma 0\ 1\ 0$ never
+needs its own name), `du`/`dv` are $p$ and $q$, and each returned component
+is one negated quadratic — the factor $2$ on the $pq$ term comes from merging
+the $(uv)$ and $(vu)$ contributions. Note what the return value is: a
+`Vec2` in the **parameter plane**, the acceleration of the coordinates — not
+an ambient arrow. That is the price of the coefficient form; §2.1's $\gamma''$
+was the honest arrow, this is its coordinate shadow. `Geodesic.rhs` packages
+these two components with $\dot u = p,\ \dot v = q$ into the first-order
+system that Chapter 4 integrates with RK4.
 
 ### 2.4 The Gauss formula, in arrow form
 
@@ -1233,6 +1703,48 @@ which `Curvature.lean` computes with **exact** second partials
 \partial_u\,(\Phi_j\cdot\Phi_k)
 = \Phi_{uj}\cdot\Phi_k + \Phi_j\cdot\Phi_{uk}.
 ```
+
+**Implementation.** One product rule and one contraction, verbatim from
+`Geodesia/Curvature.lean`:
+
+```lean
+def Surface.dMetricEntry (s : Surface) (u i j : Fin 2) (x y : Float) : Float :=
+  (d2Phi s u i x y).dot (dPhi s j x y)
+    + (dPhi s i x y).dot (d2Phi s u j x y)
+
+def Surface.christoffel (s : Surface) (x y : Float) :
+    Fin 2 → Fin 2 → Fin 2 → Float :=
+  fun k i j =>
+    let gInv := (metricI s x y).inv
+    let term0 :=
+      dMetricEntry s i j 0 x y + dMetricEntry s j i 0 x y
+        - dMetricEntry s 0 i j x y
+    let term1 :=
+      dMetricEntry s i j 1 x y + dMetricEntry s j i 1 x y
+        - dMetricEntry s 1 i j x y
+    0.5 * gInv.entry k 0 * term0 + 0.5 * gInv.entry k 1 * term1
+```
+
+**Vector-calculus reading.** `dMetricEntry s u i j x y` is the displayed
+product rule, $\partial_u I_{ij} = \Phi_{ui}\cdot\Phi_j + \Phi_i\cdot\Phi_{uj}$:
+two stored arrows dotted together, no finite differences anywhere. Each
+`term` gathers one index $\ell \in \{0,1\}$ — that is, $\ell \in \{u,v\}$ — of
+the cyclic combination in the boxed formula; reading the argument order off
+the call sites, `dMetricEntry s i j ℓ` $= \partial_i I_{j\ell}$,
+`dMetricEntry s j i ℓ` $= \partial_j I_{i\ell}$, and
+`dMetricEntry s ℓ i j` $= \partial_\ell I_{ij}$, so
+
+```math
+\mathrm{term}_\ell
+\;=\; \partial_i I_{j\ell} + \partial_j I_{i\ell} - \partial_\ell I_{ij},
+\qquad
+\Gamma^k_{\;ij} = \tfrac12\,\bigl(I^{-1}\bigr)^{k\ell}\,\mathrm{term}_\ell.
+```
+
+The final line is the boxed formula with the sum over $\ell$ unrolled into
+`term0` + `term1` and the `0.5 *` prefactors matching the $\tfrac12$; the
+inverse is the stored Cramer inverse of §1.2. (Argument order inside
+`dMetricEntry` never matters beyond the symmetry swap $I_{ij} = I_{ji}$.)
 
 This bare-$I$ route is the one the historical notes favor, since it works for
 absolutely-intrinsic data (a metric alone, no embedding). The code implements
