@@ -3,7 +3,7 @@
 This is the learning track for `projects/geodesia`. The Lean code gives you an
 exact differential-geometry sandbox; these notes explain **why** the formulas
 look the way they do, in plain *vector math*: dot products, matrices and
-concrete arrows — no hidden vocabulary.
+concrete vectors — no hidden vocabulary.
 
 The central object is a **parameterized surface**
 
@@ -16,21 +16,21 @@ Everything else is built from two derivatives of $\Phi$:
 
 | Object | Formula | What it measures |
 |---|---|---|
-| Jacobian | $J = [\Phi_u\ \ \Phi_v]$ | turns a 2-D parameter direction into the actual 3-D arrow |
+| Jacobian | $J = [\Phi_u\ \ \Phi_v]$ | turns a 2-D parameter direction into the actual 3-D tangent vector |
 | First fundamental form | $I = J^{\mathsf T}J$ | lengths, angles, area — the *ruler* |
 | Second fundamental form | $II = [\,n\cdot\Phi_{ij}\,]$ | how the surface bends — the *bending* |
-| Tangential projection | $T w = w-(w\!\cdot\! n)\,n$ | the *surface part* of any 3-D arrow |
+| Tangential projection | $T w = w-(w\!\cdot\! n)\,n$ | the *surface part* of any 3-D vector |
 | Geodesic | $T\gamma'' = 0$ | locally straightest / shortest path |
 
 The one equation that ties it all together is the **Gauss split** — an
-everyday fact about one arrow in three parts:
+everyday fact about one vector in three parts:
 
 ```math
 \boxed{\;\Phi_{ij} \;=\; \underbrace{T\,\Phi_{ij}}_{\text{tangent part (turning)}} \;+\; \underbrace{II_{ij}\,n}_{\text{normal part (bending)}}\;}
 ```
 
 The second derivative of the embedding has a **tangent part** — an honest
-3-D arrow, the *covariant derivative* of Chapter 2 — and a **normal part**
+3-D vector, the *covariant derivative* of Chapter 2 — and a **normal part**
 (the second fundamental form). Geodesics keep only the tangent part and set
 it to zero. Should you ever want the tangent part *in numbers*, expand it in
 the basis $\{\Phi_u,\Phi_v\}$; those expansion coefficients are what
@@ -42,7 +42,7 @@ leads with them).
 > literature because intrinsic geometry (relativity, abstract manifolds) has
 > *no ambient space to project onto* — coefficients and their must-track
 > corrections are all you get. Here we always have the embedding $\Phi$, so
-> every derivative is an ordinary $\mathbb{R}^3$ arrow and every correction
+> every derivative is an ordinary $\mathbb{R}^3$ vector and every correction
 > is one subtraction (`T w = w - (w·n)n`). Fewer symbols, no index
 > gymnastics, and the geometry stays visible in the object itself. Christoffels
 > reappear only where they are genuinely useful: intrinsic-only data, and as
@@ -55,7 +55,7 @@ leads with them).
 ```mermaid
 flowchart TD
     A["Ch. 1 — Fundamental forms<br/>Jacobian J, I = JᵀJ, II, shape operator"]
-    B["Ch. 2 — Turning tangent arrows<br/>covariant derivative via projection, polar & sphere"]
+    B["Ch. 2 — Turning tangent vectors<br/>covariant derivative via projection, polar, sphere & the hill walk"]
     C["Ch. 3 — Geodesics<br/>zero tangent part of γ″, length functional, conserved pairings"]
     D["Ch. 4 — ODEs & RK4<br/>state space, Runge–Kutta, stability"]
     E["Ch. 5 — Shooting<br/>BVP → IVP, Newton, variational equations"]
@@ -147,7 +147,7 @@ and constant geodesic energy.
 - $\Phi_i = \partial\Phi/\partial q^i$, $\Phi_{ij} = \partial^2\Phi/\partial q^i\partial q^j$.
 - $q(s) = (u(s),v(s))$ is a curve in parameter space; $\gamma(s)=\Phi(q(s))$ is the curve on the surface.
 - $\dot q = dq/ds$, $\ddot q = d^2q/ds^2$.
-- $I = J^{\mathsf T}J$ is the Gram matrix of the tangent arrows, with entries
+- $I = J^{\mathsf T}J$ is the Gram matrix of the tangent vectors, with entries
   $I_{ij} = \Phi_i\cdot\Phi_j$; $I^{-1}$ is its inverse.
 - $n$ is the unit normal; $II_{ij} = \langle n,\Phi_{ij}\rangle$.
 - Repeated indices are summed.
@@ -160,7 +160,7 @@ A useful dictionary in the other direction (older books use these):
 | second fundamental form $e, f, g$ | the normal dot products $II_{ij}=n\cdot\Phi_{ij}$ |
 | metric tensor | the Gram matrix $I=J^{\mathsf T}J$ |
 | Christoffel $\Gamma^k_{\;ij}$ | coordinates of the *tangent part* $T\Phi_{ij}$ (a derived view of one projection) |
-| covariant derivative | derivative corrected for the rotating basis arrows |
+| covariant derivative | derivative corrected for the rotating basis vectors |
 | shape operator | the linear map $S=I^{-1}II$ |
 | Riemann tensor (2-D) | the one curvature number $R_{1212}=K\,\det I$, built from $\Gamma$ alone (Ch. 8) |
 
@@ -169,7 +169,7 @@ A useful dictionary in the other direction (older books use these):
 ## 🖼️ The three pictures to keep in mind
 
 1. **The ruler.** $I$ is what you measure *inside* the surface: a tiny
-   displacement $dq=(du,dv)$ has 3-D arrow $J\,dq$ and length squared
+   displacement $dq=(du,dv)$ has 3-D tangent vector $J\,dq$ and length squared
    $ds^2 = dq^{\mathsf T} I\, dq$.
 2. **The bending.** $II$ is what an outside observer sees: how fast the
    normal tilts as you walk, or equivalently how much the surface leaves its
