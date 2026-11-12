@@ -982,4 +982,285 @@ K, H         = 0.194637, 0.446401
 κ_min, κ_max = 0.378306, 0.514496
 ```
 
+### 1.5 The split of an arrow — tangent part and normal part
+
+> **Picture.** Put §1.1 and §1.3 together: at a point, 3-space is exactly
+> the flat world $T_pS$ plus one extra direction, $n$. Two flat pieces, one
+> arrow to be placed — so every ambient arrow $w$ splits **uniquely** into a
+> piece that stays in the flat world and a piece that leaves it:
+
+```math
+\boxed{\;
+\begin{aligned}
+T &: \mathbb{R}^3 \to \mathbb{R}^3, & T(w) &:= w - (w\cdot n)\,n, \qquad w \in \mathbb{R}^3,\\[6pt]
+&& \Phi_{ij} &= T(\Phi_{ij}) + II_{ij}\,n, \qquad i,j \in \{u,v\}.
+\end{aligned}\;}
+```
+
+$T$ — the **tangential projection** — subtracts exactly the normal
+component: $T(w)$ is the **tangent part** of $w$, $(w\cdot n)\,n$ its
+**normal part**. Applied to a curvature arrow $\Phi_{ij}$, the second line
+is the classical **Gauss split**: the tangent part $T(\Phi_{ij})$ is the
+turning data, the normal coefficient $II_{ij}$ the bending data (§1.3).
+Expanding $T(\Phi_{ij})$ in the basis $\{\Phi_u,\Phi_v\}$ yields the
+coefficients textbooks call Christoffel symbols; Part 2 works with the
+arrows directly.
+
+**Signature.** The split now has named declarations in the library —
+this is the vector machinery of the chapter, made executable:
+
+```lean
+def Surface.tangentialPart (s : Surface) (u v : Float) (w : Vec3) : Vec3
+    -- T w = w − (w·n) n, the tangent part of the split
+def Surface.normalPart (s : Surface) (u v : Float) (w : Vec3) : Vec3
+    -- (w·n) n, the normal part of the split
+
+Vec3.sub w (Vec3.smul (w.dot n) n)   -- T w = w − (w·n) n, in bare primitives
+```
+
+**Implementation.** Each part is one `Vec3` line, verbatim from
+`Geodesia/Surface.lean` (the `namespace Surface` supplies the prefix):
+
+```lean
+def normalPart (s : Surface) (u v : Float) (w : Vec3) : Vec3 :=
+  Vec3.smul (w.dot (normalAt s u v)) (normalAt s u v)
+
+def tangentialPart (s : Surface) (u v : Float) (w : Vec3) : Vec3 :=
+  Vec3.sub w (normalPart s u v w)
+```
+
+**Vector-calculus reading.** The three `Vec3` primitives underneath
+(`Geodesia/Vec.lean`) are the textbook definitions — `dot` is the
+coordinate expansion of $u\cdot v = u_xv_x + u_yv_y + u_zv_z$, `smul` is
+scalar multiplication $a\,u$, `sub` is the component-wise difference
+$u - v$:
+
+```lean
+def Vec3.dot (u v : Vec3) : Float := u.x * v.x + u.y * v.y + u.z * v.z
+def Vec3.smul (a : Float) (u : Vec3) : Vec3 := ⟨a * u.x, a * u.y, a * u.z⟩
+def Vec3.sub (u v : Vec3) : Vec3 := ⟨u.x - v.x, u.y - v.y, u.z - v.z⟩
+```
+
+So `normalPart s u v w` is $(w\cdot n)\,n$ coordinate by coordinate, and
+`tangentialPart s u v w` is the boxed $T(w) = w - (w\cdot n)\,n$:
+
+```math
+T(w) = w - (w\cdot n)\,n
+= \begin{bmatrix}w_x\\ w_y\\ w_z\end{bmatrix}
+- (w_xn_x + w_yn_y + w_zn_z)\begin{bmatrix}n_x\\ n_y\\ n_z\end{bmatrix},
+```
+
+It lands in the tangent plane by construction:
+
+```math
+T(w)\cdot n = w\cdot n - (w\cdot n)\,(n\cdot n) = 0
+\qquad (\text{since } |n| = 1).
+```
+
+No test is needed that the result stays tangent — the algebra forbids
+anything else. The same three primitives build `Surface.normalAt` (§1.3,
+where `smul` rescales the cross product to unit length) and the orthonormal
+shooting frame `Geodesic.tangentFrame` (a Gram–Schmidt step).
+
+**Checked example.** Split the arrow $w = (0, 0, 0.6)$ — the paraboloid's
+$\Phi_{vv}$ at $(1,0)$ — using the named parts, and check the reconstruction:
+
+```lean
+#eval show IO Unit from do
+  let w : Vec3 := ⟨0, 0, 0.6⟩
+  IO.println s!"w·n         = {w.dot (Surface.normalAt surf 1 0)}"
+  IO.println s!"T(w)        = {Surface.tangentialPart surf 1 0 w}"
+  IO.println s!"(w·n)n      = {Surface.normalPart surf 1 0 w}"
+  IO.println s!"T(w) + (w·n)n = {Vec3.add (Surface.tangentialPart surf 1 0 w) (Surface.normalPart surf 1 0 w)}"
+```
+
+**Output:**
+```text
+w·n         = 0.514496
+T(w)        = (0.264706, 0.000000, 0.158824)
+(w·n)n      = (-0.264706, 0.000000, 0.441176)
+T(w) + (w·n)n = (0.000000, 0.000000, 0.600000)
+```
+
+The last line returns $w$ exactly: tangent part plus normal part *is* the
+arrow — the split is lossless, as it must be. The normal coefficient
+$0.514496$ is the $II_{22}$ entry of §1.3, and the $\Phi_u$-coefficient
+$0.264706$ of the tangent part is a Christoffel symbol — §2.7 reads this
+same arrow out of the code.
+
+**Checked example (in raw primitives).** The same split written with bare
+`Vec3` lines — what you would compute before the named declarations existed:
+
+```lean
+#eval show IO Unit from do
+  let n := Surface.normalAt surf 1 0
+  let w : Vec3 := ⟨0, 0, 0.6⟩
+  let Tw := Vec3.sub w (Vec3.smul (w.dot n) n)
+  IO.println s!"w·n  = {w.dot n}"
+  IO.println s!"T(w) = {Tw}"
+```
+
+**Output:**
+```text
+w·n  = 0.514496
+T(w) = (0.264706, 0.000000, 0.158824)
+```
+
+> **One sentence summary.** $J=[\Phi_u\;\Phi_v]$, $I=J^{\mathsf T}J$ (ruler),
+> $II_{ij}=n\cdot\Phi_{ij}$ (bending), and every arrow — curvature arrows
+> included — splits as $w = T(w) + (w\cdot n)\,n$, so
+> $\Phi_{ij}=T(\Phi_{ij})+II_{ij}n$ delivers the turning data $T(\Phi_{ij})$
+> in the same sweep.
+
+---
+
+### 1.6 Worked examples as vector computations
+
+Four classical surfaces, all measured with the same three moves: tangent
+arrows → dot products ($I$), curvature arrows → dot products with $n$
+($II$), and $S = I^{-1}II$.
+
+#### Plane
+
+```math
+\Phi(u,v) = (u,v,0):\quad
+\Phi_u = \begin{bmatrix}1\\0\\0\end{bmatrix},\quad
+\Phi_v = \begin{bmatrix}0\\1\\0\end{bmatrix},\quad
+\Phi_{uu}=\Phi_{uv}=\Phi_{vv}=0.
+```
+
+Then $I = J^{\mathsf T}J$ is the identity and every dot product with the
+(curvature) vectors vanishes, so $II = 0$, $K=H=0$. Flatness is the
+statement "all second derivatives are zero vectors".
+
+#### Cylinder of radius $R$
+
+```math
+\Phi(\theta,z) = (R\cos\theta,\,R\sin\theta,\,z).
+```
+
+Tangent arrows:
+
+```math
+\Phi_\theta = \begin{bmatrix}-R\sin\theta\\ R\cos\theta\\ 0\end{bmatrix},
+\qquad
+\Phi_z = \begin{bmatrix}0\\ 0\\ 1\end{bmatrix},
+```
+
+so $I = \begin{bmatrix}R^2 & 0\\ 0 & 1\end{bmatrix}$. The single nonzero
+curvature arrow is
+
+```math
+\Phi_{\theta\theta} = \begin{bmatrix}-R\cos\theta\\ -R\sin\theta\\ 0\end{bmatrix}
+= -R\,\frac{\Phi_\theta\times\Phi_z}{|\Phi_\theta\times\Phi_z|},
+```
+
+which is parallel to the normal — so $n\cdot\Phi_{\theta\theta} = -R$ and
+$n\cdot\Phi_{zz} = 0$, giving
+
+```math
+II = \begin{bmatrix}-R & 0\\ 0 & 0\end{bmatrix}.
+```
+
+Hence one direction bends ($-1/R$) and one is straight ($0$): $K = 0$. That
+is why a cylinder can be cut and unrolled flat — nothing forces it to bend.
+
+#### Sphere of radius $R$
+
+```math
+\Phi(\theta,\varphi)
+= R\,(\sin\theta\cos\varphi,\ \sin\theta\sin\varphi,\ \cos\theta).
+```
+
+Tangent arrows have lengths $|R\Phi_\theta| = R$ and
+$|\Phi_\varphi| = R\sin\theta$, perpendicular to each other, so
+
+```math
+I = \begin{bmatrix}R^2 & 0\\ 0 & R^2\sin^2\theta\end{bmatrix}.
+```
+
+The normal here is simply $n = \Phi/R$ (the arrow from the center to the
+point). The curvature arrows all point along $-n$:
+
+```math
+\Phi_{\theta\theta} = -R\,n,
+\qquad
+\Phi_{\varphi\varphi} = -R\sin^2\theta\,n,
+```
+
+so
+
+```math
+II = \begin{bmatrix}-R & 0\\ 0 & -R\sin^2\theta\end{bmatrix}.
+```
+
+Then $S = I^{-1}II = -(1/R)$ times identity, so
+$\kappa_1 = \kappa_2 = -1/R$, $K = 1/R^2$, $H = -1/R$. The sphere bends
+equally in every direction; only the *sign* of the first order bending
+depends on choosing the outward $n$. (The code's unit-sphere demo checks
+exactly this: $K = 1$.)
+
+#### Paraboloid graph $z = 0.3(x^2+y^2)$ at $(1,0)$
+
+Here $f_x = 0.6$, $f_y = 0$, $f_{xx} = 0.6$, $f_{yy}=0.6$, $f_{xy}=0$, so
+
+```math
+\Phi_x = \begin{bmatrix}1\\0\\0.6\end{bmatrix},
+\qquad
+\Phi_y = \begin{bmatrix}0\\1\\0\end{bmatrix},
+\qquad
+n = \frac{1}{\sqrt{1.36}}\begin{bmatrix}-0.6\\0\\1\end{bmatrix}.
+```
+
+Dot products:
+
+```math
+I
+= \begin{bmatrix}1.36 & 0\\ 0 & 1\end{bmatrix},
+\qquad
+II
+= \frac{1}{\sqrt{1.36}}\begin{bmatrix}0.6 & 0\\ 0 & 0.6\end{bmatrix}
+= \begin{bmatrix}0.5145&0\\ 0&0.5145\end{bmatrix}.
+```
+
+Notice $II$ is a multiple of the identity while $I$ is not, so
+
+```math
+S = I^{-1}II
+=
+\begin{bmatrix}
+0.3783 & 0\\
+0 & 0.5145
+\end{bmatrix}.
+```
+
+The two bending rates differ — the **metric** decides which direction is
+more curved, not $II$ alone. Then
+
+```math
+K = \frac{\det II}{\det I} = \frac{0.5145^2}{1.36} = 0.1946,
+\qquad
+H = \tfrac12(0.3783 + 0.5145) = 0.4464.
+```
+
+Every number in this example is a dot product of four 3-D arrows — exactly
+what `lake exe geodesia` prints:
+
+```text
+Geodesia — exact differential geometry (no finite differences)
+paraboloid z = 0.3(x² + y²) at (x, y) = (1.000000, 0.000000)
+  Φ            = (1.000000, 0.000000, 0.300000)
+  I            = [[1.360000, 0.000000], [0.000000, 1.000000]]
+  Γ¹₁₁, Γ¹₁₂, Γ¹₂₂ = 0.264706, 0.000000, 0.264706
+  Γ²₁₁, Γ²₁₂, Γ²₂₂ = 0.000000, 0.000000, 0.000000
+  K, H          = 0.194637, 0.446401
+  κ_min, κ_max  = 0.378306, 0.514496
+geodesic from (1, 0) with parameter velocity (1, 0), s ∈ [0, 1]
+  endpoint      = (1.879182, 0.000000, 1.059398)
+  E(0), E(1)    = 0.680000, 0.680000
+  shoot(angle=0.6, length=1) = (1.606884, 0.550855, 0.865655)
+unit sphere at (θ, φ) = (1.000000, 0.200000)
+  K (should be 1) = 1.000000
+```
+
 <!-- §APPEND -->

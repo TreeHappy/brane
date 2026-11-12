@@ -79,4 +79,4 @@ Position marker at the bottom says where we resume.
 
 ## Resume marker
 
-Next up: chapter chunk 4 (§1.5–§1.8 + Part 2 header + §2.1–2.2), then continue down the Now list in order.
+Next up: chapter chunk 4b (§1.7 + §1.8 + Part 2 header + §2.1–2.2), then continue down the Now list in order.
