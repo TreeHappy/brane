@@ -1,0 +1,8 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  // This repo's main activity is learning, so the tutor is the default agent
+  // (switch any time with Tab or /agents).
+  "default_agent": "tutor",
+  // Shared house conventions, injected into every agent.
+  "instructions": [".opencode/instructions/brane.md"],
+}
