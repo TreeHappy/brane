@@ -13,7 +13,7 @@ Position marker at the bottom says where we resume.
   notation bridge, §1.1). Remaining appends at the `<!-- §APPEND -->` marker:
   - [x] chunk 2 — §1.2 (inner product on the tangent space; classical names
     demoted; all four verified example blocks preserved)
-  - [ ] chunk 3 — §1.3 (acceleration arrows) + §1.4 (shape operator as
+  - [x] chunk 3 — §1.3 (acceleration arrows) + §1.4 (shape operator as
     endomorphism of T_pS)
   - [ ] chunk 4 — §1.5 (named split + new checked example), §1.6, §1.7
     (toolbox + new decls), §1.8 (+ new exercise 8), Part 2 header, §2.1–2.2
@@ -79,4 +79,4 @@ Position marker at the bottom says where we resume.
 
 ## Resume marker
 
-Next up: chapter chunk 3 (§1.3 + §1.4), then continue down the Now list in order.
+Next up: chapter chunk 4 (§1.5–§1.8 + Part 2 header + §2.1–2.2), then continue down the Now list in order.

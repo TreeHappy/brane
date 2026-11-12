@@ -622,4 +622,364 @@ I⁻¹ Jᵀ Φ_x   = (1.000000, 0.000000)
 
 The round-trip returns $(1, 0)$: $\Phi_x$ is indeed the first basis arrow.
 
+### 1.3 The normal, and how acceleration leaves the tangent space
+
+> **Picture.** §1.2 equipped the tangent space with a ruler. But the
+> tangent space can't tell you *everything* about the bent sheet it sits
+> on — a flat plane has no opinion about bending. The missing information
+> lives in one extra arrow, the **unit normal** $n$: the direction that
+> points *away* from the flat world, perpendicular to everything in $T_pS$.
+> With $T_pS$ and $n$ together, 3-space splits cleanly in two: every ambient
+> arrow is *tangent part plus normal part*. The normal is the gatekeeper of
+> that split — and, one derivative later, the yardstick of bending: an
+> acceleration can move you along the surface freely, but the piece of it
+> that leaves the tangent plane must go in the $n$ direction, and $n$ alone
+> measures how much.
+
+```math
+n = \frac{\Phi_u \times \Phi_v}{|\Phi_u \times \Phi_v|}.
+```
+
+Differentiate $\Phi$ once more. Besides the two tangent arrows $\Phi_u$,
+$\Phi_v$, the surface now has three **curvature arrows**:
+
+```math
+\Phi_{uu} = \frac{\partial^2\Phi}{\partial u^2},\qquad
+\Phi_{uv} = \frac{\partial^2\Phi}{\partial u\,\partial v},\qquad
+\Phi_{vv} = \frac{\partial^2\Phi}{\partial v^2}.
+```
+
+Each is an ordinary 3-D arrow, and each can be tested the same way: *how
+much of it points along $n$?* That is one dot product. Three arrows, three
+dot products, one symmetric table:
+
+```math
+\boxed{\;II =
+\begin{bmatrix}
+n\cdot\Phi_{uu} & n\cdot\Phi_{uv}\\
+n\cdot\Phi_{uv} & n\cdot\Phi_{vv}
+\end{bmatrix}\;}
+```
+
+> **What the old books call it.** The "*second fundamental form*", entries
+> $e$, $f$, $g$. Again the object is simpler than the ceremony: it is the
+> table of *normal components of the curvature arrows* — dot each
+> $\Phi_{ij}$ with $n$, write it down. (The code's other second-form entry
+> names live in `MetricII`.) Note the deep symmetry with §1.2: there,
+> tangent arrows dotted with *each other*; here, curvature arrows dotted
+> with the *gatekeeper*.
+
+**Signature** — `Geodesia/Surface.lean` and `Geodesia/Curvature.lean`:
+
+```lean
+def Surface.normalAt (s : Surface) (u v : Float) : Vec3
+    -- n = Φ_u × Φ_v / |Φ_u × Φ_v|
+def Surface.secondFormEntry (s : Surface) (x y : Float) : Fin 2 → Fin 2 → Float
+    -- II_ij = ⟨n, ∂²_ij Φ⟩, one dot product
+def Surface.metricII (s : Surface) (x y : Float) : Mat2
+    -- the whole bending matrix II
+def Surface.secondForm (s : Surface) (x y : Float) (w : Vec2) : Float
+    -- the quadratic form II(w, w)
+def Surface.normalCurvature (s : Surface) (x y : Float) (w : Vec2) : Float
+    -- κ_n = II(w, w) / I(w, w)
+```
+
+**Implementation.** The gatekeeper and the bending table:
+
+```lean
+def Surface.normalAt (s : Surface) (u v : Float) : Vec3 :=
+  let c := (dPhi s 0 u v).cross (dPhi s 1 u v)
+  Vec3.smul (1 / c.norm) c
+
+def Surface.secondFormEntry (s : Surface) (x y : Float) : Fin 2 → Fin 2 → Float :=
+  fun i j => (normalAt s x y).dot (d2Phi s i j x y)
+
+def Surface.metricII (s : Surface) (x y : Float) : Mat2 :=
+  ⟨secondFormEntry s x y 0 0, secondFormEntry s x y 0 1,
+    secondFormEntry s x y 1 1⟩
+```
+
+**Vector-calculus reading.** `cross` is the determinant expansion
+$u\times v = (u_yv_z - u_zv_y,\ u_zv_x - u_xv_z,\ u_xv_y - u_yv_x)$, so
+`normalAt` is the boxed $n = \dfrac{\Phi_u\times\Phi_v}{|\Phi_u\times\Phi_v|}$
+(the `smul (1 / c.norm)` scales to unit length). `secondFormEntry s x y i j`
+is one entry of the boxed bending table, $II_{ij} = n\cdot\Phi_{ij}$; the
+quadratic form mirrors §1.2's `firstForm`:
+
+```lean
+def Surface.secondForm (s : Surface) (x y : Float) (w : Vec2) : Float :=
+  let II := metricII s x y
+  II.a * w.x * w.x + 2 * II.b * w.x * w.y + II.c * w.y * w.y
+
+def Surface.normalCurvature (s : Surface) (x y : Float) (w : Vec2) : Float :=
+  secondForm s x y w / firstForm s x y w
+```
+
+That is $II(w,w) = e\,w_x^2 + 2f\,w_xw_y + g\,w_y^2$, and the normal
+curvature is the boxed ratio in one line,
+
+```math
+\kappa(d) \;=\; \frac{II(d,d)}{I(d,d)}
+\;=\; \frac{n\cdot\gamma''(s)}{|J\,d|^2}\qquad (d = \gamma'(s)\ \text{in parameters}),
+```
+
+so `normalCurvature` **is** the $n\cdot\gamma''(s)$ formula of this section,
+normalized — the code never differentiates $\gamma$; it just evaluates the
+two quadratic forms.
+
+#### The acceleration test, done by hand
+
+Take the same surface curve $\gamma(s) = \Phi(u(s), v(s)) \in \mathbb{R}^3$
+and differentiate it twice with respect to $s$, writing
+$u''(s) := \frac{d^2u}{ds^2}$, $v''(s) := \frac{d^2v}{ds^2}$, and
+$\gamma''(s) := \frac{d^2\gamma}{ds^2}$ — the **acceleration arrow**:
+
+```math
+\gamma''(s) = \frac{d^2\gamma}{ds^2}
+= \Phi_u\, u''(s) + \Phi_v\, v''(s)
++ \Phi_{uu}\,u'(s)^2 + 2\,\Phi_{uv}\,u'(s)v'(s) + \Phi_{vv}\,v'(s)^2.
+```
+
+Now dot it with $n$. The first two terms die ($n \perp \Phi_u, \Phi_v$ —
+the gatekeeper again), and what survives is exactly the bending table
+applied to the velocity:
+
+```math
+\boxed{\;n\cdot\gamma''(s) = n\cdot\frac{d^2\gamma}{ds^2}
+= \begin{bmatrix}u'(s) & v'(s)\end{bmatrix} II \begin{bmatrix}u'(s)\\ v'(s)\end{bmatrix}\;}
+```
+
+Let $d := \begin{bmatrix}u'(s)\\ v'(s)\end{bmatrix} \in \mathbb{R}^2$ be the
+parameter velocity. So $II(d,d)$ *is* the normal component of the
+acceleration when you move in surface direction $d$. Dividing by the
+squared speed $|J\,d|^2$ normalizes it — that ratio is the **normal
+curvature** `Surface.normalCurvature`:
+
+```math
+\kappa(d) = \frac{II(d,d)}{|J\, d|^2}.
+```
+
+In plain vector terms it answers: *if I walk across the surface in the
+direction of arrow $J d$, how fast does my acceleration arrow bend away
+from the tangent plane?* The sign depends on which way $n$ points, but the
+product of the two principal curvatures below does not.
+
+![One point of the paraboloid, two principal normal sections: the blue section along Φu and the peach section along Φv bend at different rates κu and κv (arrow lengths proportional to the bending); the polar plot sweeps κ(θ) over all parameter directions, its extremes being the principal curvatures.](images/normal-curvature.png)
+
+**Local height above the tangent plane.** Put a point at the origin, make
+the tangent plane the $xy$-plane so $n = (0,0,1)$. Then the third coordinate
+of $\Phi_{uu}$ is exactly $n\cdot\Phi_{uu} = II_{11}$ etc., and Taylor's
+theorem gives
+
+```math
+z(u,v) = \tfrac12\,\bigl(II_{11}u^2 + 2\,II_{12}uv + II_{22}v^2\bigr) + O(3).
+```
+
+So $II$ **is** the quadratic approximation of the surface above its tangent
+plane: a bowl, a saddle, or flat in one direction — you can read all three
+straight off the signs of $II$.
+
+#### Second equivalent formula: derivative of the normal
+
+Differentiate $n \cdot \Phi_u = 0$ with respect to $v$:
+
+```math
+\frac{\partial n}{\partial v}\cdot\Phi_u + n\cdot\Phi_{uv} = 0
+\qquad\Longrightarrow\qquad
+II_{12} = -\frac{\partial n}{\partial v}\cdot\Phi_u.
+```
+
+The same holds entry by entry. So $II$ also measures **how fast the normal
+arrow turns as you move** — two ways of seeing the same bending. (This is
+the identity the shape operator of §1.4 is built on.)
+
+> **What stays paper-only here.** The Taylor development
+> $z(u,v) = \tfrac12\,(II_{11}u^2 + 2\,II_{12}uv + II_{22}v^2) + O(3)$ and
+> the identity $II_{12} = -(\partial_v n)\cdot\Phi_u$ have no code: the
+> library differentiates the *coordinate functions* (`Smooth2`), never
+> `normalAt` itself, so there is no stored $\partial_v n$ arrow to dot
+> with. Both remain checkable from printed arrows: the Taylor model by
+> comparing `Surface.point` against $\Phi$ plus the quadratic model near the
+> tangency point, the derivative-of-normal sign by finite-differencing
+> `Surface.normalAt`.
+
+**Checked example.** The normal, $II$, and the two normal curvatures along
+the coordinate directions — the two extremes of the polar plot above:
+
+```lean
+#eval show IO Unit from do
+  let II := Surface.metricII surf 1 0
+  IO.println s!"II     = [[{II.a}, {II.b}], [{II.b}, {II.c}]]"
+  IO.println s!"n      = {Surface.normalAt surf 1 0}"
+  IO.println s!"κ(1,0) = {Surface.normalCurvature surf 1 0 ⟨1, 0⟩}"
+  IO.println s!"κ(0,1) = {Surface.normalCurvature surf 1 0 ⟨0, 1⟩}"
+```
+
+**Output:**
+```text
+II     = [[0.514496, 0.000000], [0.000000, 0.514496]]
+n      = (-0.514496, 0.000000, 0.857493)
+κ(1,0) = 0.378306
+κ(0,1) = 0.514496
+```
+
+Exactly the §1.6 paraboloid arithmetic: $II_{11} = 0.6/\sqrt{1.36} = 0.5145$,
+and $\kappa(1,0) = 0.5145/1.36 = 0.3783$.
+
+### 1.4 The shape operator — one linear map on the tangent space
+
+> **Picture.** Two tables now sit on the same flat world: $I$, the ruler
+> (§1.2), and $II$, the bending table (§1.3). Comparing matrices is
+> bookkeeping; comparing *maps* is geometry. There is one linear map from
+> the tangent space to itself that does the comparison in one stroke:
+
+```math
+\boxed{\;II = I\,S
+\qquad\Longleftrightarrow\qquad
+S = I^{-1} II\;}
+```
+
+$S$ takes a tangent direction and returns a tangent direction — an
+**endomorphism of $T_pS$** — and it encodes exactly one question: *if I
+slide in surface direction $\xi$, how fast and in which way does the normal
+arrow turn?* Concretely, $-S\xi$ is the rate of change of $n$ along $\xi$:
+
+```math
+-\,S\,\begin{bmatrix}a\\ b\end{bmatrix}
+= a\,\frac{\partial n}{\partial u} + b\,\frac{\partial n}{\partial v},
+\qquad \bigl(a,b\bigr)\ \text{a parameter direction}.
+```
+
+![Sliding along the two principal directions ξ1 (red arrows) and ξ2 (teal arrows), the sampled unit normals tip at different rates; the dashed tracks of the arrow tips are exactly the turns that −Sξ measures.](images/shape-operator.png)
+
+$S$ is a $2\times 2$ map acting on the 2-D tangent space, so it has two
+eigenvalues, the **principal curvatures** $\kappa_1, \kappa_2$, and two
+eigendirections — the directions of greatest and least bending. Its two
+basic invariants get the historical names:
+
+```math
+K = \det S = \frac{\det II}{\det I}
+\qquad\text{(Gaussian curvature)},
+```
+
+```math
+H = \tfrac12\,\mathrm{tr}\,S = \tfrac12\,\mathrm{tr}\!\bigl(I^{-1}II\bigr)
+\qquad\text{(mean curvature)}.
+```
+
+The eigenvalues come back from the trace/determinant pair:
+
+```math
+\kappa_{1,2} = H \pm \sqrt{H^2 - K}.
+```
+
+- $K>0$: both directions bend the same way (bowl, ellipsoid).
+- $K<0$: directions bend oppositely (saddle).
+- $K=0$: at least one direction is straight (plane, cylinder, cone).
+- $H=0$: the two bendings cancel (soap films).
+
+![The three sign regimes of the Gaussian curvature K: a bowl bends the same way in both principal directions (K>0), a saddle bends oppositely (K<0), and a cylinder has one straight direction (K=0); each panel shows the unit normal n and the two principal directions ξ1, ξ2 at one point, with the κ1, κ2, K readout.](images/curvature-signatures.png)
+
+> **What the old books call it.** The map $S$ is usually introduced as
+> $-Dn$, "*the Weingarten map*", and the identity $II = IS$ is buried under
+> the name. The code states it the honest way: $S$ is defined as the map
+> that makes $II = IS$ true, and the normal-turning picture is a theorem
+> about it, not its definition. (Which came first is a matter of taste;
+> that they agree is Exercise 7.)
+
+**Signature** — `Geodesia/Curvature.lean`:
+
+```lean
+def Surface.shapeOperator (s : Surface) (x y : Float) (w : Vec2) : Vec2
+    -- S w = I⁻¹ (II w); its eigenvalues are the principal curvatures
+def Surface.gaussK (s : Surface) (x y : Float) : Float
+    -- K = det II / det I — intrinsic
+def Surface.meanH (s : Surface) (x y : Float) : Float
+    -- H = (eG − 2fF + gE) / 2(EG − F²)
+def Surface.principalK (s : Surface) (x y : Float) : Float × Float
+    -- (κ_min, κ_max) = H ± √(H² − K)
+```
+
+One wrinkle worth knowing: `Surface.principalK` computes
+$\kappa_{1,2} = H \pm \sqrt{H^2-K}$ rather than calling an eigensolver —
+with a $2\times 2$ map the eigenvalues come from trace and determinant,
+which is all `Mat2` needs.
+
+**Implementation.** All four curvature numbers are closed-form $2\times 2$
+algebra — no eigensolver, no SVD:
+
+```lean
+def Surface.shapeOperator (s : Surface) (x y : Float) (w : Vec2) : Vec2 :=
+  let II := metricII s x y
+  let gInv := (metricI s x y).inv
+  let b1 := II.a * w.x + II.b * w.y
+  let b2 := II.b * w.x + II.c * w.y
+  ⟨gInv.a * b1 + gInv.b * b2, gInv.b * b1 + gInv.c * b2⟩
+
+def Surface.gaussK (s : Surface) (x y : Float) : Float :=
+  (metricII s x y).det / (metricI s x y).det
+
+def Surface.meanH (s : Surface) (x y : Float) : Float :=
+  let E := MetricI.E s x y
+  let Ff := MetricI.Ff s x y
+  let G := MetricI.G s x y
+  let II := metricII s x y
+  let denom := 2 * (E * G - Ff * Ff)
+  (II.a * G - 2 * II.b * Ff + II.c * E) / denom
+
+def Surface.principalK (s : Surface) (x y : Float) : Float × Float :=
+  let H := meanH s x y
+  let K := gaussK s x y
+  let disc0 := H * H - K
+  let disc := Float.sqrt (if disc0 < 0 then 0 else disc0)
+  (H - disc, H + disc)
+```
+
+**Vector-calculus reading.**
+
+- `shapeOperator` computes $Sw = I^{-1}(II\,w)$ in the two natural steps:
+  first the bending table acts on $w$,
+  $b = II\,w = \begin{bmatrix}e\,w_x + f\,w_y\\ f\,w_x + g\,w_y\end{bmatrix}$
+  (`b1`, `b2`), then the ruler inverse acts, $Sw = I^{-1}b$ (the same
+  Cramer expansion as §1.2). The defining property $II = IS$ is then
+  automatic: $I\,(Sw) = I\,I^{-1}(II\,w) = II\,w$, which is Exercise 7.
+- `gaussK` is the boxed ratio $K = \det II/\det I$ — one line.
+- `meanH` looks like a different formula because it *is* the trace,
+  expanded. From
+  $I^{-1} = \dfrac{1}{EG-F^2}\begin{bmatrix}G & -F\\ -F & E\end{bmatrix}$:
+
+  ```math
+  \mathrm{tr}\,\bigl(I^{-1}II\bigr)
+  = \frac{G\,e \,-\, 2F\,f \,+\, E\,g}{EG - F^2}
+  \qquad\Longrightarrow\qquad
+  H = \frac{eG - 2fF + gE}{2\,(EG - F^2)},
+  ```
+
+  which is literally the code line — the code never builds the matrix
+  $I^{-1}II$, only its trace.
+- `principalK` is the boxed $\kappa_{1,2} = H \pm \sqrt{H^2 - K}$; the `if`
+  clamps a tiny negative discriminant (a `Float` rounding artifact) to zero.
+
+**Checked example.** $S$ applied to the two coordinate directions, then
+$K$, $H$ and the eigenvalue pair — note $S(1,0)$ and $S(0,1)$ reproduce
+`normalCurvature` from §1.3 (here $S$ is diagonal, so $\Phi_x$, $\Phi_y$
+are the eigendirections):
+
+```lean
+#eval show IO Unit from do
+  IO.println s!"S(1,0)       = {Surface.shapeOperator surf 1 0 ⟨1, 0⟩}"
+  IO.println s!"S(0,1)       = {Surface.shapeOperator surf 1 0 ⟨0, 1⟩}"
+  IO.println s!"K, H         = {Surface.gaussK surf 1 0}, {Surface.meanH surf 1 0}"
+  let (kmin, kmax) := Surface.principalK surf 1 0
+  IO.println s!"κ_min, κ_max = {kmin}, {kmax}"
+```
+
+**Output:**
+```text
+S(1,0)       = (0.378306, 0.000000)
+S(0,1)       = (0.000000, 0.514496)
+K, H         = 0.194637, 0.446401
+κ_min, κ_max = 0.378306, 0.514496
+```
+
 <!-- §APPEND -->
