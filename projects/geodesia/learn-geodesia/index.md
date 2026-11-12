@@ -176,8 +176,8 @@ A useful dictionary in the other direction (older books use these):
    tangent plane.
 3. **The twist.** What makes a *coordinate grid* tricky: on a flat plane in
    polar coordinates the grid lines are straight in space, yet the basis
-   arrows rotate as you move — the tangent parts of the second-derivative
-   arrows (equivalently, their coordinate bookkeeping $\Gamma$) record
+   vectors rotate as you move — the tangent parts of the second-derivative
+   vectors (equivalently, their coordinate bookkeeping $\Gamma$) record
    exactly that rotation. A geodesic is a curve whose own acceleration is
    pure bending, with no “grid twist” left over.
 

@@ -67,12 +67,16 @@ Position marker at the bottom says where we resume.
   `lake build` passes); one-line "A note on words" added to the chapter
   header. Final sweep: only protected artifacts + LaTeX
   `\Longrightarrow` false positives remain.
-- [ ] **Verify chapter.** Run every checked snippet via `lake env lean`
+- [ ] **Verify chapters.** Run every checked snippet via `lake env lean`
   scratch: old outputs must print unchanged (prover already confirmed I, II,
   n, κ, Γ lines), new §1.1/§1.5 outputs as quoted; confirm §1.x/§2.x
-  cross-references resolve.
-- [ ] **index.md** — reading-map node A ("The tangent space …"), suggested
-  path 1 reword, GA_VIEW pointer ("preview in the coda").
+  cross-references resolve — now across the split files `01-fundamental-forms.md`
+  and `02-tangent-parts.md`.
+- [x] **index.md** — done during the split: reading-map node B retitled
+  ("Turning tangent vectors", + hill walk), all retired-"arrow" terms fixed
+  across index.md (incl. the pictures list), dictionary/code-map rows still
+  accurate for the two new files (no file-links pointed at the old merged
+  name).
 - [ ] **House instructions** — add GA & CT coda convention to
   `.opencode/instructions/brane.md` (optional coda per chapter; deep dives
   live in CAPS supplements).

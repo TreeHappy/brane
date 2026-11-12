@@ -640,7 +640,147 @@ sphere:      gap = 0.000000
 > read off by whichever formula is convenient, never required by the vector
 > story itself.*
 
-### 2.9 Exercises
+### 2.9 Walking the hill: which path wastes no turning?
+
+> **Picture.** The paraboloid of §2.7 is a hill of height
+> $h(x,y) = 0.3(x^2+y^2)$ — the "potential function" of these notes. Stand
+> at $(1,0)$ and slide off with the *same* initial parameter velocity
+> $(1,0)$, three times: along the parameter-plane straight line, along the
+> constant-radius circle around the hill's center, and along the path the
+> ODE of §2.8 prescribes. Split every path's acceleration $\gamma''$ the
+> §1.5 way. The normal part is the hill's bending — every path has it and
+> no path can avoid it. The **tangent part** is different: it is your own
+> path *steering and speeding along the surface* — the "grid twist" of the
+> reading map. How much of your acceleration is pure twist? That ratio is
+> the test: the winning path wastes nothing.
+
+The three candidates, computed with stored vectors only — $\gamma''$ for
+the straight and circle paths from the chain rule
+$\gamma'' = u''\,\Phi_u + v''\,\Phi_v + u'^2\,\Phi_{uu} + 2u'v'\,\Phi_{uv} + v'^2\,\Phi_{vv}$,
+and for the third path straight from the ODE integrator:
+
+```lean
+def hill : Surface :=
+  Surface.ofHeight
+    (Smooth2.smul 0.3
+      (Smooth2.add (Smooth2.mul Smooth2.coordX Smooth2.coordX)
+        (Smooth2.mul Smooth2.coordY Smooth2.coordY)))
+
+#eval show IO Unit from do
+  let s := hill
+  IO.println "== three paths from (1,0), initial parameter velocity (1,0) =="
+  -- 1. straight: γ(t) = (1+t, 0); γ'' = Φ_uu (u'' = v'' = 0, u'² = 1)
+  let d2uu := Surface.d2Phi s 0 0 1 0
+  let tStraight := Surface.tangentialPart s 1 0 d2uu
+  IO.println s!"straight: γ'' (Φ_uu)        = {d2uu}"
+  IO.println s!"straight: T γ''             = {tStraight}"
+  IO.println s!"straight: |Tγ''| / |γ''|    = {tStraight.norm / d2uu.norm}"
+  -- 2. circle r=1: c(t) = (cos t, sin t); at t=0: c=(1,0), c'=(0,1), c''=(-1,0)
+  --    γ'' = Φ_u·(-1) + Φ_vv·1 = Φ_vv - Φ_u
+  let d2vv := Surface.d2Phi s 1 1 1 0
+  let du := Surface.dPhi s 0 1 0
+  let circ := Vec3.sub d2vv du
+  let tCircle := Surface.tangentialPart s 1 0 circ
+  IO.println s!"circle: γ'' (Φ_vv − Φ_u)    = {circ}"
+  IO.println s!"circle: T γ''               = {tCircle}"
+  IO.println s!"circle: |Tγ''| / |γ''|      = {tCircle.norm / circ.norm}"
+  -- 3. geodesic: RK4 from (1,0) with parameter velocity (1,0)
+  let st0 : GeoState := ⟨1.0, 0.0, 1.0, 0.0⟩
+  let st1 := Geodesic.integrate s (1.0 / 100) 100 st0
+  IO.println s!"geodesic: endpoint (u, v)   = ({st1.u}, {st1.v})"
+  IO.println s!"geodesic: lifted endpoint   = {Surface.point s st1.u st1.v}"
+  IO.println s!"straight lift endpoint      = {Surface.point s 2 0}"
+  IO.println s!"geodesic: E(0), E(1)        = {Geodesic.energy s st0}, {Geodesic.energy s st1}"
+  -- 4. zero-residual check at st1:
+  --    γ'' = u''·Φu + v''·Φv + u'²·Φuu + 2u'v'·Φuv + v'²·Φvv
+  let a1 := Geodesic.accel s st1
+  let dU := Surface.dPhi s 0 st1.u st1.v
+  let dV := Surface.dPhi s 1 st1.u st1.v
+  let d2UU := Surface.d2Phi s 0 0 st1.u st1.v
+  let d2UV := Surface.d2Phi s 0 1 st1.u st1.v
+  let d2VV := Surface.d2Phi s 1 1 st1.u st1.v
+  let g2 :=
+    Vec3.add (Vec3.add (Vec3.smul a1.x dU) (Vec3.smul a1.y dV))
+      (Vec3.add (Vec3.smul (st1.du * st1.du) d2UU)
+        (Vec3.add (Vec3.smul (2 * st1.du * st1.dv) d2UV)
+          (Vec3.smul (st1.dv * st1.dv) d2VV)))
+  IO.println s!"geodesic: T γ'' at endpoint = {Surface.tangentialPart s st1.u st1.v g2}"
+```
+
+**Output:**
+```text
+== three paths from (1,0), initial parameter velocity (1,0) ==
+straight: γ'' (Φ_uu)        = (0.000000, 0.000000, 0.600000)
+straight: T γ''             = (0.264706, 0.000000, 0.158824)
+straight: |Tγ''| / |γ''|    = 0.514496
+circle: γ'' (Φ_vv − Φ_u)    = (-1.000000, 0.000000, 0.000000)
+circle: T γ''               = (-0.735294, 0.000000, -0.441176)
+circle: |Tγ''| / |γ''|      = 0.857493
+geodesic: endpoint (u, v)   = (1.879182, 0.000000)
+geodesic: lifted endpoint   = (1.879182, 0.000000, 1.059398)
+straight lift endpoint      = (2.000000, 0.000000, 1.200000)
+geodesic: E(0), E(1)        = 0.680000, 0.680000
+geodesic: T γ'' at endpoint = (0.000000, 0.000000, -0.000000)
+```
+
+**How to read the numbers.** The parameter-plane straight line spends
+**51%** of its acceleration as grid twist — over half of everything its
+second derivative does is steering along the surface, not bending off it.
+The constant-radius circle is worse: **86%**. The ODE path has
+$T\gamma'' = (0.000000, 0.000000, -0.000000)$ — zero up to the last float
+digit, which is exactly what "the correction terms cancel" means for the
+integrator of Chapter 4. And note the endpoint: after the same parameter
+time $s \in [0,1]$ the straight-line lift has walked out to $(2, 0)$ and
+climbed to height $1.200000$, while the ODE path has only reached
+$u = 1.879182$, height $1.059398$. Nothing was lost — the ruler $I$ grows
+with the hill, so a parameter step *outward costs more length*; the ODE
+path hoards its speed where steps are expensive and spends it where they
+are cheap. The conserved quantity is visible on the last-but-one line:
+$E(0) = E(1) = 0.680000$ — the ruler-speed never changes.
+
+> **Caution.** The hill is *not* a force. In physics a potential function
+> pushes you downhill; here the height $h$ never appears in any force law —
+> it appears in the ruler $I$. "Shortest" on the hill is not "steepest
+> descent": it is a statement about which parameter steps cost length, and
+> the winning path is the one whose own acceleration has *no tangent part*
+> — it neither steers nor speeds along the surface, it coasts. That is why
+> the ODE path can even point partly uphill and still win.
+
+So the recipe "follow the path that wastes no turning" is not a slogan —
+it is an equation, and §2.8 already wrote it down:
+$T\gamma'' = 0$ is exactly the ODE $q'' + \Gamma(q', q') = 0$ whose
+right-hand side `Geodesic.accel` packages. What that equation *earns* you
+— shortest paths, three equivalent definitions, the conserved pairing —
+is the subject of the next chapter.
+
+### 2.10 The door to Chapter 3
+
+Everything this part built converges on one condition:
+
+```math
+\boxed{\;T\,\gamma''(s) = 0
+\qquad\Longleftrightarrow\qquad
+q'' + \Gamma^k_{\;ij}\,q'^{i} q'^{j} = 0.\;}
+```
+
+Left side: the vector statement — the split of §1.5 applied to an
+acceleration. Right side: the coordinate statement — the bookkeeping of
+§2.8, the numbers an ODE integrator consumes. Chapter 3 shows these are
+two of *three* equivalent definitions of a **geodesic** (the third:
+stationary length, the honest "shortest path" property), and proves the
+equivalences on the vector calculus built here. The numeric seed is
+already planted in §2.9: a path with $T\gamma'' = 0$ kept its ruler-speed
+exactly constant, $E(0) = E(1) = 0.680000$ — a conserved pairing that
+Chapter 3 derives and generalizes.
+
+One question this chapter deliberately does not answer: given two points
+on the hill, *which* geodesic connects them? The ODE is an initial-value
+problem — it needs a starting velocity, and the velocity that lands on
+the far point has to be found. That search is **shooting** (Chapter 5)
+and its whole-path alternative **relaxation** (Chapter 6). The hill of
+§2.9 becomes a shooting range.
+
+### 2.11 Exercises
 
 1. **Polar, both ways.** From §2.5's vector rows read
    $T(\partial_\theta\Phi_r) = (1/r)\Phi_\theta$ and
@@ -672,6 +812,15 @@ sphere:      gap = 0.000000
 8. **Code experiment.** Evaluate `Surface.christoffel` on the paraboloid at
    $(0,0)$ and $(2,0)$; translate the printed numbers back into
    *which vector turned how much*, using §2.7's vector reading.
+9. **Hill walk, continued.** In §2.9's setup, compute the straight path's
+   waste one step further out —
+   `Surface.tangentialPart hill 2 0 (Surface.d2Phi hill 0 0 2 0)` — and
+   re-form the ratio $|T\gamma''|/|\gamma''|$. Does the waste grow or
+   shrink as you slide outward, and is that consistent with "the ruler
+   grows with the hill"? Then rotate the picture by $90^\circ$: at $(0,1)$
+   the circle path's waste ratio comes out $0.857493$ again — the
+   paraboloid is rotationally symmetric, so every point of the $r=1$
+   circle tells the same story.
 
 ---
 
@@ -680,9 +829,9 @@ sphere:      gap = 0.000000
 > library, in the spirit of the Lean documentation (Verso): the examples are
 > part of the build, not decoration. If the project ever adopts Verso, these
 > ```lean blocks are exactly the pieces that would become checked examples.
-> The three vector declarations this chapter added — `Surface.tangentVec`,
-> `Surface.tangentialPart`, `Surface.normalPart` — live in
-> `Geodesia/Surface.lean` alongside the vectors they are built from.
+> The three vector declarations this pair of chapters added —
+> `Surface.tangentVec`, `Surface.tangentialPart`, `Surface.normalPart` —
+> live in `Geodesia/Surface.lean` alongside the vectors they are built from.
 
 ## 🧭 Optional coda — the same chapter through geometric algebra and category theory
 
