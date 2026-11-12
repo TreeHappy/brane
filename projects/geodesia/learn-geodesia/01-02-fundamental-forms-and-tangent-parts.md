@@ -81,7 +81,7 @@ vector-calculus reading, so any formula can be checked against the code:
 | `Surface.normalPart s u v w` | the normal part $(w\cdot n)\,n$ of the split of $w$ |
 | `v.dot w`, `v.cross w`, `v.norm` | $v\cdot w$, $v\times w$, $\lvert v\rvert$ |
 | `Vec3.smul a v` | the scaled vector $a\,v$ |
-| `Mat2` with fields `a`, `b`, `c` | the symmetric matrix $\begin{bmatrix}a & b\\ b & c\end{bmatrix}$ |
+| `Mat2` with fields `a`, `b`, `c` | the symmetric matrix with rows $(a,\,b)$ and $(b,\,c)$ |
 | `metricI` / `metricII` | $I = J^{\mathsf T}J$ / $II = [\,n\cdot\Phi_{ij}\,]$ |
 | `firstForm` / `secondForm` | the quadratic forms $I(w, w) = w^{\mathsf T}Iw$ / $II(w, w) = w^{\mathsf T}II\,w$ |
 | `Surface.christoffel s x y k i j` | the coefficient $\Gamma^k_{\;ij}$ |
@@ -146,9 +146,10 @@ J = \begin{bmatrix}\Phi_u & \Phi_v\end{bmatrix}.
 **The tangent space.** Wherever you stand, the two vectors span a plane —
 and this is the sentence the whole chapter stands on: *every linear
 combination of them is again the velocity of a real curve on the surface.*
-Lift the parameter-plane line $t \mapsto p + t\,(a,b)$ to
-$\gamma(t) = \Phi\big(p + t\,(a,b)\big)$ and differentiate at $t = 0$: the
-velocity is exactly $a\,\Phi_u + b\,\Phi_v$. So the span deserves the name
+Lift the parameter-plane line $t \mapsto p + t\,d$, with velocity
+$d = (a,b)$, to $\gamma(t) = \Phi\big(p + t\,d\big)$ and differentiate at
+$t = 0$: the velocity is exactly $a\,\Phi_u + b\,\Phi_v = J\,d$. So the
+span deserves the name
 
 ```math
 T_pS \;=\; \{\, a\,\Phi_u + b\,\Phi_v \;:\; a, b \in \mathbb{R} \,\}
@@ -249,17 +250,20 @@ rule gives
 = J \begin{bmatrix}u'(s)\\ v'(s)\end{bmatrix}.
 ```
 
-So $J$ converts a 2-D direction $(a,b)$ in the parameter plane into the
-actual 3-D direction you move on the surface:
+So $J$ takes a tangent vector of the parameter plane — the velocity
+$d = (a,b)$, the flat-world tangent along the parameter curve $c$ — and
+returns the tangent vector along the surface curve $\gamma$: the actual
+3-D direction you move on the surface.
 
 ```math
-\boxed{\;J\begin{bmatrix}a\\ b\end{bmatrix} = a\,\Phi_u + b\,\Phi_v
-\;\in\; T_pS.\;}
+\boxed{\;d = \begin{bmatrix}a\\ b\end{bmatrix} = c'(s),\qquad
+J\,d = a\,\Phi_u + b\,\Phi_v = \gamma'(s) \;\in\; T_pS.\;}
 ```
 
-That is all "parameter space" means here: the numbers $(a,b)$ live in the
-flat plane, and $J$ carries them into the flat tangent world. No other
-machinery.
+That is all "parameter space" means here: the velocity $(a,b)$ lives in
+the flat plane — a vector in its own right, the tangent along the curve
+$c$ — and $J$ carries it to the tangent along the curve $\gamma$.
+Tangent vector in, tangent vector out. No other machinery.
 
 **Signature** — the linear map from parameter directions to tangent vectors
 now has a name in the code:
@@ -448,17 +452,17 @@ library anywhere.
 
 Three purchases, all of them plain expansions of $v\cdot w$.
 
-**Lengths.** A parameter direction $(a,b)$ becomes the tangent vector
-$J\,(a,b) = a\Phi_u + b\Phi_v$, and its squared length is
+**Lengths.** A parameter direction $d = (a,b)$ becomes the tangent vector
+$J\,d = a\Phi_u + b\Phi_v$, and its squared length is
 
 ```math
-\bigl|J\begin{bmatrix}a\\ b\end{bmatrix}\bigr|^2
+|J\,d|^2
 = \bigl(a\Phi_u + b\Phi_v\bigr)\cdot\bigl(a\Phi_u + b\Phi_v\bigr)
 = \begin{bmatrix}a & b\end{bmatrix} I \begin{bmatrix}a\\ b\end{bmatrix}.
 ```
 
 So $I$ is the **ruler** of the tangent space: it converts the flat
-parameter-plane numbers into true lengths on the bent sheet.
+parameter-plane vector $d$ into a true length on the bent sheet.
 
 **Implementation.** The quadratic form is that expansion, written out entry
 by entry:
@@ -754,7 +758,7 @@ applied to the velocity:
 = \begin{bmatrix}u'(s) & v'(s)\end{bmatrix} II \begin{bmatrix}u'(s)\\ v'(s)\end{bmatrix}\;}
 ```
 
-Let $d := \begin{bmatrix}u'(s)\\ v'(s)\end{bmatrix} \in \mathbb{R}^2$ be the
+Let $d := (u'(s),\, v'(s)) \in \mathbb{R}^2$ be the
 parameter velocity. So $II(d,d)$ *is* the normal component of the
 acceleration when you move in surface direction $d$. Dividing by the
 squared speed $|J\,d|^2$ normalizes it — that ratio is the **normal
@@ -850,9 +854,9 @@ slide in surface direction $\xi$, how fast and in which way does the normal
 vector turn?* Concretely, $-S\xi$ is the rate of change of $n$ along $\xi$:
 
 ```math
--\,S\,\begin{bmatrix}a\\ b\end{bmatrix}
+-\,S\,d
 = a\,\frac{\partial n}{\partial u} + b\,\frac{\partial n}{\partial v},
-\qquad \bigl(a,b\bigr)\ \text{a parameter direction}.
+\qquad d = \begin{bmatrix}a\\ b\end{bmatrix}\ \text{a parameter direction}.
 ```
 
 ![Sliding along the two principal directions ξ1 (red vectors) and ξ2 (teal vectors), the sampled unit normals tip at different rates; the dashed tracks of the vector tips are exactly the turns that −Sξ measures.](images/shape-operator.png)
@@ -943,17 +947,18 @@ def Surface.principalK (s : Surface) (x y : Float) : Float × Float :=
 **Vector-calculus reading.**
 
 - `shapeOperator` computes $Sw = I^{-1}(II\,w)$ in the two natural steps:
-  first the bending table acts on $w$,
-  $b = II\,w = \begin{bmatrix}e\,w_x + f\,w_y\\ f\,w_x + g\,w_y\end{bmatrix}$
+  first the bending table acts on $w$, $b = II\,w$ with components
+  $b_1 = e\,w_x + f\,w_y$ and $b_2 = f\,w_x + g\,w_y$
   (`b1`, `b2`), then the ruler inverse acts, $Sw = I^{-1}b$ (the same
   Cramer expansion as §1.2). The defining property $II = IS$ is then
   automatic: $I\,(Sw) = I\,I^{-1}(II\,w) = II\,w$, which is Exercise 7.
 - `gaussK` is the boxed ratio $K = \det II/\det I$ — one line.
 - `meanH` looks like a different formula because it *is* the trace,
-  expanded. From
-  $I^{-1} = \dfrac{1}{EG-F^2}\begin{bmatrix}G & -F\\ -F & E\end{bmatrix}$:
+  expanded. From the explicit inverse of the ruler:
 
   ```math
+  I^{-1} = \dfrac{1}{EG-F^2}\begin{bmatrix}G & -F\\ -F & E\end{bmatrix},
+  \qquad
   \mathrm{tr}\,\bigl(I^{-1}II\bigr)
   = \frac{G\,e \,-\, 2F\,f \,+\, E\,g}{EG - F^2}
   \qquad\Longrightarrow\qquad
@@ -1152,7 +1157,7 @@ Tangent vectors:
 \Phi_z = \begin{bmatrix}0\\ 0\\ 1\end{bmatrix},
 ```
 
-so $I = \begin{bmatrix}R^2 & 0\\ 0 & 1\end{bmatrix}$. The single nonzero
+so $I = \mathrm{diag}(R^2,\,1)$. The single nonzero
 curvature vector is
 
 ```math

@@ -54,7 +54,13 @@ Topics are independent and never depend on each other.
   every symbol before use and keep the notation table current.
 - Why-first: say what a formula *measures*, not just what it says.
   Blockquote callouts for asides like "why the literature leads with X".
-- ```math fenced blocks for display math, inline $…$ otherwise.
+- ```math fenced blocks for display math, inline $…$ otherwise. GitHub's
+  renderer eats a backslash in inline `$…$`, so never put `\\` row
+  separators, `\begin{…}` matrices or literal `|` inside inline math —
+  move them into a ```math block (or reword: pairs, `\mathrm{diag}`,
+  component lists). Official reference: docs.github.com "Writing
+  mathematical expressions" (MathJax; the `` $`…`$ `` backtick form for
+  markdown-overlapping characters).
 - Tables for dictionaries and code maps; emoji section headers; mermaid
   for algorithm/reading diagrams.
 - Deterministic examples: seeded RNG, fixed datasets, exact output match.
