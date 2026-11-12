@@ -50,7 +50,7 @@ def dPhi (s : Surface) (i : Fin 2) (u v : Float) : Vec3 :=
   | 0 => ⟨s.sx.fx u v, s.sy.fx u v, s.sz.fx u v⟩
   | 1 => ⟨s.sx.fy u v, s.sy.fy u v, s.sz.fy u v⟩
 
-/-- The parameter-direction arrow `J d = d.x • Φu + d.y • Φv`: the linear map
+/-- The parameter-direction tangent vector `J d = d.x • Φu + d.y • Φv`: the linear map
 from the parameter plane to the tangent space at (u, v). -/
 def tangentVec (s : Surface) (u v : Float) (d : Vec2) : Vec3 :=
   Vec3.add (Vec3.smul d.x (dPhi s 0 u v)) (Vec3.smul d.y (dPhi s 1 u v))
@@ -92,12 +92,12 @@ def normalAt (s : Surface) (u v : Float) : Vec3 :=
   let c := (dPhi s 0 u v).cross (dPhi s 1 u v)
   Vec3.smul (1 / c.norm) c
 
-/-- The normal part `(w · n) n` of an ambient arrow `w` — the bending
+/-- The normal part `(w · n) n` of an ambient vector `w` — the bending
 component of the Gauss split. -/
 def normalPart (s : Surface) (u v : Float) (w : Vec3) : Vec3 :=
   Vec3.smul (w.dot (normalAt s u v)) (normalAt s u v)
 
-/-- The tangential part `T w = w - (w · n) n` of an ambient arrow `w` — the
+/-- The tangential part `T w = w - (w · n) n` of an ambient vector `w` — the
 surface part of the Gauss split; `w = tangentialPart w + normalPart w`. -/
 def tangentialPart (s : Surface) (u v : Float) (w : Vec3) : Vec3 :=
   Vec3.sub w (normalPart s u v w)

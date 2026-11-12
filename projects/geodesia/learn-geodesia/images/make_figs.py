@@ -400,7 +400,7 @@ def mlabel(ax, tip, text, color=None, offset=(0.10, -0.06, 0.08),
 # ---------------------------------------------------------------------------
 def fig_fundamental_forms():
     """The chapter's anchor picture: surface with parameter grid, tangent
-    plane, the tangent/normal arrows, and a curve whose acceleration is
+    plane, the tangent/normal vectors, and a curve whose acceleration is
     split into a normal (bending) and tangent (turning) part."""
     fig = plt.figure(figsize=(8.8, 6.8))
     ax = fig.add_subplot(111, projection="3d")
@@ -582,7 +582,7 @@ def fig_relaxation():
 # ---------------------------------------------------------------------------
 def fig_normal_curvature():
     """Left: the two principal sections of the paraboloid through one point,
-    with their normal-bending arrows (lengths proportional to κ).
+    with their normal-bending vectors (lengths proportional to κ).
     Right: κ(θ) = II(d,d)/|Jd|² swept over all parameter directions; the
     extremes of the curve are the principal curvatures."""
     fig = plt.figure(figsize=(12.4, 5.4))
@@ -615,8 +615,8 @@ def fig_normal_curvature():
     plot_path(ax, np.column_stack([np.ones_like(ts_v), ts_v]),
               color=LATTE["peach"], linewidth=1.8)
 
-    # normal-bending arrows II(d,d) n — same direction, different lengths;
-    # each κ arrow is fanned slightly off P along its own section so the
+    # normal-bending vectors II(d,d) n — same direction, different lengths;
+    # each κ vector is fanned slightly off P along its own section so the
     # three parallel shafts stay legible, while n itself stays anchored at P
     base_u = P + 0.20 * wu
     base_v = P + 0.20 * wv
@@ -631,7 +631,7 @@ def fig_normal_curvature():
            offset=(0.02, 0.16, 0.06), fontsize=10.5)
 
     ax.text2D(0.02, 0.98,
-              "arrows: normal bending $II(d,d)\\,n$ for the two sections\n"
+              "vectors: normal bending $II(d,d)\\,n$ for the two sections\n"
               rf"$\kappa_u={k_u:.4f}$ along $\Phi_u$ (blue),"
               rf"  $\kappa_v={k_v:.4f}$ along $\Phi_v$ (peach)",
               transform=ax.transAxes, va="top", fontsize=8.5,
@@ -688,7 +688,7 @@ def fig_normal_curvature():
 # ---------------------------------------------------------------------------
 def fig_shape_operator():
     """Slide along the two principal directions through a point and sample
-    the unit normal: how fast the arrow tips is exactly what −Sξ encodes."""
+    the unit normal: how fast the arrow tips turn is exactly what −Sξ encodes."""
     fig = plt.figure(figsize=(8.8, 6.8))
     ax = fig.add_subplot(111, projection="3d")
     style3d(ax, (-0.20, 2.12), (-1.24, 1.24), (-0.04, 1.75),
@@ -703,7 +703,7 @@ def fig_shape_operator():
     n = normal(p)
     I_ = metric(p)
 
-    # unit tangent arrows for the two principal directions at this point,
+    # unit tangent vectors for the two principal directions at this point,
     # converted to parameter directions by the chapter's own formula
     # ξ = I⁻¹ Jᵀ w   (the §1.2 "normal equations" box)
     w1 = eu / np.linalg.norm(eu)
@@ -1069,7 +1069,7 @@ def lab2(ax, p, text, color, dx=0.0, dy=0.0, fontsize=11):
 def fig_tangent_space():
     """Jänich-style schematic: a bent sheet seen from the side, its flat
     tangent spaces attached at three points, and a zoom bubble showing the
-    unique split of an ambient arrow into tangent + normal parts."""
+    unique split of an ambient vector into tangent + normal parts."""
     fig, ax = plt.subplots(figsize=(9.2, 4.6))
 
     # the sheet, seen from the side: z = C u² profile (parabolic arc)
@@ -1081,7 +1081,7 @@ def fig_tangent_space():
                     alpha=0.35, zorder=1)
 
     # three points with their tangent spaces (flat world = line segment),
-    # the tangent arrow Φu (blue) and the normal n (red) at each
+    # the tangent vector Φu (blue) and the normal n (red) at each
     probe = [-1.35, 0.0, 1.35]
     for u0 in probe:
         P = np.array([u0, C * u0 * u0 + 0.55])
@@ -1105,7 +1105,7 @@ def fig_tangent_space():
     lab2(ax, np.array([probe[2], C * probe[2] ** 2 + 0.55]) + np.array([-0.95, 0.26]),
          r"$T_qS$ — just as flat", LATTE["blue"], fontsize=10)
 
-    # zoom bubble at the middle point: one ambient arrow w and its split
+    # zoom bubble at the middle point: one ambient vector w and its split
     zx, zy = 1.35, 2.62
     zw = 2.6
     circle = plt.Circle((zx, zy), 0.92, fill=True,
@@ -1121,7 +1121,7 @@ def fig_tangent_space():
     ndir = np.array([0.0, 1.0])
     fancy2(ax, Z - 0.80 * tdir, 1.6 * tdir, LATTE["blue"])
     fancy2(ax, Z, 0.66 * ndir, LATTE["red"])
-    w = 0.86 * np.array([0.42, 0.91])             # ambient arrow, tilted
+    w = 0.86 * np.array([0.42, 0.91])             # ambient vector, tilted
     wn = (w @ ndir) * ndir                        # (w·n) n  — teal
     wt = w - wn                                   # T w — peach
     fancy2(ax, Z, w, LATTE["text"], lw=1.9, zorder=6)
@@ -1161,7 +1161,7 @@ def _ct_box(ax, x, y, w, h, lines, face, edge):
 
 def fig_pullback():
     """The coda picture: the metric as the pullback I = Φ*δ of the ambient
-    inner product along the morphism J, and the split of an ambient arrow as
+    inner product along the morphism J, and the split of an ambient vector as
     the biproduct ℝ³ = T_pS ⊕ ℝn."""
     fig, ax = plt.subplots(figsize=(9.6, 5.8))
 
@@ -1191,7 +1191,7 @@ def fig_pullback():
     ax.text(4.4, 2.08, r"$I = \Phi^{*}\delta = J^{\mathrm{T}}J$ — the ruler,"
             " pulled back", color=LATTE["peach"], fontsize=11, ha="center")
 
-    # bottom diagram: the biproduct split of an ambient arrow w
+    # bottom diagram: the biproduct split of an ambient vector w
     _ct_box(ax, 2.45, 0.85, 2.1, 0.75,
             [(r"$w \in \mathbb{R}^3$", LATTE["text"], 11.5)],
             LATTE["base"], LATTE["subtext1"])

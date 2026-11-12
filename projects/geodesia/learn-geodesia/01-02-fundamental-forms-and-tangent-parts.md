@@ -10,7 +10,7 @@
 > two things you can do in that world: measure with its inner product
 > ($I = J^{\mathsf T}J$), and record how acceleration leaves it
 > ($II_{ij} = n\cdot\Phi_{ij}$). Everything is ordinary vector calculus:
-> arrows, dot products, one subtraction. The chapter is written like the
+> dot products, one subtraction. The chapter is written like the
 > Lean documentation (as in the Verso-built Lean Manual and *Theorem
 > Proving in Lean*): every boxed formula is followed by the **Lean
 > declarations that compute it** — a **Signature** block — and every
@@ -28,6 +28,11 @@
 > library for this chapter — `Surface.tangentVec`, `Surface.tangentialPart`,
 > `Surface.normalPart` — so that the vector statements of §1.1 and §1.5 are
 > executable, not just prose.
+>
+> **A note on words.** This chapter never says "arrow" for a mathematical
+> object: each vector is called by what it *is* — tangent vector, velocity,
+> acceleration vector, curvature vector, unit normal, ambient vector —
+> reserving "arrow" for the drawn glyphs in the figures.
 
 **Reproducing the checked examples.** All snippets run against this project:
 
@@ -46,7 +51,7 @@ The dictionary that the whole chapter keeps re-deriving:
 | $\Phi_i = \partial\Phi/\partial i$ | `Surface.dPhi` | `Geodesia/Surface.lean` |
 | $\Phi_{ij} = \partial^2\Phi/\partial i\,\partial j$ | `Surface.d2Phi` | `Geodesia/Surface.lean` |
 | $n$ | `Surface.normalAt` | `Geodesia/Surface.lean` |
-| $J\,d$ — the arrow of a parameter direction | `Surface.tangentVec` | `Geodesia/Surface.lean` |
+| $J\,d$ — the tangent vector of a parameter direction | `Surface.tangentVec` | `Geodesia/Surface.lean` |
 | $I = J^{\mathsf T}J$ — the inner product of the tangent space | `Surface.metricI`, `Surface.firstForm` | `Geodesia/Curvature.lean` |
 | $II_{ij} = n\cdot\Phi_{ij}$ — the acceleration table | `Surface.metricII`, `Surface.secondForm` | `Geodesia/Curvature.lean` |
 | $T w = w - (w\cdot n)\,n$ — the tangent part of the split | `Surface.tangentialPart` | `Geodesia/Surface.lean` |
@@ -57,7 +62,7 @@ The dictionary that the whole chapter keeps re-deriving:
 | $\Gamma^k_{\;ij}$ (coordinates of $T\Phi_{ij}$) | `Surface.christoffel` | `Geodesia/Curvature.lean` |
 | $\partial_u\,(\Phi_j\cdot\Phi_k)$ | `Surface.dMetricEntry` | `Geodesia/Curvature.lean` |
 | $\xi = I^{-1}J^{\mathsf T}w$ | `Geodesic.tangentVecToParams` | `Geodesia/Geodesic.lean` |
-| exact derivative arrows | `Smooth2` + its combinators | `Geodesia/Diff.lean` |
+| exact derivatives (stored as functions) | `Smooth2` + its combinators | `Geodesia/Diff.lean` |
 
 **The notation bridge.** The Lean code uses short identifiers where the text
 uses math symbols. Every occurrence is translatable by this table — and each
@@ -69,13 +74,13 @@ vector-calculus reading, so any formula can be checked against the code:
 | `s.sx`, `s.sy`, `s.sz` | the coordinate functions $x(u,v)$, $y(u,v)$, $z(u,v)$ of $\Phi$ |
 | `i : Fin 2` with values `0`, `1` | the parameter index: $0 \leftrightarrow u$, $1 \leftrightarrow v$ |
 | `u v : Float` | the point $(u, v)$ of the parameter plane |
-| `Surface.dPhi s i u v` | the arrow $\Phi_i(u,v)$ |
-| `Surface.d2Phi s i j u v` | the arrow $\Phi_{ij}(u,v)$ |
-| `Surface.tangentVec s u v d` | the tangent arrow $J\,d = a\,\Phi_u + b\,\Phi_v$ of the parameter direction $d=(a,b)$ |
-| `Surface.tangentialPart s u v w` | the tangent part $T\,w$ of the split of an ambient arrow $w$ |
+| `Surface.dPhi s i u v` | the tangent vector $\Phi_i(u,v)$ |
+| `Surface.d2Phi s i j u v` | the curvature vector $\Phi_{ij}(u,v)$ |
+| `Surface.tangentVec s u v d` | the tangent vector $J\,d = a\,\Phi_u + b\,\Phi_v$ of the parameter direction $d=(a,b)$ |
+| `Surface.tangentialPart s u v w` | the tangent part $T\,w$ of the split of an ambient vector $w$ |
 | `Surface.normalPart s u v w` | the normal part $(w\cdot n)\,n$ of the split of $w$ |
 | `v.dot w`, `v.cross w`, `v.norm` | $v\cdot w$, $v\times w$, $\lvert v\rvert$ |
-| `Vec3.smul a v` | the scaled arrow $a\,v$ |
+| `Vec3.smul a v` | the scaled vector $a\,v$ |
 | `Mat2` with fields `a`, `b`, `c` | the symmetric matrix $\begin{bmatrix}a & b\\ b & c\end{bmatrix}$ |
 | `metricI` / `metricII` | $I = J^{\mathsf T}J$ / $II = [\,n\cdot\Phi_{ij}\,]$ |
 | `firstForm` / `secondForm` | the quadratic forms $I(w, w) = w^{\mathsf T}Iw$ / $II(w, w) = w^{\mathsf T}II\,w$ |
@@ -85,7 +90,7 @@ vector-calculus reading, so any formula can be checked against the code:
 (Implementations are shown verbatim from the sources, with the fully
 qualified names they get from their `namespace`.)
 
-![The anchor picture: the paraboloid with its parameter grid; at one point the tangent space T_pS (dashed outline) carrying the tangent arrows Φu, Φv, a parameter direction d and its arrow Jd (green), and the normal n; a curve γ(s) whose acceleration γ″ splits into the tangent part Tγ″ (peach) and the normal part II(d,d)n (teal).](images/fundamental-forms.png)
+![The anchor picture: the paraboloid with its parameter grid; at one point the tangent space T_pS (dashed outline) carrying the tangent vectors Φu, Φv, a parameter direction d and its vector Jd (green), and the normal n; a curve γ(s) whose acceleration γ″ splits into the tangent part Tγ″ (peach) and the normal part II(d,d)n (teal).](images/fundamental-forms.png)
 
 ---
 
@@ -96,20 +101,20 @@ qualified names they get from their `namespace`.)
 > facts about one flat world: the tangent space has an inner product (that
 > is $I$), acceleration has a normal component (that is $II$), and a linear
 > operator compares the two (that is $S$, hence $K$ and $H$). Everything
-> here is ordinary vector math: arrows, dot products, one subtraction.
+> here is ordinary vector math: dot products, one subtraction.
 
 ### 1.1 The surface and its tangent space
 
 > **Picture.** Take a sheet and bend it smoothly — no creases. At every
 > point, lay a small flat plane against it, the way a coin rests on a ball.
 > That little plane is the **tangent space** of the point: a complete 2-D
-> vector world, flat as $\mathbb{R}^2$, with its own arrows, its own
+> vector world, flat as $\mathbb{R}^2$, with its own
 > lengths and angles — and, because it sits inside 3-space, it *inherits*
 > the dot products of the ambient world. The sheet is curved; its tangent
 > spaces never are. Nearly everything in this chapter happens in those
 > flat worlds.
 
-![The tangent space, schematically: the sheet seen from the side (curved), with its flat tangent spaces T_pS attached at three points, each carrying the tangent arrow Φu and the normal n; the zoom bubble at one point shows an ambient arrow w split uniquely into its tangent part T w (peach) and its normal part (w·n)n (teal) — the flat world of one point.](images/tangent-space.png)
+![The tangent space, schematically: the sheet seen from the side (curved), with its flat tangent spaces T_pS attached at three points, each carrying the tangent vector Φu and the normal n; the zoom bubble at one point shows an ambient vector w split uniquely into its tangent part T w (peach) and its normal part (w·n)n (teal) — the flat world of one point.](images/tangent-space.png)
 
 A surface is a function
 
@@ -123,7 +128,7 @@ The two numbers $(u,v)$ are just coordinates — like row and column indices
 painted on the surface.
 
 Differentiate $\Phi$ with respect to each of its two inputs. Each derivative
-is a genuine 3-D arrow:
+is a genuine 3-D vector:
 
 ```math
 \Phi_u = \begin{bmatrix}\partial x/\partial u\\ \partial y/\partial u\\ \partial z/\partial u\end{bmatrix},
@@ -138,7 +143,7 @@ Put them side by side as the columns of a $3\times 2$ matrix, the
 J = \begin{bmatrix}\Phi_u & \Phi_v\end{bmatrix}.
 ```
 
-**The tangent space.** Wherever you stand, the two arrows span a plane —
+**The tangent space.** Wherever you stand, the two vectors span a plane —
 and this is the sentence the whole chapter stands on: *every linear
 combination of them is again the velocity of a real curve on the surface.*
 Lift the parameter-plane line $t \mapsto p + t\,(a,b)$ to
@@ -151,7 +156,7 @@ T_pS \;=\; \{\, a\,\Phi_u + b\,\Phi_v \;:\; a, b \in \mathbb{R} \,\}
 ```
 
 the **tangent space** at $p$. It is a genuine vector space — sums and
-scalings of tangent arrows stay tangent, because a span always is — and it
+scalings of tangent vectors stay tangent, because a span always is — and it
 is *flat*: no curvature of the sheet leaks into it. Curvature will enter
 only as how these flat worlds tilt relative to each other from point to
 point (Part 2), never inside one of them.
@@ -159,7 +164,7 @@ point (Part 2), never inside one of them.
 > **Caution.** *Is it a problem that this flat world floats inside an extra
 > dimension?* For embedded surfaces: none — the ambient $\mathbb{R}^3$ is a
 > gift. The normal $n$, the projection $T$, the whole of §1.3 come free
-> with it, and that is why this chapter can work in honest arrows. Physics
+> with it, and that is why this chapter can work in honest vectors. Physics
 > is stricter, and for good reasons: spacetime comes with no surrounding
 > space to project into, a hypothetical embedding would be unobservable
 > scaffolding, and some perfectly honest surfaces have *no* embedding at
@@ -170,7 +175,7 @@ point (Part 2), never inside one of them.
 > need it. And where physicists *do* assume one (brane worldvolumes, the
 > ADM 3+1 split), the extrinsic objects of this chapter come right back.
 
-**Signature** — `Geodesia/Surface.lean` stores the arrows, not approximations
+**Signature** — `Geodesia/Surface.lean` stores the vectors, not approximations
 of them (the `Fin 2` index `0, 1` plays the role of $u, v$):
 
 ```lean
@@ -186,10 +191,10 @@ def Surface.point (s : Surface) (u v : Float) : Vec3
 def Surface.dPhi (s : Surface) (i : Fin 2) (u v : Float) : Vec3
     -- Φ_u (i = 0) and Φ_v (i = 1)
 def Surface.d2Phi (s : Surface) (i j : Fin 2) (u v : Float) : Vec3
-    -- Φ_ij: the curvature arrows
+    -- Φ_ij: the curvature vectors
 ```
 
-**Implementation.** The arrows are built component-wise from the exact
+**Implementation.** The vectors are built component-wise from the exact
 partials stored in `Smooth2`:
 
 ```lean
@@ -256,16 +261,16 @@ That is all "parameter space" means here: the numbers $(a,b)$ live in the
 flat plane, and $J$ carries them into the flat tangent world. No other
 machinery.
 
-**Signature** — the linear map from parameter directions to tangent arrows
+**Signature** — the linear map from parameter directions to tangent vectors
 now has a name in the code:
 
 ```lean
 def Surface.tangentVec (s : Surface) (u v : Float) (d : Vec2) : Vec3
-    -- the tangent arrow J d = d.x • Φu + d.y • Φv
+    -- the tangent vector J d = d.x • Φu + d.y • Φv
 ```
 
 **Checked example.** Handing it the coordinate directions reproduces the
-basis arrows; a diagonal direction gives the diagonal arrow:
+basis vectors; a diagonal direction gives the diagonal vector:
 
 ```lean
 #eval show IO Unit from do
@@ -279,9 +284,9 @@ J(1,0) = (1.000000, 0.000000, 0.600000)
 J(1,1) = (1.000000, 1.000000, 0.600000)
 ```
 
-`J(1,0)` is literally the $\Phi_x$ of the four-arrow table below — the same
-arrow, now obtained by feeding the *direction* to the linear map. And
-`J(1,1) = Φ_x + Φ_y`: the arrow of the diagonal direction, reused by the
+`J(1,0)` is literally the $\Phi_x$ of the table of four vectors below — the same
+vector, now obtained by feeding the *direction* to the linear map. And
+`J(1,1) = Φ_x + Φ_y`: the vector of the diagonal direction, reused by the
 angles example of §1.2.
 
 #### A graph is a special case
@@ -297,7 +302,7 @@ and the two tangent vectors are
 
 This is the surface built by `Surface.ofHeight` in the code.
 
-**Implementation.** The terrain embedding, and the two graph tangent arrows —
+**Implementation.** The terrain embedding, and the two graph tangent vectors —
 literally the displayed matrices:
 
 ```lean
@@ -327,7 +332,7 @@ def paraboloid : Smooth2 :=
 def surf : Surface := Surface.ofHeight paraboloid
 ```
 
-**Checked example.** The four arrows at $(x,y) = (1,0)$ — compare
+**Checked example.** The four vectors at $(x,y) = (1,0)$ — compare
 $f_x = 0.6$, $f_{xx} = 0.6$ below:
 
 ```lean
@@ -348,8 +353,8 @@ $f_x = 0.6$, $f_{xx} = 0.6$ below:
 
 ### 1.2 The inner product of the tangent space — how to measure on a bent sheet
 
-> **Picture.** Last section gave the tangent space its arrows. A vector
-> space with arrows but no way to compare them is a dark room: you can hold
+> **Picture.** Last section gave the tangent space its vectors. A vector
+> space with no way to compare them is a dark room: you can hold
 > things, not measure them. What turns $T_pS$ into a place where "length",
 > "angle" and "area" mean something is one piece of equipment: an **inner
 > product**. And here is the pleasant surprise — we don't have to invent
@@ -357,7 +362,7 @@ $f_x = 0.6$, $f_{xx} = 0.6$ below:
 > already owns the plain dot product $v \cdot w$. The tangent space simply
 > *inherits* it.
 
-Concretely: take the two basis arrows $\Phi_u, \Phi_v$ and record the three
+Concretely: take the two basis vectors $\Phi_u, \Phi_v$ and record the three
 dot products among them —
 
 ```math
@@ -385,7 +390,7 @@ $J^{\mathsf T}J$ in least squares:
 > were historically named $E$, $F$, $G$ — letters which tell you nothing
 > (the code keeps them as `MetricI.E`, `MetricI.Ff`, `MetricI.G` for
 > cross-reading older texts). The content is one sentence: *to measure on
-> the surface, dot the ambient arrows.*
+> the surface, dot the ambient vectors.*
 
 **Signature** — `Geodesia/Curvature.lean`:
 
@@ -443,7 +448,7 @@ library anywhere.
 
 Three purchases, all of them plain expansions of $v\cdot w$.
 
-**Lengths.** A parameter direction $(a,b)$ becomes the tangent arrow
+**Lengths.** A parameter direction $(a,b)$ becomes the tangent vector
 $J\,(a,b) = a\Phi_u + b\Phi_v$, and its squared length is
 
 ```math
@@ -472,8 +477,8 @@ I(w, w) \;=\; a\,w_x^2 \,+\, 2\,b\,w_x w_y \,+\, c\,w_y^2
 ```
 
 **Angles.** Two tangent directions $\xi$, $\eta$ (2-vectors in the parameter
-plane) meet at the angle of their arrows $J\xi$, $J\eta$ — and the inner
-product computes it without ever forming the arrows:
+plane) meet at the angle of their vectors $J\xi$, $J\eta$ — and the inner
+product computes it without ever forming the vectors:
 
 ```math
 \cos\theta = \frac{(J\xi)\cdot(J\eta)}{|J\xi|\,|J\eta|}
@@ -482,7 +487,7 @@ product computes it without ever forming the arrows:
 
 **Checked example.** No dedicated function computes $\cos\theta$, but both
 routes of the boxed formula are checkable with the library's pieces. Take
-$\xi = (1,0)$, $\eta = (1,1)$ at $(1,0)$ on the paraboloid. The **arrow
+$\xi = (1,0)$, $\eta = (1,1)$ at $(1,0)$ on the paraboloid. The **vector
 route** forms $J\xi = \Phi_x$ and $J\eta = \Phi_x + \Phi_y$ and uses plain
 dot products; the **ruler route** recovers the bilinear form by polarizing
 the quadratic form, $\xi^{\mathsf T}I\eta = \tfrac12\bigl(I(\xi{+}\eta,\xi{+}\eta) - I(\xi,\xi) - I(\eta,\eta)\bigr)$,
@@ -518,7 +523,7 @@ Two claims verified at once: the angle formula (the two routes agree) and
 the squared-length formula ($I(w,w) = |Jw|^2$: here
 $I((1,0),(1,0)) = 1.36 = |\Phi_x|^2 = 1 + f_x^2$).
 
-**Area.** The two basis arrows span a parallelogram whose area is the norm
+**Area.** The two basis vectors span a parallelogram whose area is the norm
 of their cross product — and that equals the determinant of the Gram matrix:
 
 ```math
@@ -527,10 +532,10 @@ of their cross product — and that equals the determinant of the Gram matrix:
 dA = \sqrt{\det I}\; du\, dv.
 ```
 
-#### Recovering a 2-D direction from a 3-D arrow
+#### Recovering a 2-D direction from a 3-D vector
 
 > **By the way.** This subsection is really about *coordinates*: given an
-> arrow $w$ that happens to live in $T_pS$, what are its components in the
+> vector $w$ that happens to live in $T_pS$, what are its components in the
 > basis $\Phi_u, \Phi_v$? The answer needs the inner product — which is why
 > it lives here and not in §1.1.
 
@@ -549,7 +554,7 @@ $J^{\mathsf T}$ and use $J^{\mathsf T}J = I$:
 ```
 
 This is exactly what `Geodesic.tangentVecToParams` computes — give it a
-tangent arrow $w$ and it returns the 2 coordinates whose arrows reproduce it:
+tangent vector $w$ and it returns the 2 coordinates whose vectors reproduce it:
 
 ```lean
 def Geodesic.tangentVecToParams (s : Surface) (u v : Float) (w : Vec3) : Vec2
@@ -593,14 +598,14 @@ f_x f_y & 1+f_y^2
 \end{bmatrix}.
 ```
 
-Cross-check it the vector way: a plane step $(dx,dy)$ lifts to the arrow
+Cross-check it the vector way: a plane step $(dx,dy)$ lifts to the vector
 $(dx, dy, f_x dx + f_y dy)$, whose squared norm is
 $dx^2 + dy^2 + (f_x dx + f_y dy)^2$ — the same quadratic form.
 
 **Checked example.** Three claims verified at once on `surf` at $(1,0)$:
 the graph formula ($I_{11} = 1 + 0.6^2 = 1.36$), the determinant identity
 $\det I = |\Phi_x\times\Phi_y|^2$ (Exercise 2), and the $I^{-1}J^{\mathsf T}w$
-round-trip, fed the non-unit arrow $\Phi_x$ itself:
+round-trip, fed the non-unit vector $\Phi_x$ itself:
 
 ```lean
 #eval show IO Unit from do
@@ -620,17 +625,17 @@ det I        = 1.360000
 I⁻¹ Jᵀ Φ_x   = (1.000000, 0.000000)
 ```
 
-The round-trip returns $(1, 0)$: $\Phi_x$ is indeed the first basis arrow.
+The round-trip returns $(1, 0)$: $\Phi_x$ is indeed the first basis vector.
 
 ### 1.3 The normal, and how acceleration leaves the tangent space
 
 > **Picture.** §1.2 equipped the tangent space with a ruler. But the
 > tangent space can't tell you *everything* about the bent sheet it sits
 > on — a flat plane has no opinion about bending. The missing information
-> lives in one extra arrow, the **unit normal** $n$: the direction that
+> lives in one extra vector, the **unit normal** $n$: the direction that
 > points *away* from the flat world, perpendicular to everything in $T_pS$.
 > With $T_pS$ and $n$ together, 3-space splits cleanly in two: every ambient
-> arrow is *tangent part plus normal part*. The normal is the gatekeeper of
+> vector is *tangent part plus normal part*. The normal is the gatekeeper of
 > that split — and, one derivative later, the yardstick of bending: an
 > acceleration can move you along the surface freely, but the piece of it
 > that leaves the tangent plane must go in the $n$ direction, and $n$ alone
@@ -640,8 +645,8 @@ The round-trip returns $(1, 0)$: $\Phi_x$ is indeed the first basis arrow.
 n = \frac{\Phi_u \times \Phi_v}{|\Phi_u \times \Phi_v|}.
 ```
 
-Differentiate $\Phi$ once more. Besides the two tangent arrows $\Phi_u$,
-$\Phi_v$, the surface now has three **curvature arrows**:
+Differentiate $\Phi$ once more. Besides the two tangent vectors $\Phi_u$,
+$\Phi_v$, the surface now has three **curvature vectors**:
 
 ```math
 \Phi_{uu} = \frac{\partial^2\Phi}{\partial u^2},\qquad
@@ -649,8 +654,8 @@ $\Phi_v$, the surface now has three **curvature arrows**:
 \Phi_{vv} = \frac{\partial^2\Phi}{\partial v^2}.
 ```
 
-Each is an ordinary 3-D arrow, and each can be tested the same way: *how
-much of it points along $n$?* That is one dot product. Three arrows, three
+Each is an ordinary 3-D vector, and each can be tested the same way: *how
+much of it points along $n$?* That is one dot product. Three vectors, three
 dot products, one symmetric table:
 
 ```math
@@ -663,10 +668,10 @@ n\cdot\Phi_{uv} & n\cdot\Phi_{vv}
 
 > **What the old books call it.** The "*second fundamental form*", entries
 > $e$, $f$, $g$. Again the object is simpler than the ceremony: it is the
-> table of *normal components of the curvature arrows* — dot each
+> table of *normal components of the curvature vectors* — dot each
 > $\Phi_{ij}$ with $n$, write it down. (The code's other second-form entry
 > names live in `MetricII`.) Note the deep symmetry with §1.2: there,
-> tangent arrows dotted with *each other*; here, curvature arrows dotted
+> tangent vectors dotted with *each other*; here, curvature vectors dotted
 > with the *gatekeeper*.
 
 **Signature** — `Geodesia/Surface.lean` and `Geodesia/Curvature.lean`:
@@ -732,7 +737,7 @@ two quadratic forms.
 Take the same surface curve $\gamma(s) = \Phi(u(s), v(s)) \in \mathbb{R}^3$
 and differentiate it twice with respect to $s$, writing
 $u''(s) := \frac{d^2u}{ds^2}$, $v''(s) := \frac{d^2v}{ds^2}$, and
-$\gamma''(s) := \frac{d^2\gamma}{ds^2}$ — the **acceleration arrow**:
+$\gamma''(s) := \frac{d^2\gamma}{ds^2}$ — the **acceleration vector**:
 
 ```math
 \gamma''(s) = \frac{d^2\gamma}{ds^2}
@@ -760,11 +765,11 @@ curvature** `Surface.normalCurvature`:
 ```
 
 In plain vector terms it answers: *if I walk across the surface in the
-direction of arrow $J d$, how fast does my acceleration arrow bend away
+direction of vector $J d$, how fast does my acceleration vector bend away
 from the tangent plane?* The sign depends on which way $n$ points, but the
 product of the two principal curvatures below does not.
 
-![One point of the paraboloid, two principal normal sections: the blue section along Φu and the peach section along Φv bend at different rates κu and κv (arrow lengths proportional to the bending); the polar plot sweeps κ(θ) over all parameter directions, its extremes being the principal curvatures.](images/normal-curvature.png)
+![One point of the paraboloid, two principal normal sections: the blue section along Φu and the peach section along Φv bend at different rates κu and κv (vector lengths proportional to the bending); the polar plot sweeps κ(θ) over all parameter directions, its extremes being the principal curvatures.](images/normal-curvature.png)
 
 **Local height above the tangent plane.** Put a point at the origin, make
 the tangent plane the $xy$-plane so $n = (0,0,1)$. Then the third coordinate
@@ -790,15 +795,15 @@ II_{12} = -\frac{\partial n}{\partial v}\cdot\Phi_u.
 ```
 
 The same holds entry by entry. So $II$ also measures **how fast the normal
-arrow turns as you move** — two ways of seeing the same bending. (This is
+vector turns as you move** — two ways of seeing the same bending. (This is
 the identity the shape operator of §1.4 is built on.)
 
 > **What stays paper-only here.** The Taylor development
 > $z(u,v) = \tfrac12\,(II_{11}u^2 + 2\,II_{12}uv + II_{22}v^2) + O(3)$ and
 > the identity $II_{12} = -(\partial_v n)\cdot\Phi_u$ have no code: the
 > library differentiates the *coordinate functions* (`Smooth2`), never
-> `normalAt` itself, so there is no stored $\partial_v n$ arrow to dot
-> with. Both remain checkable from printed arrows: the Taylor model by
+> `normalAt` itself, so there is no stored $\partial_v n$ vector to dot
+> with. Both remain checkable from printed vectors: the Taylor model by
 > comparing `Surface.point` against $\Phi$ plus the quadratic model near the
 > tangency point, the derivative-of-normal sign by finite-differencing
 > `Surface.normalAt`.
@@ -842,7 +847,7 @@ S = I^{-1} II\;}
 $S$ takes a tangent direction and returns a tangent direction — an
 **endomorphism of $T_pS$** — and it encodes exactly one question: *if I
 slide in surface direction $\xi$, how fast and in which way does the normal
-arrow turn?* Concretely, $-S\xi$ is the rate of change of $n$ along $\xi$:
+vector turn?* Concretely, $-S\xi$ is the rate of change of $n$ along $\xi$:
 
 ```math
 -\,S\,\begin{bmatrix}a\\ b\end{bmatrix}
@@ -850,7 +855,7 @@ arrow turn?* Concretely, $-S\xi$ is the rate of change of $n$ along $\xi$:
 \qquad \bigl(a,b\bigr)\ \text{a parameter direction}.
 ```
 
-![Sliding along the two principal directions ξ1 (red arrows) and ξ2 (teal arrows), the sampled unit normals tip at different rates; the dashed tracks of the arrow tips are exactly the turns that −Sξ measures.](images/shape-operator.png)
+![Sliding along the two principal directions ξ1 (red vectors) and ξ2 (teal vectors), the sampled unit normals tip at different rates; the dashed tracks of the vector tips are exactly the turns that −Sξ measures.](images/shape-operator.png)
 
 $S$ is a $2\times 2$ map acting on the 2-D tangent space, so it has two
 eigenvalues, the **principal curvatures** $\kappa_1, \kappa_2$, and two
@@ -982,11 +987,11 @@ K, H         = 0.194637, 0.446401
 κ_min, κ_max = 0.378306, 0.514496
 ```
 
-### 1.5 The split of an arrow — tangent part and normal part
+### 1.5 The split of a vector — tangent part and normal part
 
 > **Picture.** Put §1.1 and §1.3 together: at a point, 3-space is exactly
 > the flat world $T_pS$ plus one extra direction, $n$. Two flat pieces, one
-> arrow to be placed — so every ambient arrow $w$ splits **uniquely** into a
+> vector to be placed — so every ambient vector $w$ splits **uniquely** into a
 > piece that stays in the flat world and a piece that leaves it:
 
 ```math
@@ -999,12 +1004,12 @@ T &: \mathbb{R}^3 \to \mathbb{R}^3, & T(w) &:= w - (w\cdot n)\,n, \qquad w \in \
 
 $T$ — the **tangential projection** — subtracts exactly the normal
 component: $T(w)$ is the **tangent part** of $w$, $(w\cdot n)\,n$ its
-**normal part**. Applied to a curvature arrow $\Phi_{ij}$, the second line
+**normal part**. Applied to a curvature vector $\Phi_{ij}$, the second line
 is the classical **Gauss split**: the tangent part $T(\Phi_{ij})$ is the
 turning data, the normal coefficient $II_{ij}$ the bending data (§1.3).
 Expanding $T(\Phi_{ij})$ in the basis $\{\Phi_u,\Phi_v\}$ yields the
 coefficients textbooks call Christoffel symbols; Part 2 works with the
-arrows directly.
+vectors directly.
 
 **Signature.** The split now has named declarations in the library —
 this is the vector machinery of the chapter, made executable:
@@ -1062,7 +1067,7 @@ anything else. The same three primitives build `Surface.normalAt` (§1.3,
 where `smul` rescales the cross product to unit length) and the orthonormal
 shooting frame `Geodesic.tangentFrame` (a Gram–Schmidt step).
 
-**Checked example.** Split the arrow $w = (0, 0, 0.6)$ — the paraboloid's
+**Checked example.** Split the vector $w = (0, 0, 0.6)$ — the paraboloid's
 $\Phi_{vv}$ at $(1,0)$ — using the named parts, and check the reconstruction:
 
 ```lean
@@ -1083,10 +1088,10 @@ T(w) + (w·n)n = (0.000000, 0.000000, 0.600000)
 ```
 
 The last line returns $w$ exactly: tangent part plus normal part *is* the
-arrow — the split is lossless, as it must be. The normal coefficient
+vector — the split is lossless, as it must be. The normal coefficient
 $0.514496$ is the $II_{22}$ entry of §1.3, and the $\Phi_u$-coefficient
 $0.264706$ of the tangent part is a Christoffel symbol — §2.7 reads this
-same arrow out of the code.
+same vector out of the code.
 
 **Checked example (in raw primitives).** The same split written with bare
 `Vec3` lines — what you would compute before the named declarations existed:
@@ -1107,7 +1112,7 @@ T(w) = (0.264706, 0.000000, 0.158824)
 ```
 
 > **One sentence summary.** $J=[\Phi_u\;\Phi_v]$, $I=J^{\mathsf T}J$ (ruler),
-> $II_{ij}=n\cdot\Phi_{ij}$ (bending), and every arrow — curvature arrows
+> $II_{ij}=n\cdot\Phi_{ij}$ (bending), and every vector — curvature vectors
 > included — splits as $w = T(w) + (w\cdot n)\,n$, so
 > $\Phi_{ij}=T(\Phi_{ij})+II_{ij}n$ delivers the turning data $T(\Phi_{ij})$
 > in the same sweep.
@@ -1117,7 +1122,7 @@ T(w) = (0.264706, 0.000000, 0.158824)
 ### 1.6 Worked examples as vector computations
 
 Four classical surfaces, all measured with the same three moves: tangent
-arrows → dot products ($I$), curvature arrows → dot products with $n$
+vectors → dot products ($I$), curvature vectors → dot products with $n$
 ($II$), and $S = I^{-1}II$.
 
 #### Plane
@@ -1139,7 +1144,7 @@ statement "all second derivatives are zero vectors".
 \Phi(\theta,z) = (R\cos\theta,\,R\sin\theta,\,z).
 ```
 
-Tangent arrows:
+Tangent vectors:
 
 ```math
 \Phi_\theta = \begin{bmatrix}-R\sin\theta\\ R\cos\theta\\ 0\end{bmatrix},
@@ -1148,7 +1153,7 @@ Tangent arrows:
 ```
 
 so $I = \begin{bmatrix}R^2 & 0\\ 0 & 1\end{bmatrix}$. The single nonzero
-curvature arrow is
+curvature vector is
 
 ```math
 \Phi_{\theta\theta} = \begin{bmatrix}-R\cos\theta\\ -R\sin\theta\\ 0\end{bmatrix}
@@ -1172,15 +1177,15 @@ is why a cylinder can be cut and unrolled flat — nothing forces it to bend.
 = R\,(\sin\theta\cos\varphi,\ \sin\theta\sin\varphi,\ \cos\theta).
 ```
 
-Tangent arrows have lengths $|R\Phi_\theta| = R$ and
+Tangent vectors have lengths $|R\Phi_\theta| = R$ and
 $|\Phi_\varphi| = R\sin\theta$, perpendicular to each other, so
 
 ```math
 I = \begin{bmatrix}R^2 & 0\\ 0 & R^2\sin^2\theta\end{bmatrix}.
 ```
 
-The normal here is simply $n = \Phi/R$ (the arrow from the center to the
-point). The curvature arrows all point along $-n$:
+The normal here is simply $n = \Phi/R$ (the vector from the center to the
+point). The curvature vectors all point along $-n$:
 
 ```math
 \Phi_{\theta\theta} = -R\,n,
@@ -1243,7 +1248,7 @@ K = \frac{\det II}{\det I} = \frac{0.5145^2}{1.36} = 0.1946,
 H = \tfrac12(0.3783 + 0.5145) = 0.4464.
 ```
 
-Every number in this example is a dot product of four 3-D arrows — exactly
+Every number in this example is a dot product of four 3-D vectors — exactly
 what `lake exe geodesia` prints:
 
 ```text
@@ -1285,7 +1290,7 @@ structure Smooth2 where
 ```
 
 Each derivative is a **function**, so there is no finite-difference step in
-the main path — the derivative arrows above are exact. You build a surface
+the main path — the derivatives above are exact. You build a surface
 from exact combinators:
 
 ```lean
@@ -1334,7 +1339,7 @@ def Smooth2.mul (a b : Smooth2) : Smooth2 :=
 The `fxy` field differentiates $(fg)_x$ once more in $y$, which is why it has
 **four** summands — the two middle ones, $f_x g_y$ and $f_y g_x$, are the
 cross terms that a single-variable product rule never shows. The chain rule,
-likewise — here $\sin$ composed with an arbitrary arrow field $a(x,y)$:
+likewise — here $\sin$ composed with an arbitrary smooth field $a(x,y)$:
 
 ```lean
 def Smooth2.sin (a : Smooth2) : Smooth2 :=
@@ -1410,18 +1415,18 @@ def sphere : Surface where
 
 Then, in `Surface.lean` / `Curvature.lean`, the whole toolbox of this part —
 ending with the three vector declarations this chapter added, so that every
-arrow in the story has a name:
+vector in the story has a name:
 
 ```lean
-Surface.dPhi s 0 x y         -- the tangent arrow Φ_u
-Surface.dPhi s 1 x y         -- the tangent arrow Φ_v
-Surface.d2Phi s 0 0 x y      -- the curvature arrow Φ_uu
+Surface.dPhi s 0 x y         -- the tangent vector Φ_u
+Surface.dPhi s 1 x y         -- the tangent vector Φ_v
+Surface.d2Phi s 0 0 x y      -- the curvature vector Φ_uu
 Surface.normalAt s x y       -- n
-Surface.tangentVec s x y d   -- the arrow J d of parameter direction d
+Surface.tangentVec s x y d   -- the tangent vector J d of parameter direction d
 Surface.tangentialPart s x y w   -- T w = w − (w·n) n
 Surface.normalPart s x y w       -- (w·n) n
-Surface.metricI s x y        -- I  = Gram matrix of the tangent arrows
-Surface.metricII s x y       -- II = normal dot products of curvature arrows
+Surface.metricI s x y        -- I  = Gram matrix of the tangent vectors
+Surface.metricII s x y       -- II = normal dot products of curvature vectors
 Surface.gaussK s x y         -- K = det II / det I
 Surface.meanH s x y          -- H = ½ tr(I⁻¹ II)
 Surface.principalK s x y     -- (κ_min, κ_max)
@@ -1431,7 +1436,7 @@ Surface.shapeOperator s x y w
 ### 1.8 Exercises
 
 1. **Cone.** Take $\Phi(r,\theta) = (r\cos\theta, r\sin\theta, r)$.
-   Compute the tangent arrows $\Phi_r$, $\Phi_\theta$ and $I = J^{\mathsf T}J$.
+   Compute the tangent vectors $\Phi_r$, $\Phi_\theta$ and $I = J^{\mathsf T}J$.
    Show that one bending direction is zero and hence $K = 0$.
 2. **Determinant identity.** Prove $\det I = |\Phi_u\times\Phi_v|^2$ using
    only the cross-product identity
@@ -1460,38 +1465,38 @@ Surface.shapeOperator s x y w
    vs `Surface.firstForm s 1 0 (Surface.shapeOperator s 1 0 d)`.)*
 8. **The split, probed.** Using `Surface.tangentialPart` and
    `Surface.normalPart`, check on the paraboloid at $(1,0)$ that
-   (a) splitting the basis arrows gives
+   (a) splitting the basis vectors gives
    $T(\Phi_x) = \Phi_x$, $(\Phi_x\cdot n)\,n \ne 0$, and
    (b) splitting twice changes nothing:
    $T(T(w)) = T(w)$ and $(T(w)\cdot n) = 0$ — $T$ is a projection, so
-   splitting an already-split arrow is the identity. *(Starter: feed
+   splitting an already-split vector is the identity. *(Starter: feed
    `Surface.tangentialPart surf 1 0 w` back into itself for some `w`.)*
 
 ---
 
-## Part 2 — How tangent arrows turn: the tangential projection
+## Part 2 — How tangent vectors turn: the tangential projection
 
 > **Goal.** Express everything in **pure vector calculus**: the derivative of
-> any surface-bound arrow is an ordinary 3-D arrow, and the *surface-visible*
+> any surface-bound vector is an ordinary 3-D vector, and the *surface-visible*
 > part is obtained by the tangential projection $T w = w - (w\cdot n)\,n$
 > (defined in §1.5, computable in one `Vec3` line — and named in the code as
 > `Surface.tangentialPart`). Coefficients — the Christoffel symbols — appear
 > only as the *coordinate bookkeeping* of that projection (§2.8), because
 > that is what the Lean code stores.
 
-### 2.1 The problem: basis arrows turn as you walk
+### 2.1 The problem: basis vectors turn as you walk
 
-In the $xy$-plane the basis arrows $e_1=(1,0)$, $e_2=(0,1)$ are the same
+In the $xy$-plane the basis vectors $e_1=(1,0)$, $e_2=(0,1)$ are the same
 everywhere, so differentiating a vector field is component-wise. On a
-parameterized surface, the tangent basis arrows are the *columns of the
+parameterized surface, the tangent basis vectors are the *columns of the
 Jacobian*, $\Phi_u$ and $\Phi_v$, and these genuinely change from point to
 point. Differentiate them: each derivative $\Phi_{ui},\Phi_{vi},\dots$ (more
-generally $\Phi_{ij}$) is again a 3-D arrow in $\mathbb{R}^3$.
+generally $\Phi_{ij}$) is again a 3-D vector in $\mathbb{R}^3$.
 
 Here is the central **vector** move — the split of §1.5, applied to exactly
-the arrows that appear when you differentiate. At any point, 3-space
-decomposes into the tangent plane plus the normal arrow $n$, so every 3-D
-arrow splits uniquely:
+the vectors that appear when you differentiate. At any point, 3-space
+decomposes into the tangent plane plus the normal vector $n$, so every 3-D
+vector splits uniquely:
 
 ```math
 \boxed{\;
@@ -1502,16 +1507,16 @@ T w \;=\; w - (w\cdot n)\,n
 \;}
 ```
 
-$T$ — *tangential projection* — is a linear map from 3-D arrows back onto the
+$T$ — *tangential projection* — is a linear map from 3-D vectors back onto the
 tangent plane. Everything in this part is one of exactly two statements about
-the arrows $\Phi_{ij}$:
+the vectors $\Phi_{ij}$:
 
 - the **normal part** $(n\cdot\Phi_{ij})$ is the second fundamental form $II$
   (§1.3 — surface bending);
 - the **tangent part** $T\Phi_{ij}$ is how much the surface-bound derivative
-  of an arrow *unexpectedly* turns. That is the subject of this part.
+  of a vector *unexpectedly* turns. That is the subject of this part.
 
-No coefficients yet — these are honest arrows. Keep it that way as long as
+No coefficients yet — these are honest vectors. Keep it that way as long as
 possible. (§1.5's checked example already did one split:
 $\Phi_{vv} = (0.264706, 0, 0.158824) + 0.514496\,n$.)
 
@@ -1538,17 +1543,17 @@ covariant derivative has a **one-line vector formula**:
 \boxed{\;\nabla_v \, w \;=\; D_v w - \bigl((D_v w)\cdot n\bigr)\,n \;=\; T(D_v w)\;}
 ```
 
-i.e. differentiate the ambient arrows with the ordinary $\mathbb{R}^3$
+i.e. differentiate the ambient vectors with the ordinary $\mathbb{R}^3$
 derivative, then drop the normal piece. "Tangent + projection" replaces every
 $\Gamma$ contraction. Concretely:
 
 | | symbol route | vector route (this track) |
 |---|---|---|
-| what you differentiate | coordinate *coefficients* $V^k$ | the arrows $V$ themselves |
+| what you differentiate | coordinate *coefficients* $V^k$ | the vectors $V$ themselves |
 | correction mechanism | the $\Gamma$ terms (3-index bookkeeping) | subtract the normal part (`tangentialPart`) |
-| geometry read out | after summing repeated indices | directly, by looking at arrows |
+| geometry read out | after summing repeated indices | directly, by looking at vectors |
 | works without embedding | ✅ (its super-power) | needs $\Phi$ (fine — we have it) |
-| code cost | build $\Gamma$ array, then contract | project + dot with basis arrows |
+| code cost | build $\Gamma$ array, then contract | project + dot with basis vectors |
 
 Where the symbols *are* the right tool, this track says so honestly: when you
 only have the ruler $I$ (an abstract surface, a higher-dimensional manifold,
@@ -1568,7 +1573,7 @@ vector statement stays primary; the symbol array is a derived container.
 
 ### 2.3 The covariant derivative is the correction-free rate of turn
 
-> **Picture.** A surface-bound arrow field $V$ — think of the wind arrows
+> **Picture.** A surface-bound vector field $V$ — think of the wind vectors
 > painted on the sheet. To ask "how does $V$ change as I move?" you
 > differentiate it in ambient 3-space, as ordinary calculus. But part of
 > that derivative is *fake*: it records the ambient space's opinion about
@@ -1576,7 +1581,7 @@ vector statement stays primary; the symbol array is a derived container.
 > covariant derivative is the ambient derivative with the fake part
 > subtracted — one projection, the split of §1.5, nothing more.
 
-Take a surface-bound arrow field $V = V^u\,\Phi_u + V^v\,\Phi_v$. Its
+Take a surface-bound vector field $V = V^u\,\Phi_u + V^v\,\Phi_v$. Its
 ambient derivative in direction $i$ is ordinary calculus:
 
 ```math
@@ -1586,8 +1591,8 @@ ambient derivative in direction $i$ is ordinary calculus:
 + V^u\,\Phi_{ui} + V^v\,\Phi_{vi}.
 ```
 
-The first two terms are expected changes of the arrow; the last two are the
-surprise — *the basis arrows themselves turn* as the field's coefficients
+The first two terms are expected changes of the vector; the last two are the
+surprise — *the basis vectors themselves turn* as the field's coefficients
 move with the point. The surface-visible rate of turn is: project the whole
 thing back.
 
@@ -1596,7 +1601,7 @@ thing back.
 ```
 
 Since $V^u\Phi_u+V^v\Phi_v$ is already tangent ($T$ passes through it
-unchanged), the correction is exactly "differentiate the arrows, project".
+unchanged), the correction is exactly "differentiate the vectors, project".
 In pencil-and-paper coordinates the same statement becomes the familiar
 textbook pair
 
@@ -1608,18 +1613,18 @@ textbook pair
 with the $\Gamma$-correction terms coming straight from
 $T(\Phi_{ki}) = \Gamma^\cdot_{ki}\Phi_u + \cdots$ (i.e., from expanding
 $T\Phi_{ij}$ in $\{\Phi_u,\Phi_v\}$). On a flat plane in standard coordinates
-the basis arrows never turn: $\Gamma^k_{\;ij}=0$ and every $\nabla$ is an
+the basis vectors never turn: $\Gamma^k_{\;ij}=0$ and every $\nabla$ is an
 ordinary partial. The same plane *in polar coordinates* does need
 corrections; on a sphere every direction needs them (§2.5–2.6). This is the
-whole narrative of the Christoffel story — but written in arrow-language it
+whole narrative of the Christoffel story — but written in vector language it
 is simply $T(\partial\text{-derivative})$, with the $\Gamma$ terms surfacing
 only when a pencil demands them.
 
-> **This formula is executable.** The arrow statement is not just a slogan:
+> **This formula is executable.** The vector statement is not just a slogan:
 > `Surface.tangentialPart s u v (ambient derivative)` *is* $\nabla_i V$ —
 > one call of the named split of §1.5. What the library additionally stores
 > is the coefficient form, because an ODE integrator needs numbers, not
-> arrows. Both describe the same projection; the code below implements the
+> vectors. Both describe the same projection; the code below implements the
 > coefficient form of its most important case.
 
 **Signature.** The library's consumer of the $\Gamma$ array is the geodesic
@@ -1649,7 +1654,7 @@ def Geodesic.accel (s : Surface) (st : GeoState) : Vec2 :=
    -(g2uu * du * du + 2 * g2uv * du * dv + g2vv * dv * dv)⟩
 ```
 
-**Vector-calculus reading.** Start from the arrow statement
+**Vector-calculus reading.** Start from the vector statement
 $T\gamma''(s) = 0$ and expand it in the basis $\{\Phi_u, \Phi_v\}$, using
 $\gamma'' = u''\,\Phi_u + v''\,\Phi_v + u'^2\,\Phi_{uu} + 2u'v'\,\Phi_{uv} + v'^2\,\Phi_{vv}$
 (§1.3) and $T\Phi_{ij} = \Gamma^k_{\;ij}\,\Phi_k$ (§2.8):
@@ -1660,8 +1665,8 @@ T\gamma''
 + \Bigl(v'' + \Gamma^2_{\;uu}\,u'^2 + 2\Gamma^2_{\;uv}\,u'v' + \Gamma^2_{\;vv}\,v'^2\Bigr)\Phi_v.
 ```
 
-$\Phi_u$ and $\Phi_v$ are independent arrows, so each coefficient must vanish
-on its own — the arrow statement becomes **two scalar ODEs** for the
+$\Phi_u$ and $\Phi_v$ are independent vectors, so each coefficient must vanish
+on its own — the vector statement becomes **two scalar ODEs** for the
 coordinates:
 
 ```math
@@ -1677,40 +1682,40 @@ needs its own name), `du`/`dv` are $p$ and $q$, and each returned component
 is one negated quadratic — the factor $2$ on the $pq$ term comes from merging
 the $(uv)$ and $(vu)$ contributions. Note what the return value is: a
 `Vec2` in the **parameter plane**, the acceleration of the coordinates — not
-an ambient arrow. That is the price of the coefficient form; §2.1's $\gamma''$
-was the honest arrow, this is its coordinate shadow. `Geodesic.rhs` packages
+an ambient vector. That is the price of the coefficient form; §2.1's $\gamma''$
+was the honest vector, this is its coordinate shadow. `Geodesic.rhs` packages
 these two components with $\dot u = p,\ \dot v = q$ into the first-order
 system that Chapter 4 integrates with RK4.
 
-### 2.4 The Gauss formula, in arrow form
+### 2.4 The Gauss formula, in vector form
 
 The one-sentence motto of the whole part:
-*the second-derivative arrows split into tangent part $+$ normal part, and
+*the second-derivative vectors split into tangent part $+$ normal part, and
 every formula is one of those two projections.*
 
 ```mermaid
 flowchart LR
-    A["second-derivative arrows<br/>Φᵤᵤ, Φᵤᵥ, Φᵥᵥ (3-D)"] -->|"project out bending:<br/>(n·Φᵢⱼ) n"| B["II — second fundamental form"]
+    A["second-derivative vectors<br/>Φᵤᵤ, Φᵤᵥ, Φᵥᵥ (3-D)"] -->|"project out bending:<br/>(n·Φᵢⱼ) n"| B["II — second fundamental form"]
     A -->|"remove bending:<br/>T = w − (w·n)n"| C["tangent part: turning<br/>(covariant derivative)"]
     B -.->|"basis-coefficients<br/>(optional!)"| D["Γᵏᵢⱼ — the symbols"]
     C -.->|"basis-coefficients<br/>(optional!)"| D
 ```
 
 Both routes — the "project-out" route and the "differentiate-the-metric"
-route of §2.8 — measure the same arrows and agree numerically; they are the
+route of §2.8 — measure the same vectors and agree numerically; they are the
 same computation with and without coordinates. (§2.8's checked example makes
 "agree numerically" exact: the gap is `0.000000`.)
 
 ### 2.5 Example: the flat plane in polar coordinates
 
 Flat plane, wrapped geometry — the perfect test that tangent parts are about
-the *basis arrows*, not about bending:
+the *basis vectors*, not about bending:
 
 ```math
 \Phi(r,\theta) = (r\cos\theta,\ r\sin\theta,\ 0).
 ```
 
-Basis arrows and Gram matrix:
+Basis vectors and Gram matrix:
 
 ```math
 \Phi_r = (\cos\theta,\ \sin\theta,\ 0),\quad
@@ -1718,7 +1723,7 @@ Basis arrows and Gram matrix:
 I = \begin{bmatrix}1&0\\0&r^2\end{bmatrix}.
 ```
 
-Differentiate the arrows (all ordinary $\mathbb{R}^3$ calculus):
+Differentiate the vectors (all ordinary $\mathbb{R}^3$ calculus):
 
 ```math
 \frac{\partial\Phi_r}{\partial r}=0,\qquad
@@ -1731,15 +1736,15 @@ The plane's normal is a constant vector $n=(0,0,1)$, so these derivatives are
 *entirely tangent*: $T(\text{each row}) = $ each row. Two consequences worth
 pausing over:
 
-- the *basis arrows turn* — $\Phi_r$ turns into a $\Phi_\theta$ arrow when
+- the *basis vectors turn* — $\Phi_r$ turns into a $\Phi_\theta$ vector when
   pushed around $\theta$ — despite the *plane being flat*;
-- and the *arrow turning is exactly what cancels a curve's own turning*:
+- and the *vector turning is exactly what cancels a curve's own turning*:
   for a trajectory that stays geometrically straight, the coordinate parts
-  $\ddot r$, $\ddot\theta$ must push against these turning arrows so that
-  the *surface arrow* $\gamma''$ ends up purely normal (Chapter 3 makes
+  $\ddot r$, $\ddot\theta$ must push against these turning vectors so that
+  the acceleration vector $\gamma''$ ends up purely normal (Chapter 3 makes
   this precise).
 
-For comparison, in coordinates: these arrow equations *are*
+For comparison, in coordinates: these vector equations *are*
 $\Gamma^\theta_{\;\theta r} = \Gamma^\theta_{\;r\theta} = 1/r$ and
 $\Gamma^r_{\;\theta\theta}=-r$ — read off the same displayed rows, with
 coefficients recorded in the basis. The vector statement comes first; the
@@ -1778,16 +1783,16 @@ II          = [[0.000000, 0.000000], [0.000000, 0.000000]]
 Γ^r_rr, Γ^r_rθ, Γ^θ_θθ = 0.000000, 0.000000, 0.000000
 ```
 
-Flat plane, nonzero $\Gamma$: the *arrows* turn, the *plane* does not bend.
+Flat plane, nonzero $\Gamma$: the *vectors* turn, the *plane* does not bend.
 
 ### 2.6 Example: the unit sphere
 
 Sphere $\Phi(\theta,\varphi)=
 (\sin\theta\cos\varphi, \sin\theta\sin\varphi,\cos\theta)$,
-normal $n = \Phi$ (the radial arrow), and Gram matrix
+normal $n = \Phi$ (the radial vector), and Gram matrix
 $I = \operatorname{diag}(1, \sin^2\theta)$.
 
-Now differentiate the basis arrows — keeping the split intact:
+Now differentiate the basis vectors — keeping the split intact:
 
 ```math
 \frac{\partial\Phi_\theta}{\partial\theta}
@@ -1809,7 +1814,7 @@ agrees with $-\sin^2\theta\,n$.)
 This single row-set explains all the geometry the $\Gamma$ table used to
 mumble about:
 
-- a **meridian** ($\varphi$ fixed): its second-derivative arrow is
+- a **meridian** ($\varphi$ fixed): its second-derivative vector is
   $\Phi_{\theta\theta} = -n$ — normal only, tangent part zero → geodesic.
 - around the **equator** ($\theta = \pi/2$):
   $\partial_\varphi\Phi_\varphi = -n$ too, so latitude circles at $\pi/2$
@@ -1820,7 +1825,7 @@ mumble about:
 
 **Checked example.** The sphere's $I$ and its two nontrivial
 $\Gamma$-coefficients at $(\theta,\varphi) = (1.0, 0.2)$ — exactly the two
-arrow rows above ($\sin^2 1.0 = 0.708073$,
+vector rows above ($\sin^2 1.0 = 0.708073$,
 $-\sin\theta\cos\theta = -0.454649$, $\cot\theta = 0.642093$):
 
 ```lean
@@ -1840,7 +1845,7 @@ I_sphere = [[1.000000, 0.000000], [0.000000, 0.708073]]
 ```
 
 (`Γ^θ_θθ`, `Γ^θ_θφ`, `Γ^φ_θθ`, `Γ^φ_φφ` all come out $0$ — the $\Gamma$
-table here is as sparse as the arrow rows.)
+table here is as sparse as the vector rows.)
 
 ### 2.7 Example: the paraboloid
 
@@ -1853,36 +1858,36 @@ I=\begin{bmatrix}1.36&0\\0&1\end{bmatrix},
 ```
 
 Vector reading: the $v$-coordinate curve $x=\text{const}$ has second-derivative
-arrow $(0,0,0.6)$, while the normal there is
+vector $(0,0,0.6)$, while the normal there is
 $n=(-0.6,0,1)/\sqrt{1.36}$. Since $(0,0,0.6)$ is **not** parallel to $n$,
 exactly the leftover — the tangent part $T(0,0,0.6)$ — has a nonzero
-$\Phi_u$ component, and $0.2647$ is that arrow's coefficient in the user
+$\Phi_u$ component, and $0.2647$ is that vector's coefficient in the user
 direction (the coefficient of $\Phi_u$ inside $T\Phi_{vv}$, which in
-coordinates is labelled $\Gamma^u_{\;vv}$). The same arrow's *normal*
-coefficient is the $II_{22}$ entry from §1.3. One arrow, two
+coordinates is labelled $\Gamma^u_{\;vv}$). The same vector's *normal*
+coefficient is the $II_{22}$ entry from §1.3. One vector, two
 projections — that split pattern is the *entire subject*.
 
 **Checked example.** Both halves of that story, printed by the code:
-the $\Gamma^u$ row (§1.6 demo) and the explicit split of the same arrow
+the $\Gamma^u$ row (§1.6 demo) and the explicit split of the same vector
 (§1.5):
 
 ```text
 Γ¹₁₁, Γ¹₁₂, Γ¹₂₂ = 0.264706, 0.000000, 0.264706     -- coordinates of T Φ_vv (and T Φ_uu)
-T(w) = (0.264706, 0.000000, 0.158824)               -- the arrow T Φ_vv itself, w = (0, 0, 0.6)
+T(w) = (0.264706, 0.000000, 0.158824)               -- the vector T Φ_vv itself, w = (0, 0, 0.6)
 w·n  = 0.514496                                     -- the normal coefficient = II₂₂
 ```
 
 ### 2.8 The coordinate bookkeeping (what the code stores)
 
-Everything above was arrow language. When you (or the Lean code) want actual
+Everything above was vector language. When you (or the Lean code) want actual
 **numbers to feed an ODE**, the tangent parts have to be expressed in the
 basis $\{\Phi_u,\Phi_v\}$ and the *coefficients* recorded. That's what the
 following code computes — the coefficients are what tradition calls the
 Christoffel symbols:
 
 ```lean
-Surface.dPhi  s i x y   -- the basis arrows Φ_i
-Surface.d2Phi s i j x y -- the second-derivative arrows Φ_ij
+Surface.dPhi  s i x y   -- the basis vectors Φ_i
+Surface.d2Phi s i j x y -- the second-derivative vectors Φ_ij
 Surface.dMetricEntry s u i j x y
                         -- exact Gram-matrix derivative ∂_u (Φ_i·Φ_j)
 Surface.metricI s x y   -- the Gram matrix I
@@ -1894,7 +1899,7 @@ Surface.christoffel s x y
 Two equivalent coordinate formulas, both implemented exactly:
 
 **(a) Direct projection.** For an unknown expansion
-$T\Phi_{ij} = a\,\Phi_u + b\,\Phi_v$, dot each row with the basis arrows;
+$T\Phi_{ij} = a\,\Phi_u + b\,\Phi_v$, dot each row with the basis vectors;
 the normal-part drops, and the Gram matrix $I=J^{\mathsf T}J$ remains:
 
 ```math
@@ -1945,7 +1950,7 @@ def Surface.christoffel (s : Surface) (x y : Float) :
 
 **Vector-calculus reading.** `dMetricEntry s u i j x y` is the displayed
 product rule, $\partial_u I_{ij} = \Phi_{ui}\cdot\Phi_j + \Phi_i\cdot\Phi_{uj}$:
-two stored arrows dotted together, no finite differences anywhere. Each
+two stored vectors dotted together, no finite differences anywhere. Each
 `term` gathers one index $\ell \in \{0,1\}$ — that is, $\ell \in \{u,v\}$ — of
 the cyclic combination in the boxed formula; reading the argument order off
 the call sites, `dMetricEntry s i j ℓ` $= \partial_i I_{j\ell}$,
@@ -1993,7 +1998,7 @@ def gammaGap (s : Surface) (x y : Float) : Float :=
 ```
 
 **Checked example.** The two routes agree exactly on every surface of this
-chapter — the arrow statement (a) and the ruler statement (b) are the same
+chapter — the vector statement (a) and the ruler statement (b) are the same
 computation:
 
 ```lean
@@ -2011,13 +2016,13 @@ sphere:      gap = 0.000000
 ```
 
 > One sentence to keep both views in place: *the Christoffel symbols are the
-> coordinates of the tangent part of the second-derivative arrows: numbers
+> coordinates of the tangent part of the second-derivative vectors: numbers
 > read off by whichever formula is convenient, never required by the vector
 > story itself.*
 
 ### 2.9 Exercises
 
-1. **Polar, both ways.** From §2.5's arrow rows read
+1. **Polar, both ways.** From §2.5's vector rows read
    $T(\partial_\theta\Phi_r) = (1/r)\Phi_\theta$ and
    $T(\partial_\theta\Phi_\theta) = -r\,\Phi_r$; then check the same numbers
    via the pure-$I$ formula of §2.8 with $I=\mathrm{diag}(1,r^2)$.
@@ -2025,7 +2030,7 @@ sphere:      gap = 0.000000
 2. **Standard coordinates.** Show that every tangent-part coefficient
    vanishes for the plane in standard $(x,y)$ coordinates — and explain why
    that matches §2.5's nonzero polar numbers: the *plane* is flat in both;
-   the *arrows* turn only after polar wrapping.
+   the *vectors* turn only after polar wrapping.
 3. **Symmetry.** Use $\Phi_{uv}=\Phi_{vu}$ to show the tangent-part
    coordinates are symmetric in $i,j$: $\Gamma^k_{\;ij}=\Gamma^k_{\;ji}$.
    *(Check: `Surface.christoffel s x y k 0 1 == Surface.christoffel s x y k 1 0`.)*
@@ -2037,7 +2042,7 @@ sphere:      gap = 0.000000
    each of $\partial_\theta\Phi_\theta=(-R\,n)$,
    $\partial_\theta\Phi_z = 0$-type rows and deduce that *every* tangent
    part vanishes. Is that consistent with the cylinder being flat?
-6. **Sphere check.** Verify the three arrow splits of §2.6 from
+6. **Sphere check.** Verify the three vector splits of §2.6 from
    $I=\mathrm{diag}(1,\sin^2\theta)$ and the pure-$I$ route.
    *(The §2.6 checked example did the pure-$I$ half.)*
 7. **Conserved pairing.** Show that on the sphere
@@ -2047,7 +2052,7 @@ sphere:      gap = 0.000000
    equations.
 8. **Code experiment.** Evaluate `Surface.christoffel` on the paraboloid at
    $(0,0)$ and $(2,0)$; translate the printed numbers back into
-   *which arrow turned how much*, using §2.7's vector reading.
+   *which vector turned how much*, using §2.7's vector reading.
 
 ---
 
@@ -2058,20 +2063,20 @@ sphere:      gap = 0.000000
 > ```lean blocks are exactly the pieces that would become checked examples.
 > The three vector declarations this chapter added — `Surface.tangentVec`,
 > `Surface.tangentialPart`, `Surface.normalPart` — live in
-> `Geodesia/Surface.lean` alongside the arrows they are built from.
+> `Geodesia/Surface.lean` alongside the vectors they are built from.
 
 ## 🧭 Optional coda — the same chapter through geometric algebra and category theory
 
 > **Optional.** Everything above is complete without this coda. Read on if
 > you want to see the same objects — tangent space, ruler, split — wearing
-> two other coats: multivectors (Cl₃) and universal arrows (category
+> two other coats: multivectors (Cl₃) and universal properties (category
 > theory). The deep GA treatment lives in `GA_VIEW.md`; each chapter of
 > this tutorial ends with a coda like this one.
 
 ### The GA view: one blade carries the whole split
 
-Geometric algebra $\mathrm{Cl}_3$ has, besides arrows, **blades** — oriented
-area elements. The tangent plane is not just a set of arrows; it is one
+Geometric algebra $\mathrm{Cl}_3$ has, besides vectors, **blades** — oriented
+area elements. The tangent plane is not just a set of vectors; it is one
 unit 2-blade,
 
 ```math
@@ -2125,7 +2130,7 @@ be.
 | the split | $w = T w + (w\cdot n)n$ | projections onto $\hat B$ and $n$ | biproduct $\mathbb{R}^3 \cong T_pS \oplus \mathbb{R}n$ |
 | the turning data | $T\Phi_{ij}$, i.e. $\Gamma^k_{\;ij}\Phi_k$ | tangential part of $\Phi_{ij}$ | connection from the metric |
 
-![The coda picture: the metric as a pullback — the ambient inner product δ on ℝ³ read through the morphism J to give I = JᵀJ on T_pS — and the split of an ambient arrow w as the biproduct ℝ³ = T_pS ⊕ ℝn with projections T and (w·n)n.](images/pullback.png)
+![The coda picture: the metric as a pullback — the ambient inner product δ on ℝ³ read through the morphism J to give I = JᵀJ on T_pS — and the split of an ambient vector w as the biproduct ℝ³ = T_pS ⊕ ℝn with projections T and (w·n)n.](images/pullback.png)
 
 > **By the way.** Why end chapters with two extra lenses at all? Because
 > the same fact can sit at three depths: a computation (this chapter), a

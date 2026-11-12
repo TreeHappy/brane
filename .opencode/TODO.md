@@ -47,26 +47,26 @@ Position marker at the bottom says where we resume.
   converged → red, viridis → latte fade; alt-text semantics preserved);
   `__main__` updated; all 9 figures regenerated (png + svg), visually
   inspected for label collisions.
-- [ ] **NEXT SLOT — Terminology pass: retire the generic "arrow".**
-  Re-evaluate every "arrow" in `01-02-*.md` by its mathematical type and
-  use the specific term:
-  - $\Phi_u,\Phi_v$ → **tangent vector** (basis vectors of $T_pS$)
-  - $\gamma'$ → **velocity**; $\gamma''$ → **acceleration (vector)**
-  - $\Phi_{ij}$ → **curvature vector** (second-derivative vector)
-  - $n$ → **(unit) normal vector**
-  - generic $w \in \mathbb{R}^3$ → **ambient vector**
-  - basis arrows → **basis vectors**; "arrow field" → **vector field**
-  - leftover generic uses → **vector**; keep "arrow" nowhere in prose
-    (picture callouts included).
-  Scope: chapter prose, figure alt texts, dictionary + notation-bridge
-  tables ("the arrow of a parameter direction" etc.), and the rendered
-  text inside `make_figs.py` figures. Also update the `/-- -/` docstrings
-  in `Geodesia/Surface.lean` that say "arrow" (`tangentVec`, `normalPart`,
-  `tangentialPart`) — comment-only change, `lake build` after; add a
-  one-line terminology note to the chapter header explaining the mapping.
-  Mechanical check afterwards: `grep -in arrow` over the chapter returns
-  nothing (excluding quoted Lean code that genuinely means something
-  else). Commit + push when done.
+- [x] **NEXT SLOT — Terminology pass: retire the generic "arrow".** — done:
+  every "arrow" in `01-02-*.md` re-evaluated by type and renamed
+  (Φu,Φv → tangent vectors; γ″ → acceleration vector; Φij → curvature
+  vectors; n → normal vector; w ∈ ℝ³ → ambient vector; basis arrows →
+  basis vectors; arrow field → vector field; leftovers → vector); the
+  two protected verified artifacts kept byte-identical (`cos θ (arrows)`
+  snippet label + Output line, and the snippet comment
+  `-- the arrows: J ξ = Φ_x`); fence-internal changes are comments and
+  one mermaid label only (verified via fence-diff); awkward mechanical
+  results hand-fixed (tautologies "vector math: vectors", "vector world
+  … its own vectors", "four-vector table" → "table of four vectors",
+  "surface vector γ″" → "acceleration vector γ″", dictionary rows →
+  tangent/curvature vector). Also: `make_figs.py` rendered text
+  ("arrows: normal bending…" → "vectors: …") + math-referring
+  comments/docstrings updated (glyph-drawing "arrow"s kept);
+  `fig_normal_curvature` regenerated and inspected; the three
+  `/-- -/` docstrings in `Geodesia/Surface.lean` updated (comment-only,
+  `lake build` passes); one-line "A note on words" added to the chapter
+  header. Final sweep: only protected artifacts + LaTeX
+  `\Longrightarrow` false positives remain.
 - [ ] **Verify chapter.** Run every checked snippet via `lake env lean`
   scratch: old outputs must print unchanged (prover already confirmed I, II,
   n, κ, Γ lines), new §1.1/§1.5 outputs as quoted; confirm §1.x/§2.x
@@ -105,4 +105,4 @@ Position marker at the bottom says where we resume.
 
 ## Resume marker
 
-Next up: **terminology pass** (retire "arrow" — see NEXT SLOT item), then verify chapter, index.md, house instructions, commit-point report.
+Next up: **verify chapter** (run all checked snippets), then index.md, house instructions, commit-point report. Terminology pass done.
