@@ -67,11 +67,37 @@ Position marker at the bottom says where we resume.
   `lake build` passes); one-line "A note on words" added to the chapter
   header. Final sweep: only protected artifacts + LaTeX
   `\Longrightarrow` false positives remain.
+- [x] **Rework Ch. 3** (`03-geodesics-and-lagrangians.md`) — done: full house
+  header (epigraph picking up Ch. 2 §2.10 hand-off, what-this-chapter-is,
+  reproducing block, dictionary + notation bridge incl. `GeoState`/`accel`/
+  `energy`/`speed`/`tangentFrame`/`shoot`, note on words); §3.1–3.7 numbering
+  preserved (external cites: `08` §3.4, `GA_VIEW` §3.3 — both still resolve);
+  §3.2 gains Signature+Implementation of `Geodesic.accel` + verified eq-check
+  ($g_u = 0.360000$, $u'' = -0.264706 = -\Gamma^u_{uu}$ of §2.7, residual
+  $I\cdot\text{accel}+g = (0,0)$); §3.4 gains the setup fence (three surfaces
+  + `pConserved`) and three verified conservation tables (paraboloid
+  $E = 0.680000$/speed $1.166190$ at 5 checkpoints; polar $p_\theta =
+  1.350000 = r^2\dot\theta$; sphere $p_\varphi = 0.424844$; sphere drift
+  $\theta: 1.0 \to 1.834986$ woven into §3.5); new figure `height-map.png`
+  ("height map is the topic": contours + three §2.9 paths | conserved
+  ruler-speed vs straight line's rising price) embedded in §3.4; §3.6
+  garbled $g_k$ pseudo-formula replaced by pointer to §3.2's box; new
+  GA & CT coda (mirror wedge test $\gamma''\wedge n = 0$; Noether pairing /
+  momentum of the $S^1$ symmetry; three-coats table; skippable note).
+  All 23 retired-"arrow" occurrences retyped (2 remaining are the
+  note-on-words meta-mentions). Certification: the chapter's exact embedded
+  Lean (setup + eq-check + 3 tables) run as one scratch — all four quoted
+  Output blocks byte-exact; render sweep: 0 odd-$ lines, 0 fragile inline
+  (incl. two line-spanning inline spans fixed pre-commit). Ride-alongs in
+  `02-tangent-parts.md`: coda GA gloss corrected ("carries no normal blade"
+  → "the acceleration is purely normal") + ex. 9 inline-| hazard fixed;
+  index.md node C mentions the height map.
 - [ ] **Verify chapters.** Run every checked snippet via `lake env lean`
   scratch: old outputs must print unchanged (prover already confirmed I, II,
   n, κ, Γ lines), new §1.1/§1.5 outputs as quoted; confirm §1.x/§2.x
   cross-references resolve — now across the split files `01-fundamental-forms.md`
-  and `02-tangent-parts.md`.
+  and `02-tangent-parts.md`. (Ch. 3's embedded snippets certified at rewrite
+  time.)
 - [x] **index.md** — done during the split: reading-map node B retitled
   ("Turning tangent vectors", + hill walk), all retired-"arrow" terms fixed
   across index.md (incl. the pictures list), dictionary/code-map rows still
@@ -109,4 +135,7 @@ Position marker at the bottom says where we resume.
 
 ## Resume marker
 
-Next up: **verify chapter** (run all checked snippets), then index.md, house instructions, commit-point report. Terminology pass done.
+Next up: **verify chapters** (run all checked snippets across the split
+files), then house instructions (GA & CT coda convention), 08 §8.2 extension,
+GA_VIEW pointer, commit-point report. Split + §2.9/§2.10 + **Ch. 3 rework**
+done (Ch. 3's snippets certified byte-exact at rewrite time).

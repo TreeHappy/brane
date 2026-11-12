@@ -1241,6 +1241,107 @@ def fig_pullback():
     plt.close(fig)
 
 
+def fig_height_map():
+    """Ch. 3 anchor: the paraboloid hill as a topographic height map.
+
+    Left: contours of equal height h = C(u²+v²); three paths leave (1,0)
+    with the same initial parameter velocity (1,0) — the constant-radius
+    ring rides one contour, the parameter-straight line and the geodesic
+    cross every contour head-on, but only the geodesic ends where the ODE
+    says.  Right: the geodesic's ruler-speed |J q̇| stays flat (E held at
+    0.680) while its parameter speed sinks; the straight line's ruler-cost
+    rises — same walk, growing price."""
+    cmap = LinearSegmentedColormap.from_list(
+        "latte_topo", [LATTE["base"], LATTE["crust"], LATTE["surface0"],
+                       LATTE["surface1"], LATTE["yellow"], LATTE["peach"]])
+    fig, (ax, ax2) = plt.subplots(1, 2, figsize=(12.4, 5.6))
+
+    # ---- left: the height map ------------------------------------------------
+    g = np.linspace(0.0, 2.3, 420)
+    U, V = np.meshgrid(g, g)
+    Z = C * (U * U + V * V)
+    cs = ax.contourf(U, V, Z, levels=14, cmap=cmap, alpha=0.95)
+    lines = ax.contour(U, V, Z, levels=[0.3, 0.9, 1.5, 2.1, 2.7],
+                       colors=LATTE["overlay0"], linewidths=0.8)
+    ax.clabel(lines, inline=True, fontsize=8, fmt="%.1f",
+              colors=[LATTE["subtext0"]])
+
+    # the three paths of §2.9 from (1,0), initial parameter velocity (1,0)
+    t = np.linspace(0.0, 1.0, 200)
+    ring = np.column_stack([np.cos(t), np.sin(t)])            # circle r = 1
+    straight = np.column_stack([1.0 + t, np.zeros_like(t)])   # straight line
+    qs, ps = integrate(np.array([1.0, 0.0]), np.array([1.0, 0.0]), 1.0, n=400)
+    ax.plot(ring[:, 0], ring[:, 1], color=LATTE["overlay1"], lw=2.0,
+            linestyle=(0, (2, 2)))
+    ax.plot(straight[:, 0], straight[:, 1], color=LATTE["overlay1"], lw=2.0,
+            linestyle=(0, (5, 2)))
+    ax.plot(qs[:, 0], qs[:, 1], color=LATTE["green"], lw=2.6)
+    ax.plot([1.0], [0.0], marker="o", ms=7, color=LATTE["surface1"], zorder=5)
+    ax.plot([2.0], [0.0], marker="o", ms=6, color=LATTE["overlay1"], zorder=5)
+    ax.plot([qs[-1, 0]], [qs[-1, 1]], marker="o", ms=7, color=LATTE["green"],
+            zorder=5)
+
+    ax.text(0.28, 0.13, "start $(1,0)$,\nvelocity $(1,0)$",
+            color=LATTE["subtext0"], fontsize=9)
+    ax.text(2.24, 0.20, "straight\n$u=2.0$", color=LATTE["overlay1"],
+            fontsize=9, ha="right")
+    ax.text(0.30, 0.62, "ring rides\none contour", color=LATTE["overlay1"],
+            fontsize=9, ha="center")
+    ax.text(1.66, -0.30, "geodesic: $T\\gamma''=0$, ends at\n"
+            "$u=1.879182$ — speed hoarded\nwhere steps cost most",
+            color=LATTE["green"], fontsize=9)
+    ax.text(0.06, 2.10, "contours: equal height $h = 0.3(u^2{+}v^2)$",
+            color=LATTE["subtext0"], fontsize=8.5)
+    ax.set_title("The height map is the ruler", fontsize=13,
+                 color=LATTE["text"])
+    ax.set_xlabel("$u$", color=LATTE["subtext0"])
+    ax.set_ylabel("$v$", color=LATTE["subtext0"])
+    ax.set_xlim(0.0, 2.3)
+    ax.set_ylim(-0.45, 2.3)
+    ax.set_aspect("equal")
+
+    # ---- right: what is conserved -------------------------------------------
+    ss = np.linspace(0.0, 1.0, 201)
+    h = 1.0 / 200
+    q, p = np.array([1.0, 0.0]), np.array([1.0, 0.0])
+    geo_ruler, geo_param = [], []
+    for i, s in enumerate(ss):
+        I = metric(q)
+        geo_ruler.append(np.sqrt(p @ I @ p))
+        geo_param.append(np.linalg.norm(p))
+        if i < len(ss) - 1:
+            q, p = rk4_step(q, p, h)
+    straight_ruler = np.sqrt(1.0 + 4 * C * C * (1.0 + ss) ** 2)
+
+    ax2.plot(ss, geo_ruler, color=LATTE["green"], lw=2.6,
+             label=r"geodesic: $|J\,\dot q|$ held — $E=0.680000$")
+    ax2.plot(ss, straight_ruler, color=LATTE["overlay1"], lw=2.0,
+             linestyle=(0, (5, 2)),
+             label="straight line: same walk, rising price")
+    ax2.plot(ss, geo_param, color=LATTE["peach"], lw=2.4,
+             label=r"geodesic: parameter speed $|\dot q|$ sinks")
+    ax2.set_xlabel("parameter time $s$", color=LATTE["subtext0"])
+    ax2.set_title("What the geodesic conserves", fontsize=13,
+                  color=LATTE["text"])
+    ax2.legend(fontsize=9, loc="upper left", framealpha=0.0,
+               labelcolor=LATTE["subtext0"])
+    ax2.tick_params(colors=LATTE["subtext0"])
+    for spine in ax2.spines.values():
+        spine.set_color(LATTE["overlay0"])
+
+    fig.text(0.5, 0.015,
+             "Left: contours of the hill $h=0.3(u^2{+}v^2)$ — three paths "
+             "from the same start and velocity.  Right: the geodesic keeps "
+             "its ruler-cost per parameter second constant; the straight\n"
+             "line pays more and more as the contours spread apart.",
+             ha="center", fontsize=9.5, color=LATTE["subtext0"])
+    fig.tight_layout(rect=(0.0, 0.055, 1.0, 1.0))
+    for ext in ("png", "svg"):
+        fig.savefig(os.path.join(HERE, f"height-map.{ext}"),
+                    dpi=170, bbox_inches="tight")
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     fig_tangent_space()
     fig_fundamental_forms()
@@ -1251,6 +1352,7 @@ if __name__ == "__main__":
     fig_signatures()
     fig_jacobi_fan()
     fig_pullback()
+    fig_height_map()
     print("wrote tangent-space, fundamental-forms, shooting, relaxation, "
           "normal-curvature, shape-operator, curvature-signatures, "
-          "jacobi-fan, pullback (png + svg)")
+          "jacobi-fan, pullback, height-map (png + svg)")

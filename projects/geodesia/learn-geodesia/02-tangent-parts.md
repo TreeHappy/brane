@@ -815,7 +815,7 @@ and its whole-path alternative **relaxation** (Chapter 6). The hill of
 9. **Hill walk, continued.** In §2.9's setup, compute the straight path's
    waste one step further out —
    `Surface.tangentialPart hill 2 0 (Surface.d2Phi hill 0 0 2 0)` — and
-   re-form the ratio $|T\gamma''|/|\gamma''|$. Does the waste grow or
+   re-form the ratio $\lvert T\gamma''\rvert/\lvert\gamma''\rvert$. Does the waste grow or
    shrink as you slide outward, and is that consistent with "the ruler
    grows with the hill"? Then rotate the picture by $90^\circ$: at $(0,1)$
    the circle path's waste ratio comes out $0.857493$ again — the
@@ -862,7 +862,7 @@ blade and normal carry the same plane):
 | normal part $(w\cdot n)\,n$ | projection onto the 1-blade $n$ |
 | $w \in T_pS$ (tangency test) | the **wedge test**: $w \wedge \hat B = 0$ |
 | $dA = \sqrt{\det I}\;du\,dv$ | the area of the unnormalized blade: $\Phi_u \wedge \Phi_v$ |
-| geodesic equation $T\gamma'' = 0$ | $\gamma'' \wedge n = 0$ — acceleration carries no normal blade (Ch. 3) |
+| geodesic equation $T\gamma'' = 0$ | $\gamma'' \wedge n = 0$ — the acceleration is purely normal (Ch. 3) |
 
 The split is lossless in GA for the same reason it is here: blades give a
 basis-independent way to say "the part in the plane" and "the part out of

@@ -56,7 +56,7 @@ leads with them).
 flowchart TD
     A["Ch. 1 — Fundamental forms<br/>Jacobian J, I = JᵀJ, II, shape operator"]
     B["Ch. 2 — Turning tangent vectors<br/>covariant derivative via projection, polar, sphere & the hill walk"]
-    C["Ch. 3 — Geodesics<br/>zero tangent part of γ″, length functional, conserved pairings"]
+    C["Ch. 3 — Geodesics<br/>zero tangent part of γ″, length functional, conserved pairings, height map"]
     D["Ch. 4 — ODEs & RK4<br/>state space, Runge–Kutta, stability"]
     E["Ch. 5 — Shooting<br/>BVP → IVP, Newton, variational equations"]
     F["Ch. 6 — Relaxation<br/>deform a whole path, PDE & hierarchical methods"]
