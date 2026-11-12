@@ -2060,4 +2060,76 @@ sphere:      gap = 0.000000
 > `Surface.tangentialPart`, `Surface.normalPart` — live in
 > `Geodesia/Surface.lean` alongside the arrows they are built from.
 
-<!-- §APPEND -->
+## 🧭 Optional coda — the same chapter through geometric algebra and category theory
+
+> **Optional.** Everything above is complete without this coda. Read on if
+> you want to see the same objects — tangent space, ruler, split — wearing
+> two other coats: multivectors (Cl₃) and universal arrows (category
+> theory). The deep GA treatment lives in `GA_VIEW.md`; each chapter of
+> this tutorial ends with a coda like this one.
+
+### The GA view: one blade carries the whole split
+
+Geometric algebra $\mathrm{Cl}_3$ has, besides arrows, **blades** — oriented
+area elements. The tangent plane is not just a set of arrows; it is one
+unit 2-blade,
+
+```math
+\hat B \;=\; \frac{\Phi_u \wedge \Phi_v}{|\Phi_u \wedge \Phi_v|},
+\qquad \hat B^2 = -1,
+```
+
+and everything in this chapter becomes operations with $\hat B$ and the
+normal $n$ (in $\mathrm{Cl}_3$, $n\,\hat B$ is the unit trivector $I_3$, so
+blade and normal carry the same plane):
+
+| This chapter | GA form |
+|---|---|
+| tangent part $T w = w - (w\cdot n)\,n$ | projection onto the blade: $w_\parallel = (w\cdot \hat B)\,\hat B^{-1}$ (sandwich with $\hat B$) |
+| normal part $(w\cdot n)\,n$ | projection onto the 1-blade $n$ |
+| $w \in T_pS$ (tangency test) | the **wedge test**: $w \wedge \hat B = 0$ |
+| $dA = \sqrt{\det I}\;du\,dv$ | the area of the unnormalized blade: $\Phi_u \wedge \Phi_v$ |
+| geodesic equation $T\gamma'' = 0$ | $\gamma'' \wedge n = 0$ — acceleration carries no normal blade (Ch. 3) |
+
+The split is lossless in GA for the same reason it is here: blades give a
+basis-independent way to say "the part in the plane" and "the part out of
+the plane", and those two subspaces intersect only in $0$.
+
+### The CT view: the split is a biproduct, the metric is a pullback
+
+Category theory does not compute the numbers; it says *which* diagrams
+commute, i.e. why the numbers had to agree:
+
+| This chapter | CT form |
+|---|---|
+| parameter plane, tangent space, ambient space | objects of $\mathbf{Vect}$: $\mathbb{R}^2$, $T_pS$, $\mathbb{R}^3$ |
+| $J d = d.x\,\Phi_u + d.y\,\Phi_v$ (`tangentVec`) | the linear morphism $J : T\mathbb{R}^2 \to T_pS$ — the tangent functor applied to $\Phi$ |
+| $I = J^{\mathsf T}J$ | the **pullback** of the ambient inner product: $I = \Phi^{*}\delta$ — "the ruler $I$ is what the ambient $\delta$ becomes when read through $\Phi$" |
+| $w = T w + (w\cdot n)\,n$ | the **biproduct** decomposition $\mathbb{R}^3 \cong T_pS \oplus \mathbb{R}n$; $T$ and $(w\cdot n)\,n$ are the projection/injection pair, unique for each $w$ |
+| coordinates via $I^{-1}J^{\mathsf T}w$ (§1.2) | duality: the adjoint $J^{\mathsf T}$ paired with the isomorphism $I^{-1}$ |
+| $\Gamma^k_{\;ij}$ from $\partial(I)$ (§2.8) | the connection is determined by the metric — one natural transformation, not an extra structure |
+| $\Phi_{uv} = \Phi_{vu}$ (used everywhere) | $d^2 = 0$: the coordinate 1-forms $du, dv$ are exact, so their exterior derivative vanishes |
+
+The reason both formulations agree with the vector chapter is structural:
+$\mathbf{Vect}$ has biproducts, so "split into plane + normal" is not an
+assumption but a property; and the metric is *defined* as a pullback, so
+$J^{\mathsf T}J$ is not a formula to remember but the only thing it could
+be.
+
+### One object, three coats
+
+| Object | Vector chapter | GA | CT |
+|---|---|---|---|
+| the flat world | $T_pS = \mathrm{span}\{\Phi_u,\Phi_v\}$ | unit 2-blade $\hat B$ | object $T_pS \in \mathbf{Vect}$ |
+| the ruler | $I = J^{\mathsf T}J$ | inner products of blades | pullback $\Phi^{*}\delta$ |
+| the split | $w = T w + (w\cdot n)n$ | projections onto $\hat B$ and $n$ | biproduct $\mathbb{R}^3 \cong T_pS \oplus \mathbb{R}n$ |
+| the turning data | $T\Phi_{ij}$, i.e. $\Gamma^k_{\;ij}\Phi_k$ | tangential part of $\Phi_{ij}$ | connection from the metric |
+
+![The coda picture: the metric as a pullback — the ambient inner product δ on ℝ³ read through the morphism J to give I = JᵀJ on T_pS — and the split of an ambient arrow w as the biproduct ℝ³ = T_pS ⊕ ℝn with projections T and (w·n)n.](images/pullback.png)
+
+> **By the way.** Why end chapters with two extra lenses at all? Because
+> the same fact can sit at three depths: a computation (this chapter), a
+> product structure (GA), and a universal property (CT). Seeing all three
+> is the difference between knowing the formula and knowing the formula
+> *could not have been otherwise*. When a chapter's coda feels redundant,
+> skip it — it is written to be skippable.

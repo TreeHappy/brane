@@ -20,9 +20,10 @@ Position marker at the bottom says where we resume.
     (+ embedding Caution box)
   - [x] chunk 5 — §2.3 (executable covariant-derivative note) … §2.9
     (+ closing note extended to mention the new vector decls)
-  - [ ] chunk 6 — **GA & CT coda** (Cl₃: 2-blade B, sandwich split, wedge
-    test, 1-forms as dual pairs; CT: Vect, morphism J, pullback I = Φ*δ,
-    biproduct split, duality Jᵀ, d²=0; mapping table) + closing note
+  - [x] chunk 6 — **GA & CT coda** (Cl₃: unit 2-blade B̂, sandwich split,
+    wedge test, 1-forms d²=0; CT: Vect, morphism J, pullback I = Φ*δ,
+    biproduct split, duality Jᵀ; three-coats mapping table) + pullback
+    figure reference + closing "By the way"
 - [ ] **Intrinsic-vs-embedding aside.** Fold the "why not just assume the
   extra dimension?" exchange in: compact Caution box in §1.1/§2.2 + pointer
   to Ch. 8.
@@ -81,4 +82,4 @@ Position marker at the bottom says where we resume.
 
 ## Resume marker
 
-Next up: chapter chunk 6 (GA & CT coda + closing), then continue down the Now list in order.
+Next up: figures (make_figs.py: fig_tangent_space, fig_pullback, retunes, recolors), then continue down the Now list in order.
