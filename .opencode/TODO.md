@@ -37,17 +37,36 @@ Position marker at the bottom says where we resume.
   and is not observable), and the counterpoint: where physics *does* assume
   an embedding (ADM 3+1 split, brane worldvolumes) the extrinsic machinery
   (II, S, H) comes right back.
-- [ ] **Figures** (`learn-geodesia/images/make_figs.py`):
-  - [ ] add `fig_tangent_space()` — 2-D Jänich-style schematic (sheet profile,
-    three tangent spaces, zoom bubble with the split)
-  - [ ] add `fig_pullback()` — coda picture (metric as pullback I = Φ*δ;
-    split as biproduct ℝ³ = T_pS ⊕ ℝn)
-  - [ ] retune `fig_fundamental_forms` (add Jd arrow + T_pS label + title),
-    titles of `fig_normal_curvature` + `fig_shape_operator`
-  - [ ] recolor `fig_shooting` + `fig_relaxation` to Latte (semantic colors
-    preserved: grey misses → overlay0, red converged → red; alt texts in
-    05/06 stay valid)
-  - [ ] run `python3 make_figs.py`, regenerate png+svg for all
+- [x] **Figures** (`learn-geodesia/images/make_figs.py`) — all done:
+  `fig_tangent_space()` (2-D schematic: sheet profile, three tangent spaces,
+  zoom bubble with the split) and `fig_pullback()` (metric as pullback,
+  split as biproduct) added; `fig_fundamental_forms` retuned (green J d
+  vector + T_pS label + tangent-space-first title); titles of
+  `fig_normal_curvature` + `fig_shape_operator` retitled; `fig_shooting` +
+  `fig_relaxation` recolored to Latte (grey misses → overlay0, red
+  converged → red, viridis → latte fade; alt-text semantics preserved);
+  `__main__` updated; all 9 figures regenerated (png + svg), visually
+  inspected for label collisions.
+- [ ] **NEXT SLOT — Terminology pass: retire the generic "arrow".**
+  Re-evaluate every "arrow" in `01-02-*.md` by its mathematical type and
+  use the specific term:
+  - $\Phi_u,\Phi_v$ → **tangent vector** (basis vectors of $T_pS$)
+  - $\gamma'$ → **velocity**; $\gamma''$ → **acceleration (vector)**
+  - $\Phi_{ij}$ → **curvature vector** (second-derivative vector)
+  - $n$ → **(unit) normal vector**
+  - generic $w \in \mathbb{R}^3$ → **ambient vector**
+  - basis arrows → **basis vectors**; "arrow field" → **vector field**
+  - leftover generic uses → **vector**; keep "arrow" nowhere in prose
+    (picture callouts included).
+  Scope: chapter prose, figure alt texts, dictionary + notation-bridge
+  tables ("the arrow of a parameter direction" etc.), and the rendered
+  text inside `make_figs.py` figures. Also update the `/-- -/` docstrings
+  in `Geodesia/Surface.lean` that say "arrow" (`tangentVec`, `normalPart`,
+  `tangentialPart`) — comment-only change, `lake build` after; add a
+  one-line terminology note to the chapter header explaining the mapping.
+  Mechanical check afterwards: `grep -in arrow` over the chapter returns
+  nothing (excluding quoted Lean code that genuinely means something
+  else). Commit + push when done.
 - [ ] **Verify chapter.** Run every checked snippet via `lake env lean`
   scratch: old outputs must print unchanged (prover already confirmed I, II,
   n, κ, Γ lines), new §1.1/§1.5 outputs as quoted; confirm §1.x/§2.x
@@ -86,4 +105,4 @@ Position marker at the bottom says where we resume.
 
 ## Resume marker
 
-Next up: figures (make_figs.py: fig_tangent_space, fig_pullback, retunes, recolors), then continue down the Now list in order.
+Next up: **terminology pass** (retire "arrow" — see NEXT SLOT item), then verify chapter, index.md, house instructions, commit-point report.

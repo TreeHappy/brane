@@ -455,11 +455,19 @@ def fig_fundamental_forms():
     fancy_arrow(ax, P, 0.92 * n, LATTE["red"], lw=2.2)
     ball(ax, P, s=70)
 
+    # the vector J d of a parameter direction d = (1, −1) — green
+    jd = jac(p) @ np.array([1.0, -1.0])
+    jd = jd / np.linalg.norm(jd)
+    tip_jd = fancy_arrow(ax, P, 0.62 * jd, LATTE["green"], lw=2.2)
+
     mlabel(ax, P + 0.78 * wu, r"$\Phi_u$", LATTE["blue"],
            offset=(0.10, 0.05, 0.06))
     mlabel(ax, P + 0.78 * wv, r"$\Phi_v$", LATTE["blue"],
            offset=(-0.30, -0.06, 0.02))
     mlabel(ax, P + 0.92 * n, r"$n$", LATTE["red"], offset=(0.08, 0.00, 0.10))
+    mlabel(ax, tip_jd, r"$J\,d$", LATTE["green"], offset=(0.06, -0.14, 0.08))
+    mlabel(ax, P - 0.55 * wu - 0.55 * wv, r"$T_pS$", LATTE["blue"],
+           offset=(-0.16, -0.10, -0.14), fontsize=11)
     mlabel(ax, tip2, r"$\gamma''$", LATTE["text"], offset=(0.05, 0.12, 0.04))
     mlabel(ax, tipn, r"$II(d,d)\,n$", LATTE["teal"],
            offset=(0.16, 0.06, 0.16))
@@ -469,8 +477,8 @@ def fig_fundamental_forms():
     mlabel(ax, phi(qs[i_mid]), r"$\gamma(s)$", LATTE["mauve"],
            offset=(-0.26, 0.02, -0.02), fontsize=10.5)
 
-    ax.set_title("The two fundamental forms at one point\n"
-                 r"$I=J^{\mathrm{T}}J$ measures in the tangent plane,"
+    ax.set_title("The tangent space $T_pS$ and the two measurements\n"
+                 r"$I=J^{\mathrm{T}}J$ measures inside $T_pS$,"
                  r"  $II=\langle n,\Phi_{ij}\rangle$ up along $n$",
                  fontsize=11, color=LATTE["text"])
     fig.tight_layout()
@@ -498,23 +506,25 @@ def fig_shooting():
     # Several shots with the *initial* length: visible misses.
     for k, da in enumerate(np.linspace(-0.28, 0.28, 5)):
         qs = shoot(q0, alpha0 + da, L0)
-        plot_path(ax, qs, color="#adb5bd", linewidth=1.0, alpha=0.9,
+        plot_path(ax, qs, color=LATTE["overlay0"], linewidth=1.0, alpha=0.9,
                   linestyle="--")
-        ax.scatter(*phi(qs[-1]), color="#6c757d", s=12, depthshade=False)
+        ax.scatter(*phi(qs[-1]), color=LATTE["overlay1"], s=12,
+                   depthshade=False)
 
-    plot_path(ax, paths[-1], color="#d00000", linewidth=3.0,
+    plot_path(ax, paths[-1], color=LATTE["red"], linewidth=3.0,
               label="converged geodesic")
-    ax.scatter(*phi(q0), color="#2a9d8f", s=70, depthshade=False,
+    ax.scatter(*phi(q0), color=LATTE["teal"], s=70, depthshade=False,
                label="source $a$")
-    ax.scatter(*phi(target), color="#e63946", s=90, marker="*",
+    ax.scatter(*phi(target), color=LATTE["maroon"], s=90, marker="*",
                depthshade=False, label="target $b$")
-    ax.set_title("Shooting: grey = misses at the initial $L$, red = converged",
+    ax.set_title("Shooting: misses at the initial $L$ (grey),"
+                 " converged geodesic (red)",
                  fontsize=10)
     ax.legend(loc="upper left", fontsize=8)
     ax.set_box_aspect((1, 1, 0.62))
 
     ax2 = fig.add_subplot(122)
-    ax2.semilogy(range(len(hist)), hist, "o-", color="#d00000")
+    ax2.semilogy(range(len(hist)), hist, "o-", color=LATTE["red"])
     ax2.set_xlabel("Newton iteration")
     ax2.set_ylabel(r"$\|R\|=\|q(L)-b\|$")
     ax2.set_title(f"Converged: $\\alpha={x[0]:.5f}$, $L={x[1]:.5f}$",
@@ -540,18 +550,22 @@ def fig_relaxation():
     draw_surface(ax)
 
     keys = sorted(snaps)
-    colors = cm.viridis(np.linspace(0.05, 0.9, len(keys)))
+    latte_fade = LinearSegmentedColormap.from_list(
+        "latte_fade", [LATTE["blue"], LATTE["lavender"], LATTE["mauve"],
+                       LATTE["red"]])
+    colors = latte_fade(np.linspace(0.05, 0.9, len(keys)))
     for color, it in zip(colors, keys):
         plot_path(ax, snaps[it], color=color, linewidth=2.0,
                   label=f"iter {it}" if it in (0, 250, 1000, keys[-1]) else None)
-    ax.scatter(*phi(q0), color="#2a9d8f", s=70, depthshade=False)
-    ax.scatter(*phi(q1), color="#e63946", s=90, marker="*", depthshade=False)
+    ax.scatter(*phi(q0), color=LATTE["teal"], s=70, depthshade=False)
+    ax.scatter(*phi(q1), color=LATTE["maroon"], s=90, marker="*",
+               depthshade=False)
     ax.set_title("Relaxation: a bent path tightens into a geodesic", fontsize=10)
     ax.legend(loc="upper left", fontsize=8)
     ax.set_box_aspect((1, 1, 0.62))
 
     ax2 = fig.add_subplot(122)
-    ax2.semilogy(lengths, color="#0077b6", linewidth=2.0)
+    ax2.semilogy(lengths, color=LATTE["blue"], linewidth=2.0)
     ax2.set_xlabel("iteration")
     ax2.set_ylabel("polyline length")
     ax2.set_title("Length decreases monotonically", fontsize=10)
@@ -622,7 +636,8 @@ def fig_normal_curvature():
               rf"  $\kappa_v={k_v:.4f}$ along $\Phi_v$ (peach)",
               transform=ax.transAxes, va="top", fontsize=8.5,
               color=LATTE["subtext1"])
-    ax.set_title("One point, two directions,\ntwo different bending rates",
+    ax.set_title("One tangent space, two directions,\n"
+                 "two different bending rates",
                  fontsize=10.5, color=LATTE["text"])
 
     # polar sweep of κ(θ): rotate d=(cosθ, sinθ) through all directions
@@ -729,8 +744,8 @@ def fig_shape_operator():
               "\n" r"that $-S\xi$ measures",
               transform=ax.transAxes, va="top", fontsize=8.5,
               color=LATTE["subtext1"])
-    ax.set_title("Shape operator $S = I^{-1}II$: slide along $\\xi$,\n"
-                 r"and the normal arrow tips at rate $-S\xi$",
+    ax.set_title("The shape operator, one map on $T_pS$:\n"
+                 r"slide along $\xi$, the normal tips at rate $-S\xi$",
                  fontsize=10.5, color=LATTE["text"])
     fig.tight_layout()
     for ext in ("png", "svg"):
@@ -1023,7 +1038,211 @@ def fig_jacobi_fan():
     plt.close(fig)
 
 
+# ---------------------------------------------------------------------------
+# Figure: tangent space schematic (2-D book style)
+# ---------------------------------------------------------------------------
+def fancy2(ax, base, vec, color, lw=2.2, head=0.055, zorder=5):
+    """A 2-D arrow with a filled triangular head."""
+    b = np.asarray(base, float)
+    v = np.asarray(vec, float)
+    n_ = v / np.linalg.norm(v)
+    perp = np.array([-n_[1], n_[0]])
+    tip = b + v
+    left = tip - head * n_ + 0.6 * head * perp
+    right = tip - head * n_ - 0.6 * head * perp
+    ax.plot([b[0], tip[0]], [b[1], tip[1]], color=color, lw=lw,
+            solid_capstyle="round", zorder=zorder)
+    ax.fill([tip[0], left[0], right[0]], [tip[1], left[1], right[1]],
+            color=color, zorder=zorder)
+    return tip
+
+
+def ball2(ax, p, s=42, color=LATTE["text"]):
+    ax.scatter(*p, s=s, color=color, zorder=6)
+
+
+def lab2(ax, p, text, color, dx=0.0, dy=0.0, fontsize=11):
+    ax.text(p[0] + dx, p[1] + dy, text, color=color, fontsize=fontsize,
+            ha="left", va="center", zorder=7)
+
+
+def fig_tangent_space():
+    """Jänich-style schematic: a bent sheet seen from the side, its flat
+    tangent spaces attached at three points, and a zoom bubble showing the
+    unique split of an ambient arrow into tangent + normal parts."""
+    fig, ax = plt.subplots(figsize=(9.2, 4.6))
+
+    # the sheet, seen from the side: z = C u² profile (parabolic arc)
+    us = np.linspace(-1.9, 1.9, 300)
+    zs = C * us * us
+    ax.plot(us, zs + 0.55, color=LATTE["subtext1"], lw=3.0,
+            solid_capstyle="round", zorder=3)
+    ax.fill_between(us, zs + 0.55, zs + 0.53, color=LATTE["lavender"],
+                    alpha=0.35, zorder=1)
+
+    # three points with their tangent spaces (flat world = line segment),
+    # the tangent arrow Φu (blue) and the normal n (red) at each
+    probe = [-1.35, 0.0, 1.35]
+    for u0 in probe:
+        P = np.array([u0, C * u0 * u0 + 0.55])
+        slope = 2 * C * u0
+        tdir = np.array([1.0, slope]) / np.hypot(1.0, slope)
+        ndir = np.array([-slope, 1.0]) / np.hypot(1.0, slope)
+        r = 0.75
+        ax.plot([P[0] - r * tdir[0], P[0] + r * tdir[0]],
+                [P[1] - r * tdir[1], P[1] + r * tdir[1]],
+                color=LATTE["blue"], lw=1.4, ls=(0, (4, 2.2)),
+                alpha=0.9, zorder=4)
+        fancy2(ax, P, 0.55 * tdir, LATTE["blue"])
+        fancy2(ax, P, 0.55 * ndir, LATTE["red"])
+        ball2(ax, P, s=36)
+    lab2(ax, np.array([probe[0], C * probe[0] ** 2 + 0.55]) + np.array([-0.62, 0.28]),
+         r"$\Phi_u$", LATTE["blue"], fontsize=11)
+    lab2(ax, np.array([probe[0], C * probe[0] ** 2 + 0.55]) + np.array([0.02, 0.30]),
+         r"$n$", LATTE["red"], fontsize=11)
+    lab2(ax, np.array([probe[1], C + 0.55]) + np.array([0.72, -0.44]),
+         r"$T_pS$ — flat", LATTE["blue"], fontsize=11.5)
+    lab2(ax, np.array([probe[2], C * probe[2] ** 2 + 0.55]) + np.array([-0.95, 0.26]),
+         r"$T_qS$ — just as flat", LATTE["blue"], fontsize=10)
+
+    # zoom bubble at the middle point: one ambient arrow w and its split
+    zx, zy = 1.35, 2.62
+    zw = 2.6
+    circle = plt.Circle((zx, zy), 0.92, fill=True,
+                        facecolor=LATTE["mantle"], edgecolor=LATTE["surface2"],
+                        lw=1.2, zorder=2)
+    ax.add_patch(circle)
+    # connector from the sheet point to the bubble
+    ax.plot([probe[1], zx - 0.30], [C + 0.55, zy - 0.88],
+            color=LATTE["overlay1"], lw=1.0, ls=(0, (2, 2)), zorder=1)
+
+    Z = np.array([zx, zy])            # bubble center = the point p
+    tdir = np.array([1.0, 0.0])
+    ndir = np.array([0.0, 1.0])
+    fancy2(ax, Z - 0.80 * tdir, 1.6 * tdir, LATTE["blue"])
+    fancy2(ax, Z, 0.66 * ndir, LATTE["red"])
+    w = 0.86 * np.array([0.42, 0.91])             # ambient arrow, tilted
+    wn = (w @ ndir) * ndir                        # (w·n) n  — teal
+    wt = w - wn                                   # T w — peach
+    fancy2(ax, Z, w, LATTE["text"], lw=1.9, zorder=6)
+    fancy2(ax, Z, 0.72 * wn, LATTE["teal"])
+    fancy2(ax, Z, 0.72 * wt, LATTE["peach"])
+    lab2(ax, Z + w + np.array([-0.02, 0.10]), r"$w$", LATTE["text"], fontsize=11)
+    lab2(ax, Z + 0.72 * wn + np.array([0.12, 0.05]), r"$(w\cdot n)\,n$",
+         LATTE["teal"], fontsize=10.5)
+    lab2(ax, Z + 0.72 * wt + np.array([0.02, -0.16]), r"$T\,w$",
+         LATTE["peach"], fontsize=11)
+    lab2(ax, Z + np.array([-0.02, 0.74]), r"$n$", LATTE["red"], fontsize=11)
+
+    ax.set_xlim(-2.6, 3.15)
+    ax.set_ylim(0.35, 3.7)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    ax.set_title("The sheet is curved; its tangent spaces are flat\n"
+                 "and every ambient vector splits uniquely",
+                 fontsize=11.5, color=LATTE["text"])
+    fig.tight_layout()
+    for ext in ("png", "svg"):
+        fig.savefig(os.path.join(HERE, f"tangent-space.{ext}"),
+                    dpi=170, bbox_inches="tight")
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Figure: pullback metric + biproduct split (CT coda, 2-D book style)
+# ---------------------------------------------------------------------------
+def _ct_box(ax, x, y, w, h, lines, face, edge):
+    ax.add_patch(plt.Rectangle((x, y), w, h, facecolor=face,
+                               edgecolor=edge, lw=1.3, zorder=2))
+    for k, (txt, col, fs) in enumerate(lines):
+        ax.text(x + w / 2, y + h - (k + 1) * h / (len(lines) + 1), txt,
+                color=col, fontsize=fs, ha="center", va="center", zorder=3)
+
+
+def fig_pullback():
+    """The coda picture: the metric as the pullback I = Φ*δ of the ambient
+    inner product along the morphism J, and the split of an ambient arrow as
+    the biproduct ℝ³ = T_pS ⊕ ℝn."""
+    fig, ax = plt.subplots(figsize=(9.6, 5.8))
+
+    # top diagram: pullback — δ on ℝ³, pulled back to I on T_pS
+    _ct_box(ax, 0.35, 2.75, 3.05, 1.5,
+            [(r"$T\,\mathbb{R}^2 \to T_pS$", LATTE["text"], 12),
+             (r"$d$: a parameter direction", LATTE["subtext0"], 10.5)],
+            LATTE["mantle"], LATTE["blue"])
+    _ct_box(ax, 5.35, 2.75, 3.05, 1.5,
+            [(r"$\mathbb{R}^3$", LATTE["text"], 12),
+             (r"$\delta$: the plain dot product", LATTE["subtext0"], 10.5)],
+            LATTE["mantle"], LATTE["subtext1"])
+
+    ax.annotate("", xy=(5.25, 3.85), xytext=(3.55, 3.85),
+                arrowprops=dict(arrowstyle="-|>", color=LATTE["green"],
+                                lw=2.2, mutation_scale=16))
+    ax.text(4.4, 4.06, r"$J$", color=LATTE["green"], fontsize=13,
+            ha="center")
+    ax.text(4.4, 3.52, r"$J\,d = d_x\,\Phi_u + d_y\,\Phi_v$",
+            color=LATTE["subtext0"], fontsize=10, ha="center")
+
+    # the pullback: I = Jᵀ J read backwards along J
+    ax.annotate("", xy=(3.55, 2.45), xytext=(5.25, 2.45),
+                arrowprops=dict(arrowstyle="-|>", color=LATTE["peach"],
+                                lw=2.2, mutation_scale=16,
+                                linestyle=(0, (5, 2))))
+    ax.text(4.4, 2.08, r"$I = \Phi^{*}\delta = J^{\mathrm{T}}J$ — the ruler,"
+            " pulled back", color=LATTE["peach"], fontsize=11, ha="center")
+
+    # bottom diagram: the biproduct split of an ambient arrow w
+    _ct_box(ax, 2.45, 0.85, 2.1, 0.75,
+            [(r"$w \in \mathbb{R}^3$", LATTE["text"], 11.5)],
+            LATTE["base"], LATTE["subtext1"])
+    _ct_box(ax, 0.55, -0.05, 1.75, 0.85,
+            [(r"$T_pS$", LATTE["text"], 12.5),
+             (r"$T\,w$ (peach)", LATTE["peach"], 10)],
+            LATTE["mantle"], LATTE["peach"])
+    _ct_box(ax, 4.95, -0.05, 1.75, 0.85,
+            [(r"$\mathbb{R}n$", LATTE["text"], 12.5),
+             (r"$(w\cdot n)\,n$ (teal)", LATTE["teal"], 10)],
+            LATTE["mantle"], LATTE["teal"])
+
+    # projections (solid) and re-injections (dashed, slightly offset)
+    ax.annotate("", xy=(1.45, 0.88), xytext=(3.05, 0.80),
+                arrowprops=dict(arrowstyle="-|>", color=LATTE["peach"],
+                                lw=2.0, mutation_scale=14))
+    ax.text(1.95, 1.10, r"$T$", color=LATTE["peach"], fontsize=12)
+    ax.annotate("", xy=(5.80, 0.88), xytext=(3.95, 0.80),
+                arrowprops=dict(arrowstyle="-|>", color=LATTE["teal"],
+                                lw=2.0, mutation_scale=14))
+    ax.text(4.85, 1.10, r"$(w\cdot n)$", color=LATTE["teal"], fontsize=11)
+    ax.annotate("", xy=(2.85, 0.82), xytext=(1.65, 0.92),
+                arrowprops=dict(arrowstyle="-|>", color=LATTE["overlay1"],
+                                lw=1.1, mutation_scale=10,
+                                linestyle=(0, (2, 2))))
+    ax.annotate("", xy=(4.15, 0.82), xytext=(5.60, 0.92),
+                arrowprops=dict(arrowstyle="-|>", color=LATTE["overlay1"],
+                                lw=1.1, mutation_scale=10,
+                                linestyle=(0, (2, 2))))
+
+    ax.text(4.4, -0.72, r"$\mathbb{R}^3 \cong T_pS \oplus \mathbb{R}n$:"
+            " every vector splits uniquely, and the two pieces reassemble"
+            " it losslessly",
+            color=LATTE["subtext0"], fontsize=10.5, ha="center")
+
+    ax.set_xlim(0.1, 8.9)
+    ax.set_ylim(-1.0, 4.45)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    ax.set_title("The metric is a pullback; the split is a biproduct\n"
+                 "(the category-theory reading of §1.2 and §1.5)",
+                 fontsize=11.5, color=LATTE["text"])
+    fig.tight_layout()
+    for ext in ("png", "svg"):
+        fig.savefig(os.path.join(HERE, f"pullback.{ext}"),
+                    dpi=170, bbox_inches="tight")
+    plt.close(fig)
+
+
 if __name__ == "__main__":
+    fig_tangent_space()
     fig_fundamental_forms()
     fig_shooting()
     fig_relaxation()
@@ -1031,5 +1250,7 @@ if __name__ == "__main__":
     fig_shape_operator()
     fig_signatures()
     fig_jacobi_fan()
-    print("wrote fundamental-forms, shooting, relaxation, normal-curvature, "
-          "shape-operator, curvature-signatures, jacobi-fan (png + svg)")
+    fig_pullback()
+    print("wrote tangent-space, fundamental-forms, shooting, relaxation, "
+          "normal-curvature, shape-operator, curvature-signatures, "
+          "jacobi-fan, pullback (png + svg)")
