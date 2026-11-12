@@ -15,8 +15,9 @@ Position marker at the bottom says where we resume.
     demoted; all four verified example blocks preserved)
   - [x] chunk 3 — §1.3 (acceleration arrows) + §1.4 (shape operator as
     endomorphism of T_pS)
-  - [ ] chunk 4 — §1.5 (named split + new checked example), §1.6, §1.7
+  - [x] chunk 4 — §1.5 (named split + new checked example), §1.6, §1.7
     (toolbox + new decls), §1.8 (+ new exercise 8), Part 2 header, §2.1–2.2
+    (+ embedding Caution box)
   - [ ] chunk 5 — §2.3 (executable covariant-derivative note) … §2.9
   - [ ] chunk 6 — **GA & CT coda** (Cl₃: 2-blade B, sandwich split, wedge
     test, 1-forms as dual pairs; CT: Vect, morphism J, pullback I = Φ*δ,
@@ -79,4 +80,4 @@ Position marker at the bottom says where we resume.
 
 ## Resume marker
 
-Next up: chapter chunk 4b (§1.7 + §1.8 + Part 2 header + §2.1–2.2), then continue down the Now list in order.
+Next up: chapter chunk 5 (§2.3 … §2.9), then continue down the Now list in order.

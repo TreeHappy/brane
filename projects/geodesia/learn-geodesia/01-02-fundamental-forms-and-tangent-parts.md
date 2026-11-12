@@ -1263,4 +1263,307 @@ unit sphere at (θ, φ) = (1.000000, 0.200000)
   K (should be 1) = 1.000000
 ```
 
+### 1.7 How the code represents this (exact derivatives)
+
+> **By the way.** This section is about the *plumbing*, and it can be
+> skipped on a first pass. But it answers the question every reader of the
+> checked examples eventually asks: *where do the exact numbers come
+> from?* The answer is pleasingly old-fashioned: derivatives stored as
+> functions, combined by the product and chain rules — a calculus course
+> in four lines of code.
+
+`Geodesia/Diff.lean` defines
+
+```lean
+structure Smooth2 where
+  f   : Float → Float → Float
+  fx  : Float → Float → Float
+  fy  : Float → Float → Float
+  fxx : Float → Float → Float
+  fxy : Float → Float → Float
+  fyy : Float → Float → Float
+```
+
+Each derivative is a **function**, so there is no finite-difference step in
+the main path — the derivative arrows above are exact. You build a surface
+from exact combinators:
+
+```lean
+def paraboloid : Smooth2 :=
+  Smooth2.smul 0.3
+    (Smooth2.add (Smooth2.mul Smooth2.coordX Smooth2.coordX)
+                 (Smooth2.mul Smooth2.coordY Smooth2.coordY))
+```
+
+`Smooth2.mul` implements the product rule in both variables, `Smooth2.sin`
+implements the chain rule twice, etc. If you only have a bare
+`Float → Float → Float`, use `Smooth2.ofFiniteDiff` as a fallback; that is
+the only place an `ε` appears.
+
+**Implementation.** The product rule, verbatim from `Geodesia/Diff.lean` —
+each of the six fields is one textbook identity:
+
+```lean
+def Smooth2.mul (a b : Smooth2) : Smooth2 :=
+  { f := fun x y => a.f x y * b.f x y
+    fx := fun x y => a.fx x y * b.f x y + a.f x y * b.fx x y
+    fy := fun x y => a.fy x y * b.f x y + a.f x y * b.fy x y
+    fxx := fun x y =>
+      a.fxx x y * b.f x y + 2 * a.fx x y * b.fx x y + a.f x y * b.fxx x y
+    fxy := fun x y =>
+      a.fxy x y * b.f x y + a.fx x y * b.fy x y
+        + a.fy x y * b.fx x y + a.f x y * b.fxy x y
+    fyy := fun x y =>
+      a.fyy x y * b.f x y + 2 * a.fy x y * b.fy x y + a.f x y * b.fyy x y }
+```
+
+**Vector-calculus reading.** With $f, g$ the two factors:
+
+```math
+(fg)_x = f_x\,g + f\,g_x,
+\qquad
+(fg)_{xx} = f_{xx}\,g + 2\,f_x g_x + f\,g_{xx},
+```
+
+```math
+(fg)_{xy} = f_{xy}\,g + f_x\,g_y + f_y\,g_x + f\,g_{xy},
+\qquad
+(fg)_{yy} = f_{yy}\,g + 2\,f_y g_y + f\,g_{yy}.
+```
+
+The `fxy` field differentiates $(fg)_x$ once more in $y$, which is why it has
+**four** summands — the two middle ones, $f_x g_y$ and $f_y g_x$, are the
+cross terms that a single-variable product rule never shows. The chain rule,
+likewise — here $\sin$ composed with an arbitrary arrow field $a(x,y)$:
+
+```lean
+def Smooth2.sin (a : Smooth2) : Smooth2 :=
+  { f := fun x y => Float.sin (a.f x y)
+    fx := fun x y => Float.cos (a.f x y) * a.fx x y
+    fy := fun x y => Float.cos (a.f x y) * a.fy x y
+    fxx := fun x y =>
+      -Float.sin (a.f x y) * a.fx x y * a.fx x y
+        + Float.cos (a.f x y) * a.fxx x y
+    fxy := fun x y =>
+      -Float.sin (a.f x y) * a.fx x y * a.fy x y
+        + Float.cos (a.f x y) * a.fxy x y
+    fyy := fun x y =>
+      -Float.sin (a.f x y) * a.fy x y * a.fy x y
+        + Float.cos (a.f x y) * a.fyy x y }
+```
+
+```math
+(\sin a)_x = \cos(a)\,a_x,
+\qquad
+(\sin a)_{xx} = -\sin(a)\,a_x^2 + \cos(a)\,a_{xx},
+```
+
+```math
+(\sin a)_{xy} = -\sin(a)\,a_xa_y + \cos(a)\,a_{xy},
+\qquad
+(\sin a)_{yy} = -\sin(a)\,a_y^2 + \cos(a)\,a_{yy}.
+```
+
+The sphere of §2.6 is built from exactly these combinators — `sin` and `cos`
+composed with `coordX`/`coordY`, multiplied with `mul` — so its metric and
+Christoffel symbols are exact to the last bit of `Float`. And the fallback,
+with its single `ε`:
+
+```lean
+def Smooth2.eps : Float := 1e-5
+
+def Smooth2.fd1 (g : Float → Float) (t : Float) : Float :=
+  (g (t + eps) - g (t - eps)) / (2 * eps)
+
+def Smooth2.fd2 (g : Float → Float) (t : Float) : Float :=
+  (g (t + eps) - 2 * g t + g (t - eps)) / (eps * eps)
+
+def Smooth2.ofFiniteDiff (f : Float → Float → Float) : Smooth2 :=
+  { f := f
+    fx := fun x y => fd1 (fun u => f u y) x
+    fy := fun x y => fd1 (fun v => f x v) y
+    fxx := fun x y => fd2 (fun u => f u y) x
+    fxy := fun x y => fd1 (fun u => fd1 (fun v => f u v) y) x
+    fyy := fun x y => fd2 (fun v => f x v) y }
+```
+
+i.e. the central differences
+
+```math
+f'(t) \approx \frac{f(t+\varepsilon) - f(t-\varepsilon)}{2\varepsilon},
+\qquad
+f''(t) \approx \frac{f(t+\varepsilon) - 2f(t) + f(t-\varepsilon)}{\varepsilon^2},
+```
+
+with the mixed partial `fxy` built by nesting two `fd1`s. Every other
+declaration in the library differentiates **exactly**.
+
+A general (non-graph) surface is just three `Smooth2` coordinate functions —
+that is how the sphere and the polar plane of Part 2 are built:
+
+```lean
+def sphere : Surface where
+  sx := Smooth2.mul (Smooth2.sin Smooth2.coordX) (Smooth2.cos Smooth2.coordY)
+  sy := Smooth2.mul (Smooth2.sin Smooth2.coordX) (Smooth2.sin Smooth2.coordY)
+  sz := Smooth2.cos Smooth2.coordX
+```
+
+Then, in `Surface.lean` / `Curvature.lean`, the whole toolbox of this part —
+ending with the three vector declarations this chapter added, so that every
+arrow in the story has a name:
+
+```lean
+Surface.dPhi s 0 x y         -- the tangent arrow Φ_u
+Surface.dPhi s 1 x y         -- the tangent arrow Φ_v
+Surface.d2Phi s 0 0 x y      -- the curvature arrow Φ_uu
+Surface.normalAt s x y       -- n
+Surface.tangentVec s x y d   -- the arrow J d of parameter direction d
+Surface.tangentialPart s x y w   -- T w = w − (w·n) n
+Surface.normalPart s x y w       -- (w·n) n
+Surface.metricI s x y        -- I  = Gram matrix of the tangent arrows
+Surface.metricII s x y       -- II = normal dot products of curvature arrows
+Surface.gaussK s x y         -- K = det II / det I
+Surface.meanH s x y          -- H = ½ tr(I⁻¹ II)
+Surface.principalK s x y     -- (κ_min, κ_max)
+Surface.shapeOperator s x y w
+```
+
+### 1.8 Exercises
+
+1. **Cone.** Take $\Phi(r,\theta) = (r\cos\theta, r\sin\theta, r)$.
+   Compute the tangent arrows $\Phi_r$, $\Phi_\theta$ and $I = J^{\mathsf T}J$.
+   Show that one bending direction is zero and hence $K = 0$.
+2. **Determinant identity.** Prove $\det I = |\Phi_u\times\Phi_v|^2$ using
+   only the cross-product identity
+   $(a\times b)\cdot(c\times d) = (a\cdot c)(b\cdot d) - (a\cdot d)(b\cdot c)$.
+   *(The §1.2 checked example verifies it numerically on the paraboloid.)*
+3. **Graph curvature.** From the dot-product formulas in §1.2–§1.3 for
+   $\Phi=(x,y,f)$, derive
+
+   ```math
+   K=\frac{f_{xx}f_{yy}-f_{xy}^2}{\bigl(1+f_x^2+f_y^2\bigr)^2}.
+   ```
+
+4. **Normal-turning sign.** Differentiate $n\cdot\Phi_u = 0$ with respect
+   to $v$ and show $n\cdot\Phi_{uv} = -(\partial n/\partial v)\cdot\Phi_u$
+   — the identity behind $-S\xi$ being the normal-turning rate (§1.4).
+   What changes if you choose $-n$ instead of $n$?
+5. **Cylinder vs sphere.** In §1.6, the cylinder's non-straight direction
+   had $n\cdot\Phi_{\theta\theta}=-R$ and the straight one had $0$. Point
+   out which matrix entry of $II$ encodes each, and why $K=0$ follows.
+6. **Code experiment.** In `Main.lean`, move the paraboloid point from
+   $(1,0)$ to $(2,0)$ and predict which of $I$, $II$, $K$, $\kappa_1$,
+   $\kappa_2$ change and in which direction before running.
+7. **Shape operator.** Verify numerically on the paraboloid that
+   $II(d,d) = I(Sd, d)$ holds for several parameter directions $d$ — the
+   defining property of $S = I^{-1}II$. *(Starter: `Surface.secondForm s 1 0 d`
+   vs `Surface.firstForm s 1 0 (Surface.shapeOperator s 1 0 d)`.)*
+8. **The split, probed.** Using `Surface.tangentialPart` and
+   `Surface.normalPart`, check on the paraboloid at $(1,0)$ that
+   (a) splitting the basis arrows gives
+   $T(\Phi_x) = \Phi_x$, $(\Phi_x\cdot n)\,n \ne 0$, and
+   (b) splitting twice changes nothing:
+   $T(T(w)) = T(w)$ and $(T(w)\cdot n) = 0$ — $T$ is a projection, so
+   splitting an already-split arrow is the identity. *(Starter: feed
+   `Surface.tangentialPart surf 1 0 w` back into itself for some `w`.)*
+
+---
+
+## Part 2 — How tangent arrows turn: the tangential projection
+
+> **Goal.** Express everything in **pure vector calculus**: the derivative of
+> any surface-bound arrow is an ordinary 3-D arrow, and the *surface-visible*
+> part is obtained by the tangential projection $T w = w - (w\cdot n)\,n$
+> (defined in §1.5, computable in one `Vec3` line — and named in the code as
+> `Surface.tangentialPart`). Coefficients — the Christoffel symbols — appear
+> only as the *coordinate bookkeeping* of that projection (§2.8), because
+> that is what the Lean code stores.
+
+### 2.1 The problem: basis arrows turn as you walk
+
+In the $xy$-plane the basis arrows $e_1=(1,0)$, $e_2=(0,1)$ are the same
+everywhere, so differentiating a vector field is component-wise. On a
+parameterized surface, the tangent basis arrows are the *columns of the
+Jacobian*, $\Phi_u$ and $\Phi_v$, and these genuinely change from point to
+point. Differentiate them: each derivative $\Phi_{ui},\Phi_{vi},\dots$ (more
+generally $\Phi_{ij}$) is again a 3-D arrow in $\mathbb{R}^3$.
+
+Here is the central **vector** move — the split of §1.5, applied to exactly
+the arrows that appear when you differentiate. At any point, 3-space
+decomposes into the tangent plane plus the normal arrow $n$, so every 3-D
+arrow splits uniquely:
+
+```math
+\boxed{\;
+\Phi_{ij} \;=\; \underbrace{T\,\Phi_{ij}}_{\text{stays in the surface}}
+\;+\; \underbrace{(n\cdot\Phi_{ij})\, n}_{\text{bending out of the surface}},
+\qquad
+T w \;=\; w - (w\cdot n)\,n
+\;}
+```
+
+$T$ — *tangential projection* — is a linear map from 3-D arrows back onto the
+tangent plane. Everything in this part is one of exactly two statements about
+the arrows $\Phi_{ij}$:
+
+- the **normal part** $(n\cdot\Phi_{ij})$ is the second fundamental form $II$
+  (§1.3 — surface bending);
+- the **tangent part** $T\Phi_{ij}$ is how much the surface-bound derivative
+  of an arrow *unexpectedly* turns. That is the subject of this part.
+
+No coefficients yet — these are honest arrows. Keep it that way as long as
+possible. (§1.5's checked example already did one split:
+$\Phi_{vv} = (0.264706, 0, 0.158824) + 0.514496\,n$.)
+
+### 2.2 Why not Christoffels? (and why this track uses vectors)
+
+You will meet $\Gamma^k_{\;ij}$ everywhere in textbooks, and it is fair to ask
+why this track relegates them to a sub-role.
+
+**Why the literature is symbol-heavy.** Classical surface theory and general
+relativity grew up with *intrinsic* geometry: work with a quantity that lives
+on a manifold with no ambient space at all. Inside a manifold with only
+coordinates, there is nothing to project onto — no ambient derivative exists
+— so you *must* track how the coordinate basis itself twists, and that means
+carrying a 3-index array of correction numbers, $\Gamma^k_{\;ij}$, into every
+derivative. They are the price of computing without an embedding. Index
+gymnastics ($\nabla_i V^k = \partial_i V^k + \Gamma^k_{\;ij}V^j$ and the
+higher contractions) is then a full telescope for that correction.
+
+**Why vectors are preferable here.** This course always has the embedding
+$\Phi : \mathbb{R}^2 \to \mathbb{R}^3$ in hand, and for embedded surfaces the
+covariant derivative has a **one-line vector formula**:
+
+```math
+\boxed{\;\nabla_v \, w \;=\; D_v w - \bigl((D_v w)\cdot n\bigr)\,n \;=\; T(D_v w)\;}
+```
+
+i.e. differentiate the ambient arrows with the ordinary $\mathbb{R}^3$
+derivative, then drop the normal piece. "Tangent + projection" replaces every
+$\Gamma$ contraction. Concretely:
+
+| | symbol route | vector route (this track) |
+|---|---|---|
+| what you differentiate | coordinate *coefficients* $V^k$ | the arrows $V$ themselves |
+| correction mechanism | the $\Gamma$ terms (3-index bookkeeping) | subtract the normal part (`tangentialPart`) |
+| geometry read out | after summing repeated indices | directly, by looking at arrows |
+| works without embedding | ✅ (its super-power) | needs $\Phi$ (fine — we have it) |
+| code cost | build $\Gamma$ array, then contract | project + dot with basis arrows |
+
+Where the symbols *are* the right tool, this track says so honestly: when you
+only have the ruler $I$ (an abstract surface, a higher-dimensional manifold,
+relativity), or when the textbook source you are following (Eberly's notes)
+exploits the pure-$I$ formulas. And — since the Lean code does implement
+`Surface.christoffel` — its job in the code is precisely to *store the
+coordinates of $T\Phi_{ij}$* (§2.8, and see `Geodesia/Curvature.lean`). The
+vector statement stays primary; the symbol array is a derived container.
+
+> **Caution — the embedding question, again.** §1.1 asked whether it is a
+> problem that the flat world floats in an extra dimension. Part 2 sharpens
+> the answer: the vector route *needs* the embedding (`tangentialPart` is
+> literally a subtraction in $\mathbb{R}^3$), the symbol route does not.
+> That is not a defect of the vector route — it is its scope. Chapter 8
+> audits what survives when the embedding is taken away, and where that
+> matters (Hilbert's theorem, the flat torus, general relativity).
+
 <!-- §APPEND -->
