@@ -11,7 +11,7 @@ Position marker at the bottom says where we resume.
   w=(0,0,0.6) incl. reconstruction; regression lines unchanged).
 - [ ] **Chapter rewrite.** New text on disk: chunk 1 (header, dictionary,
   notation bridge, §1.1). Remaining appends at the `<!-- §APPEND -->` marker:
-  - [ ] chunk 2 — §1.2 (inner product on the tangent space; classical names
+  - [x] chunk 2 — §1.2 (inner product on the tangent space; classical names
     demoted; all four verified example blocks preserved)
   - [ ] chunk 3 — §1.3 (acceleration arrows) + §1.4 (shape operator as
     endomorphism of T_pS)
@@ -79,4 +79,4 @@ Position marker at the bottom says where we resume.
 
 ## Resume marker
 
-Next up: chapter chunk 2 (§1.2), then continue down the Now list in order.
+Next up: chapter chunk 3 (§1.3 + §1.4), then continue down the Now list in order.

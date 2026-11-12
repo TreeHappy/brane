@@ -346,4 +346,280 @@ $f_x = 0.6$, $f_{xx} = 0.6$ below:
 Φ_xx = (0.000000, 0.000000, 0.600000)
 ```
 
+### 1.2 The inner product of the tangent space — how to measure on a bent sheet
+
+> **Picture.** Last section gave the tangent space its arrows. A vector
+> space with arrows but no way to compare them is a dark room: you can hold
+> things, not measure them. What turns $T_pS$ into a place where "length",
+> "angle" and "area" mean something is one piece of equipment: an **inner
+> product**. And here is the pleasant surprise — we don't have to invent
+> one. The tangent space sits inside $\mathbb{R}^3$, and $\mathbb{R}^3$
+> already owns the plain dot product $v \cdot w$. The tangent space simply
+> *inherits* it.
+
+Concretely: take the two basis arrows $\Phi_u, \Phi_v$ and record the three
+dot products among them —
+
+```math
+\Phi_u\cdot\Phi_u, \qquad
+\Phi_u\cdot\Phi_v, \qquad
+\Phi_v\cdot\Phi_v.
+```
+
+Stacked into a symmetric $2\times 2$ matrix, this is the *matrix of the
+inner product in the basis $\{\Phi_u,\Phi_v\}$* — the **Gram matrix** of two
+vectors, the same object you meet as the normal-equation matrix
+$J^{\mathsf T}J$ in least squares:
+
+```math
+\boxed{\;I = J^{\mathsf T}J
+=
+\begin{bmatrix}
+\Phi_u\cdot\Phi_u & \Phi_u\cdot\Phi_v\\
+\Phi_v\cdot\Phi_u & \Phi_v\cdot\Phi_v
+\end{bmatrix}\;}
+```
+
+> **What the old books call it.** "The *first fundamental form*." The name
+> sounds like a sacrament; the object is a Gram matrix. The three entries
+> were historically named $E$, $F$, $G$ — letters which tell you nothing
+> (the code keeps them as `MetricI.E`, `MetricI.Ff`, `MetricI.G` for
+> cross-reading older texts). The content is one sentence: *to measure on
+> the surface, dot the ambient arrows.*
+
+**Signature** — `Geodesia/Curvature.lean`:
+
+```lean
+structure Mat2 where
+  a : Float        -- the symmetric matrix [[a, b], [b, c]]
+  b : Float
+  c : Float
+
+def Mat2.det (M : Mat2) : Float          -- det I = ac − b²
+def Mat2.inv (M : Mat2) : Mat2           -- Cramer's rule (det > 0 here)
+
+def Surface.metricEntry (s : Surface) (u v : Float) : Fin 2 → Fin 2 → Float
+    -- I_ij = ⟨∂_iΦ, ∂_jΦ⟩, one dot product
+def Surface.metricI (s : Surface) (u v : Float) : Mat2
+    -- the whole Gram matrix I = JᵀJ
+def Surface.firstForm (s : Surface) (x y : Float) (w : Vec2) : Float
+    -- the quadratic form I(w, w)
+```
+
+**Implementation.** The symmetric matrix is stored as three `Float`s, and
+every entry of the boxed matrix is one `metricEntry` dot product:
+
+```lean
+def Mat2.det (M : Mat2) : Float := M.a * M.c - M.b * M.b
+    -- det [[a, b], [b, c]] = ac − b²
+
+def Mat2.inv (M : Mat2) : Mat2 :=
+  let d := M.det
+  ⟨M.c / d, -M.b / d, M.a / d⟩
+    -- Cramer's rule: I⁻¹ = (1/det I) [[c, −b], [−b, a]]
+
+def Surface.metricEntry (s : Surface) (u v : Float) : Fin 2 → Fin 2 → Float :=
+  fun i j => (dPhi s i u v).dot (dPhi s j u v)
+
+def Surface.metricI (s : Surface) (u v : Float) : Mat2 :=
+  ⟨metricEntry s u v 0 0, metricEntry s u v 0 1, metricEntry s u v 1 1⟩
+```
+
+**Vector-calculus reading.** `metricEntry s u v i j` is one entry of the
+boxed matrix, $I_{ij} = \Phi_i\cdot\Phi_j$; `metricI` stacks the three
+independent ones ($b = I_{12} = \Phi_u\cdot\Phi_v = I_{21}$, by symmetry of
+the dot product). `Mat2.inv` is the closed-form inverse of a symmetric
+$2\times 2$ matrix,
+
+```math
+I^{-1} = \frac{1}{\det I}\begin{bmatrix}c & -b\\ -b & a\end{bmatrix},
+```
+
+so every use of $I^{-1}$ below (the shape operator, the Christoffel symbols,
+the $I^{-1}J^{\mathsf T}w$ solve) is four divisions — no linear-algebra
+library anywhere.
+
+#### What the inner product buys you
+
+Three purchases, all of them plain expansions of $v\cdot w$.
+
+**Lengths.** A parameter direction $(a,b)$ becomes the tangent arrow
+$J\,(a,b) = a\Phi_u + b\Phi_v$, and its squared length is
+
+```math
+\bigl|J\begin{bmatrix}a\\ b\end{bmatrix}\bigr|^2
+= \bigl(a\Phi_u + b\Phi_v\bigr)\cdot\bigl(a\Phi_u + b\Phi_v\bigr)
+= \begin{bmatrix}a & b\end{bmatrix} I \begin{bmatrix}a\\ b\end{bmatrix}.
+```
+
+So $I$ is the **ruler** of the tangent space: it converts the flat
+parameter-plane numbers into true lengths on the bent sheet.
+
+**Implementation.** The quadratic form is that expansion, written out entry
+by entry:
+
+```lean
+def Surface.firstForm (s : Surface) (x y : Float) (w : Vec2) : Float :=
+  let I := metricI s x y
+  I.a * w.x * w.x + 2 * I.b * w.x * w.y + I.c * w.y * w.y
+```
+
+i.e. for $w = (w_x, w_y)$:
+
+```math
+I(w, w) \;=\; a\,w_x^2 \,+\, 2\,b\,w_x w_y \,+\, c\,w_y^2
+\;=\; w^{\mathsf T} I\, w.
+```
+
+**Angles.** Two tangent directions $\xi$, $\eta$ (2-vectors in the parameter
+plane) meet at the angle of their arrows $J\xi$, $J\eta$ — and the inner
+product computes it without ever forming the arrows:
+
+```math
+\cos\theta = \frac{(J\xi)\cdot(J\eta)}{|J\xi|\,|J\eta|}
+= \frac{\xi^{\mathsf T} I\, \eta}{\sqrt{\xi^{\mathsf T} I\, \xi}\;\sqrt{\eta^{\mathsf T} I\, \eta}}.
+```
+
+**Checked example.** No dedicated function computes $\cos\theta$, but both
+routes of the boxed formula are checkable with the library's pieces. Take
+$\xi = (1,0)$, $\eta = (1,1)$ at $(1,0)$ on the paraboloid. The **arrow
+route** forms $J\xi = \Phi_x$ and $J\eta = \Phi_x + \Phi_y$ and uses plain
+dot products; the **ruler route** recovers the bilinear form by polarizing
+the quadratic form, $\xi^{\mathsf T}I\eta = \tfrac12\bigl(I(\xi{+}\eta,\xi{+}\eta) - I(\xi,\xi) - I(\eta,\eta)\bigr)$,
+using `firstForm` from above:
+
+```lean
+#eval show IO Unit from do
+  -- the arrows: J ξ = Φ_x, J η = Φ_x + Φ_y for ξ = (1, 0), η = (1, 1)
+  let Jxi : Vec3 := Surface.dPhi surf 0 1 0
+  let Jeta : Vec3 := Vec3.add (Surface.dPhi surf 0 1 0) (Surface.dPhi surf 1 1 0)
+  IO.println s!"cos θ (arrows) = {(Jxi.dot Jeta) / (Jxi.norm * Jeta.norm)}"
+  -- the ruler route via polarization of I(w, w) = wᵀ I w
+  let q : Vec2 → Float := fun w => Surface.firstForm surf 1 0 w
+  let xi : Vec2 := ⟨1, 0⟩
+  let eta : Vec2 := ⟨1, 1⟩
+  let sum : Vec2 := Vec2.add xi eta
+  let bil := (q sum - q xi - q eta) / 2
+  IO.println s!"cos θ (ruler)   = {bil / (Float.sqrt (q xi) * Float.sqrt (q eta))}"
+  -- the squared-length claim: I(w, w) = |J w|²
+  IO.println s!"I((1,0),(1,0))  = {q xi}"
+  IO.println s!"|Φ_x|²          = {Jxi.dot Jxi}"
+```
+
+**Output:**
+```text
+cos θ (arrows) = 0.759125
+cos θ (ruler)   = 0.759125
+I((1,0),(1,0))  = 1.360000
+|Φ_x|²          = 1.360000
+```
+
+Two claims verified at once: the angle formula (the two routes agree) and
+the squared-length formula ($I(w,w) = |Jw|^2$: here
+$I((1,0),(1,0)) = 1.36 = |\Phi_x|^2 = 1 + f_x^2$).
+
+**Area.** The two basis arrows span a parallelogram whose area is the norm
+of their cross product — and that equals the determinant of the Gram matrix:
+
+```math
+|\Phi_u \times \Phi_v|^2 = \det I
+\qquad\Longrightarrow\qquad
+dA = \sqrt{\det I}\; du\, dv.
+```
+
+#### Recovering a 2-D direction from a 3-D arrow
+
+> **By the way.** This subsection is really about *coordinates*: given an
+> arrow $w$ that happens to live in $T_pS$, what are its components in the
+> basis $\Phi_u, \Phi_v$? The answer needs the inner product — which is why
+> it lives here and not in §1.1.
+
+Expand $w$ in the basis:
+
+```math
+w = a\,\Phi_u + b\,\Phi_v = J\begin{bmatrix}a\\ b\end{bmatrix}.
+```
+
+$J$ is $3\times 2$, not square — but $w$ is known to lie in the span, so a
+solution exists and the normal-equations trick finds it: multiply by
+$J^{\mathsf T}$ and use $J^{\mathsf T}J = I$:
+
+```math
+\boxed{\;\begin{bmatrix}a\\ b\end{bmatrix} = I^{-1} J^{\mathsf T} w\;}
+```
+
+This is exactly what `Geodesic.tangentVecToParams` computes — give it a
+tangent arrow $w$ and it returns the 2 coordinates whose arrows reproduce it:
+
+```lean
+def Geodesic.tangentVecToParams (s : Surface) (u v : Float) (w : Vec3) : Vec2
+    -- ξ = I⁻¹ Jᵀ w
+```
+
+**Implementation.** Two dot products form $J^{\mathsf T}w$, then the stored
+Cramer inverse applies $I^{-1}$:
+
+```lean
+def Geodesic.tangentVecToParams (s : Surface) (u v : Float) (w : Vec3) : Vec2 :=
+  let gInv := (Surface.metricI s u v).inv
+  let a := (Surface.dPhi s 0 u v).dot w        -- b₀ = Φ_u · w
+  let b := (Surface.dPhi s 1 u v).dot w        -- b₁ = Φ_v · w
+  ⟨gInv.a * a + gInv.b * b, gInv.b * a + gInv.c * b⟩
+```
+
+**Vector-calculus reading.** With $b := J^{\mathsf T}w =
+\begin{bmatrix}\Phi_u\cdot w\\ \Phi_v\cdot w\end{bmatrix}$, the code returns
+$I^{-1}b$ component-wise: $\xi_1 = (I^{-1})_{11}b_0 + (I^{-1})_{12}b_1$,
+$\xi_2 = (I^{-1})_{21}b_0 + (I^{-1})_{22}b_1$ — the boxed solve
+$\xi = I^{-1}J^{\mathsf T}w$, with no matrix product ever formed.
+
+#### The graph metric again, by dot products
+
+For $\Phi = (x, y, f)$ the three dot products are immediate:
+
+```math
+\Phi_x\cdot\Phi_x = 1 + f_x^2,\qquad
+\Phi_x\cdot\Phi_y = f_x f_y,\qquad
+\Phi_y\cdot\Phi_y = 1 + f_y^2,
+```
+
+so
+
+```math
+I=
+\begin{bmatrix}
+1+f_x^2 & f_x f_y\\
+f_x f_y & 1+f_y^2
+\end{bmatrix}.
+```
+
+Cross-check it the vector way: a plane step $(dx,dy)$ lifts to the arrow
+$(dx, dy, f_x dx + f_y dy)$, whose squared norm is
+$dx^2 + dy^2 + (f_x dx + f_y dy)^2$ — the same quadratic form.
+
+**Checked example.** Three claims verified at once on `surf` at $(1,0)$:
+the graph formula ($I_{11} = 1 + 0.6^2 = 1.36$), the determinant identity
+$\det I = |\Phi_x\times\Phi_y|^2$ (Exercise 2), and the $I^{-1}J^{\mathsf T}w$
+round-trip, fed the non-unit arrow $\Phi_x$ itself:
+
+```lean
+#eval show IO Unit from do
+  let I := Surface.metricI surf 1 0
+  IO.println s!"I            = [[{I.a}, {I.b}], [{I.b}, {I.c}]]"
+  IO.println s!"det I        = {I.det}"
+  let c := (Surface.dPhi surf 0 1 0).cross (Surface.dPhi surf 1 1 0)
+  IO.println s!"|Φ_x × Φ_y|² = {c.dot c}"
+  IO.println s!"I⁻¹ Jᵀ Φ_x   = {Geodesic.tangentVecToParams surf 1 0 (Surface.dPhi surf 0 1 0)}"
+```
+
+**Output:**
+```text
+I            = [[1.360000, 0.000000], [0.000000, 1.000000]]
+det I        = 1.360000
+|Φ_x × Φ_y|² = 1.360000
+I⁻¹ Jᵀ Φ_x   = (1.000000, 0.000000)
+```
+
+The round-trip returns $(1, 0)$: $\Phi_x$ is indeed the first basis arrow.
+
 <!-- §APPEND -->
