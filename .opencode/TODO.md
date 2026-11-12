@@ -18,7 +18,8 @@ Position marker at the bottom says where we resume.
   - [x] chunk 4 — §1.5 (named split + new checked example), §1.6, §1.7
     (toolbox + new decls), §1.8 (+ new exercise 8), Part 2 header, §2.1–2.2
     (+ embedding Caution box)
-  - [ ] chunk 5 — §2.3 (executable covariant-derivative note) … §2.9
+  - [x] chunk 5 — §2.3 (executable covariant-derivative note) … §2.9
+    (+ closing note extended to mention the new vector decls)
   - [ ] chunk 6 — **GA & CT coda** (Cl₃: 2-blade B, sandwich split, wedge
     test, 1-forms as dual pairs; CT: Vect, morphism J, pullback I = Φ*δ,
     biproduct split, duality Jᵀ, d²=0; mapping table) + closing note
@@ -80,4 +81,4 @@ Position marker at the bottom says where we resume.
 
 ## Resume marker
 
-Next up: chapter chunk 5 (§2.3 … §2.9), then continue down the Now list in order.
+Next up: chapter chunk 6 (GA & CT coda + closing), then continue down the Now list in order.

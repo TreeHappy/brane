@@ -1566,4 +1566,498 @@ vector statement stays primary; the symbol array is a derived container.
 > audits what survives when the embedding is taken away, and where that
 > matters (Hilbert's theorem, the flat torus, general relativity).
 
+### 2.3 The covariant derivative is the correction-free rate of turn
+
+> **Picture.** A surface-bound arrow field $V$ — think of the wind arrows
+> painted on the sheet. To ask "how does $V$ change as I move?" you
+> differentiate it in ambient 3-space, as ordinary calculus. But part of
+> that derivative is *fake*: it records the ambient space's opinion about
+> which way is "up", not any change of $V$ relative to the sheet. The
+> covariant derivative is the ambient derivative with the fake part
+> subtracted — one projection, the split of §1.5, nothing more.
+
+Take a surface-bound arrow field $V = V^u\,\Phi_u + V^v\,\Phi_v$. Its
+ambient derivative in direction $i$ is ordinary calculus:
+
+```math
+\frac{\partial V}{\partial u_i}
+= \frac{\partial V^u}{\partial u_i}\Phi_u
++ \frac{\partial V^v}{\partial u_i}\Phi_v
++ V^u\,\Phi_{ui} + V^v\,\Phi_{vi}.
+```
+
+The first two terms are expected changes of the arrow; the last two are the
+surprise — *the basis arrows themselves turn* as the field's coefficients
+move with the point. The surface-visible rate of turn is: project the whole
+thing back.
+
+```math
+\boxed{\;\nabla_i V \;=\; T\!\left(\frac{\partial V}{\partial u_i}\right)\;}
+```
+
+Since $V^u\Phi_u+V^v\Phi_v$ is already tangent ($T$ passes through it
+unchanged), the correction is exactly "differentiate the arrows, project".
+In pencil-and-paper coordinates the same statement becomes the familiar
+textbook pair
+
+```math
+\nabla_i V^k \;=\; \frac{\partial V^k}{\partial u_i}
++ \Gamma^k_{\;ij}\,V^j,
+```
+
+with the $\Gamma$-correction terms coming straight from
+$T(\Phi_{ki}) = \Gamma^\cdot_{ki}\Phi_u + \cdots$ (i.e., from expanding
+$T\Phi_{ij}$ in $\{\Phi_u,\Phi_v\}$). On a flat plane in standard coordinates
+the basis arrows never turn: $\Gamma^k_{\;ij}=0$ and every $\nabla$ is an
+ordinary partial. The same plane *in polar coordinates* does need
+corrections; on a sphere every direction needs them (§2.5–2.6). This is the
+whole narrative of the Christoffel story — but written in arrow-language it
+is simply $T(\partial\text{-derivative})$, with the $\Gamma$ terms surfacing
+only when a pencil demands them.
+
+> **This formula is executable.** The arrow statement is not just a slogan:
+> `Surface.tangentialPart s u v (ambient derivative)` *is* $\nabla_i V$ —
+> one call of the named split of §1.5. What the library additionally stores
+> is the coefficient form, because an ODE integrator needs numbers, not
+> arrows. Both describe the same projection; the code below implements the
+> coefficient form of its most important case.
+
+**Signature.** The library's consumer of the $\Gamma$ array is the geodesic
+equation: a geodesic is a curve whose *tangent part* of $\gamma''$ vanishes,
+$T\gamma'' = 0$ (Chapter 3). `Geodesia/Geodesic.lean` implements the
+coordinate form of that single projection:
+
+```lean
+def Geodesic.accel (s : Surface) (st : GeoState) : Vec2
+    -- (u″, v″) = −Γ^k_ij q′ⁱ q′ʲ: the coefficient form of T γ″ = 0
+```
+
+**Implementation.** Verbatim from `Geodesia/Geodesic.lean`:
+
+```lean
+def Geodesic.accel (s : Surface) (st : GeoState) : Vec2 :=
+  let Γ := Surface.christoffel s st.u st.v
+  let g1uu := Γ 0 0 0
+  let g1uv := Γ 0 0 1
+  let g1vv := Γ 0 1 1
+  let g2uu := Γ 1 0 0
+  let g2uv := Γ 1 0 1
+  let g2vv := Γ 1 1 1
+  let du := st.du
+  let dv := st.dv
+  ⟨-(g1uu * du * du + 2 * g1uv * du * dv + g1vv * dv * dv),
+   -(g2uu * du * du + 2 * g2uv * du * dv + g2vv * dv * dv)⟩
+```
+
+**Vector-calculus reading.** Start from the arrow statement
+$T\gamma''(s) = 0$ and expand it in the basis $\{\Phi_u, \Phi_v\}$, using
+$\gamma'' = u''\,\Phi_u + v''\,\Phi_v + u'^2\,\Phi_{uu} + 2u'v'\,\Phi_{uv} + v'^2\,\Phi_{vv}$
+(§1.3) and $T\Phi_{ij} = \Gamma^k_{\;ij}\,\Phi_k$ (§2.8):
+
+```math
+T\gamma''
+= \Bigl(u'' + \Gamma^1_{\;uu}\,u'^2 + 2\Gamma^1_{\;uv}\,u'v' + \Gamma^1_{\;vv}\,v'^2\Bigr)\Phi_u
++ \Bigl(v'' + \Gamma^2_{\;uu}\,u'^2 + 2\Gamma^2_{\;uv}\,u'v' + \Gamma^2_{\;vv}\,v'^2\Bigr)\Phi_v.
+```
+
+$\Phi_u$ and $\Phi_v$ are independent arrows, so each coefficient must vanish
+on its own — the arrow statement becomes **two scalar ODEs** for the
+coordinates:
+
+```math
+u'' = -\bigl(\Gamma^1_{\;uu}\,p^2 + 2\,\Gamma^1_{\;uv}\,pq + \Gamma^1_{\;vv}\,q^2\bigr),
+\qquad
+v'' = -\bigl(\Gamma^2_{\;uu}\,p^2 + 2\,\Gamma^2_{\;uv}\,pq + \Gamma^2_{\;vv}\,q^2\bigr),
+\qquad (p,q) := (u', v').
+```
+
+The code is exactly this: the six `let`s name the six independent symbols
+(the symmetry $\Gamma^k_{\;ij} = \Gamma^k_{\;ji}$ means $\Gamma 0\ 1\ 0$ never
+needs its own name), `du`/`dv` are $p$ and $q$, and each returned component
+is one negated quadratic — the factor $2$ on the $pq$ term comes from merging
+the $(uv)$ and $(vu)$ contributions. Note what the return value is: a
+`Vec2` in the **parameter plane**, the acceleration of the coordinates — not
+an ambient arrow. That is the price of the coefficient form; §2.1's $\gamma''$
+was the honest arrow, this is its coordinate shadow. `Geodesic.rhs` packages
+these two components with $\dot u = p,\ \dot v = q$ into the first-order
+system that Chapter 4 integrates with RK4.
+
+### 2.4 The Gauss formula, in arrow form
+
+The one-sentence motto of the whole part:
+*the second-derivative arrows split into tangent part $+$ normal part, and
+every formula is one of those two projections.*
+
+```mermaid
+flowchart LR
+    A["second-derivative arrows<br/>Φᵤᵤ, Φᵤᵥ, Φᵥᵥ (3-D)"] -->|"project out bending:<br/>(n·Φᵢⱼ) n"| B["II — second fundamental form"]
+    A -->|"remove bending:<br/>T = w − (w·n)n"| C["tangent part: turning<br/>(covariant derivative)"]
+    B -.->|"basis-coefficients<br/>(optional!)"| D["Γᵏᵢⱼ — the symbols"]
+    C -.->|"basis-coefficients<br/>(optional!)"| D
+```
+
+Both routes — the "project-out" route and the "differentiate-the-metric"
+route of §2.8 — measure the same arrows and agree numerically; they are the
+same computation with and without coordinates. (§2.8's checked example makes
+"agree numerically" exact: the gap is `0.000000`.)
+
+### 2.5 Example: the flat plane in polar coordinates
+
+Flat plane, wrapped geometry — the perfect test that tangent parts are about
+the *basis arrows*, not about bending:
+
+```math
+\Phi(r,\theta) = (r\cos\theta,\ r\sin\theta,\ 0).
+```
+
+Basis arrows and Gram matrix:
+
+```math
+\Phi_r = (\cos\theta,\ \sin\theta,\ 0),\quad
+\Phi_\theta = (-r\sin\theta,\ r\cos\theta,\ 0),\quad
+I = \begin{bmatrix}1&0\\0&r^2\end{bmatrix}.
+```
+
+Differentiate the arrows (all ordinary $\mathbb{R}^3$ calculus):
+
+```math
+\frac{\partial\Phi_r}{\partial r}=0,\qquad
+\frac{\partial\Phi_r}{\partial\theta}=\frac{1}{r}\,\Phi_\theta,\qquad
+\frac{\partial\Phi_\theta}{\partial r}=\frac{1}{r}\,\Phi_\theta,\qquad
+\frac{\partial\Phi_\theta}{\partial\theta}=-r\,\Phi_r.
+```
+
+The plane's normal is a constant vector $n=(0,0,1)$, so these derivatives are
+*entirely tangent*: $T(\text{each row}) = $ each row. Two consequences worth
+pausing over:
+
+- the *basis arrows turn* — $\Phi_r$ turns into a $\Phi_\theta$ arrow when
+  pushed around $\theta$ — despite the *plane being flat*;
+- and the *arrow turning is exactly what cancels a curve's own turning*:
+  for a trajectory that stays geometrically straight, the coordinate parts
+  $\ddot r$, $\ddot\theta$ must push against these turning arrows so that
+  the *surface arrow* $\gamma''$ ends up purely normal (Chapter 3 makes
+  this precise).
+
+For comparison, in coordinates: these arrow equations *are*
+$\Gamma^\theta_{\;\theta r} = \Gamma^\theta_{\;r\theta} = 1/r$ and
+$\Gamma^r_{\;\theta\theta}=-r$ — read off the same displayed rows, with
+coefficients recorded in the basis. The vector statement comes first; the
+coefficients are nothing more than these rows written as slips of paper.
+The cross-check with the pure-$I$ Gram-derivative formula (§2.8) gives the
+same numbers, as it must.
+
+**Signature + Checked example.** The polar plane is three exact `Smooth2`
+combinators — then the code's pure-$I$ route reproduces every coefficient of
+the hand-derived rows above (at $r = 1.5$: $-r = -1.5$, $1/r = 0.666667$),
+while $II = 0$ confirms the plane is flat:
+
+```lean
+def polarPlane : Surface where
+  sx := Smooth2.mul Smooth2.coordX (Smooth2.cos Smooth2.coordY)
+  sy := Smooth2.mul Smooth2.coordX (Smooth2.sin Smooth2.coordY)
+  sz := Smooth2.const 0
+
+#eval show IO Unit from do
+  let I := Surface.metricI polarPlane 1.5 0.7
+  IO.println s!"I (r = 1.5) = [[{I.a}, {I.b}], [{I.b}, {I.c}]]"
+  let II := Surface.metricII polarPlane 1.5 0.7
+  IO.println s!"II          = [[{II.a}, {II.b}], [{II.b}, {II.c}]]"
+  let Γ := Surface.christoffel polarPlane 1.5 0.7
+  IO.println s!"Γ^r_θθ      = {Γ 0 1 1}"
+  IO.println s!"Γ^θ_rθ, Γ^θ_θr = {Γ 1 0 1}, {Γ 1 1 0}"
+  IO.println s!"Γ^r_rr, Γ^r_rθ, Γ^θ_θθ = {Γ 0 0 0}, {Γ 0 0 1}, {Γ 1 1 1}"
+```
+
+**Output:**
+```text
+I (r = 1.5) = [[1.000000, 0.000000], [0.000000, 2.250000]]
+II          = [[0.000000, 0.000000], [0.000000, 0.000000]]
+Γ^r_θθ      = -1.500000
+Γ^θ_rθ, Γ^θ_θr = 0.666667, 0.666667
+Γ^r_rr, Γ^r_rθ, Γ^θ_θθ = 0.000000, 0.000000, 0.000000
+```
+
+Flat plane, nonzero $\Gamma$: the *arrows* turn, the *plane* does not bend.
+
+### 2.6 Example: the unit sphere
+
+Sphere $\Phi(\theta,\varphi)=
+(\sin\theta\cos\varphi, \sin\theta\sin\varphi,\cos\theta)$,
+normal $n = \Phi$ (the radial arrow), and Gram matrix
+$I = \operatorname{diag}(1, \sin^2\theta)$.
+
+Now differentiate the basis arrows — keeping the split intact:
+
+```math
+\frac{\partial\Phi_\theta}{\partial\theta}
+= -\Phi \;=\; -\,n\quad (\text{entirely normal — } T\text{-part is 0}),
+```
+
+```math
+\frac{\partial\Phi_\varphi}{\partial\theta}
+= \cot\theta\,\Phi_\varphi\quad (\text{purely tangent}),
+\qquad
+\frac{\partial\Phi_\varphi}{\partial\varphi}
+= -\sin\theta\cos\theta\,\Phi_\theta - \sin^2\theta\,n.
+```
+
+(Run the dot-product check yourself: $n\cdot\Phi_\theta = 0$ shows the first
+split is clean, and $n\cdot \partial_\varphi\Phi_\varphi = -\sin^2\theta$
+agrees with $-\sin^2\theta\,n$.)
+
+This single row-set explains all the geometry the $\Gamma$ table used to
+mumble about:
+
+- a **meridian** ($\varphi$ fixed): its second-derivative arrow is
+  $\Phi_{\theta\theta} = -n$ — normal only, tangent part zero → geodesic.
+- around the **equator** ($\theta = \pi/2$):
+  $\partial_\varphi\Phi_\varphi = -n$ too, so latitude circles at $\pi/2$
+  are geodesics but no other latitudes are: at $\theta\ne\pi/2$ the tangent
+  part $-\sin\theta\cos\theta\,\Phi_\theta$ is nonzero (the circle must
+  accelerate inward, and the surface can only supply the normal fraction).
+- general great circles are combinations, in the ordinary sense.
+
+**Checked example.** The sphere's $I$ and its two nontrivial
+$\Gamma$-coefficients at $(\theta,\varphi) = (1.0, 0.2)$ — exactly the two
+arrow rows above ($\sin^2 1.0 = 0.708073$,
+$-\sin\theta\cos\theta = -0.454649$, $\cot\theta = 0.642093$):
+
+```lean
+#eval show IO Unit from do
+  let I := Surface.metricI sphere 1.0 0.2
+  IO.println s!"I_sphere = [[{I.a}, {I.b}], [{I.b}, {I.c}]]"
+  let Γ := Surface.christoffel sphere 1.0 0.2
+  IO.println s!"Γ^θ_φφ   = {Γ 0 1 1}"  -- should be −sin θ cos θ
+  IO.println s!"Γ^φ_θφ   = {Γ 1 0 1}"  -- should be cot θ
+```
+
+**Output:**
+```text
+I_sphere = [[1.000000, 0.000000], [0.000000, 0.708073]]
+Γ^θ_φφ   = -0.454649
+Γ^φ_θφ   = 0.642093
+```
+
+(`Γ^θ_θθ`, `Γ^θ_θφ`, `Γ^φ_θθ`, `Γ^φ_φφ` all come out $0$ — the $\Gamma$
+table here is as sparse as the arrow rows.)
+
+### 2.7 Example: the paraboloid
+
+For $z = 0.3(x^2+y^2)$ at $(x,y)=(1,0)$ the code prints
+
+```math
+I=\begin{bmatrix}1.36&0\\0&1\end{bmatrix},
+\qquad
+\Gamma^u_{\;uu}=0.2647,\quad\Gamma^u_{\;uv}=0,\quad\Gamma^u_{\;vv}=0.2647.
+```
+
+Vector reading: the $v$-coordinate curve $x=\text{const}$ has second-derivative
+arrow $(0,0,0.6)$, while the normal there is
+$n=(-0.6,0,1)/\sqrt{1.36}$. Since $(0,0,0.6)$ is **not** parallel to $n$,
+exactly the leftover — the tangent part $T(0,0,0.6)$ — has a nonzero
+$\Phi_u$ component, and $0.2647$ is that arrow's coefficient in the user
+direction (the coefficient of $\Phi_u$ inside $T\Phi_{vv}$, which in
+coordinates is labelled $\Gamma^u_{\;vv}$). The same arrow's *normal*
+coefficient is the $II_{22}$ entry from §1.3. One arrow, two
+projections — that split pattern is the *entire subject*.
+
+**Checked example.** Both halves of that story, printed by the code:
+the $\Gamma^u$ row (§1.6 demo) and the explicit split of the same arrow
+(§1.5):
+
+```text
+Γ¹₁₁, Γ¹₁₂, Γ¹₂₂ = 0.264706, 0.000000, 0.264706     -- coordinates of T Φ_vv (and T Φ_uu)
+T(w) = (0.264706, 0.000000, 0.158824)               -- the arrow T Φ_vv itself, w = (0, 0, 0.6)
+w·n  = 0.514496                                     -- the normal coefficient = II₂₂
+```
+
+### 2.8 The coordinate bookkeeping (what the code stores)
+
+Everything above was arrow language. When you (or the Lean code) want actual
+**numbers to feed an ODE**, the tangent parts have to be expressed in the
+basis $\{\Phi_u,\Phi_v\}$ and the *coefficients* recorded. That's what the
+following code computes — the coefficients are what tradition calls the
+Christoffel symbols:
+
+```lean
+Surface.dPhi  s i x y   -- the basis arrows Φ_i
+Surface.d2Phi s i j x y -- the second-derivative arrows Φ_ij
+Surface.dMetricEntry s u i j x y
+                        -- exact Gram-matrix derivative ∂_u (Φ_i·Φ_j)
+Surface.metricI s x y   -- the Gram matrix I
+Surface.christoffel s x y
+                        -- coordinates of T(Φ_ij) in {Φ_u, Φ_v}:
+                        -- Fin 2 → Fin 2 → Fin 2 → Float
+```
+
+Two equivalent coordinate formulas, both implemented exactly:
+
+**(a) Direct projection.** For an unknown expansion
+$T\Phi_{ij} = a\,\Phi_u + b\,\Phi_v$, dot each row with the basis arrows;
+the normal-part drops, and the Gram matrix $I=J^{\mathsf T}J$ remains:
+
+```math
+I\begin{bmatrix}a\\b\end{bmatrix} =
+\begin{bmatrix}\Phi_u\cdot\Phi_{ij}\\ \Phi_v\cdot\Phi_{ij}\end{bmatrix}
+\;\;\Longrightarrow\;\;
+\Gamma^k_{\;ij}=\bigl(I^{-1}\bigr)^{k\ell}
+\bigl(\Phi_\ell\cdot\Phi_{ij}\bigr).
+```
+
+**(b) From the ruler alone.** Differentiate $I_{ij} = \Phi_i\cdot\Phi_j$,
+cancel shared terms cyclically, and get the pure-$I$ formula
+
+```math
+\Gamma^k_{\;ij}
+= \tfrac12\bigl(I^{-1}\bigr)^{k\ell}
+\bigl(\partial_i I_{j\ell}+\partial_j I_{i\ell}-\partial_\ell I_{ij}\bigr),
+```
+
+which `Curvature.lean` computes with **exact** second partials
+(`Surface.dMetricEntry`):
+
+```math
+\partial_u\,(\Phi_j\cdot\Phi_k)
+= \Phi_{uj}\cdot\Phi_k + \Phi_j\cdot\Phi_{uk}.
+```
+
+**Implementation.** One product rule and one contraction, verbatim from
+`Geodesia/Curvature.lean`:
+
+```lean
+def Surface.dMetricEntry (s : Surface) (u i j : Fin 2) (x y : Float) : Float :=
+  (d2Phi s u i x y).dot (dPhi s j x y)
+    + (dPhi s i x y).dot (d2Phi s u j x y)
+
+def Surface.christoffel (s : Surface) (x y : Float) :
+    Fin 2 → Fin 2 → Fin 2 → Float :=
+  fun k i j =>
+    let gInv := (metricI s x y).inv
+    let term0 :=
+      dMetricEntry s i j 0 x y + dMetricEntry s j i 0 x y
+        - dMetricEntry s 0 i j x y
+    let term1 :=
+      dMetricEntry s i j 1 x y + dMetricEntry s j i 1 x y
+        - dMetricEntry s 1 i j x y
+    0.5 * gInv.entry k 0 * term0 + 0.5 * gInv.entry k 1 * term1
+```
+
+**Vector-calculus reading.** `dMetricEntry s u i j x y` is the displayed
+product rule, $\partial_u I_{ij} = \Phi_{ui}\cdot\Phi_j + \Phi_i\cdot\Phi_{uj}$:
+two stored arrows dotted together, no finite differences anywhere. Each
+`term` gathers one index $\ell \in \{0,1\}$ — that is, $\ell \in \{u,v\}$ — of
+the cyclic combination in the boxed formula; reading the argument order off
+the call sites, `dMetricEntry s i j ℓ` $= \partial_i I_{j\ell}$,
+`dMetricEntry s j i ℓ` $= \partial_j I_{i\ell}$, and
+`dMetricEntry s ℓ i j` $= \partial_\ell I_{ij}$, so
+
+```math
+\mathrm{term}_\ell
+\;=\; \partial_i I_{j\ell} + \partial_j I_{i\ell} - \partial_\ell I_{ij},
+\qquad
+\Gamma^k_{\;ij} = \tfrac12\,\bigl(I^{-1}\bigr)^{k\ell}\,\mathrm{term}_\ell.
+```
+
+The final line is the boxed formula with the sum over $\ell$ unrolled into
+`term0` + `term1` and the `0.5 *` prefactors matching the $\tfrac12$; the
+inverse is the stored Cramer inverse of §1.2. (Argument order inside
+`dMetricEntry` never matters beyond the symmetry swap $I_{ij} = I_{ji}$.)
+
+This bare-$I$ route is the one the historical notes favor, since it works for
+absolutely-intrinsic data (a metric alone, no embedding). The code implements
+(b); route (a) is three dot products and a $2\times 2$ solve, so it makes a
+portable independent check:
+
+```lean
+/-- Route (a): Γ^k_ij = (I⁻¹)^kℓ (Φ_ℓ · Φ_ij), straight from the projection. -/
+def gammaDirect (s : Surface) (x y : Float) : Fin 2 → Fin 2 → Fin 2 → Float :=
+  fun k i j =>
+    let Iinv := (Surface.metricI s x y).inv
+    let b0 := (Surface.dPhi s 0 x y).dot (Surface.d2Phi s i j x y)
+    let b1 := (Surface.dPhi s 1 x y).dot (Surface.d2Phi s i j x y)
+    Iinv.entry k 0 * b0 + Iinv.entry k 1 * b1
+
+/-- Squared gap between the two routes, over all eight (k, i, j). -/
+def gammaGap (s : Surface) (x y : Float) : Float :=
+  let Γ := Surface.christoffel s x y
+  let d := gammaDirect s x y
+  (Γ 0 0 0 - d 0 0 0) * (Γ 0 0 0 - d 0 0 0)
+    + (Γ 0 0 1 - d 0 0 1) * (Γ 0 0 1 - d 0 0 1)
+    + (Γ 0 1 0 - d 0 1 0) * (Γ 0 1 0 - d 0 1 0)
+    + (Γ 0 1 1 - d 0 1 1) * (Γ 0 1 1 - d 0 1 1)
+    + (Γ 1 0 0 - d 1 0 0) * (Γ 1 0 0 - d 1 0 0)
+    + (Γ 1 0 1 - d 1 0 1) * (Γ 1 0 1 - d 1 0 1)
+    + (Γ 1 1 0 - d 1 1 0) * (Γ 1 1 0 - d 1 1 0)
+    + (Γ 1 1 1 - d 1 1 1) * (Γ 1 1 1 - d 1 1 1)
+```
+
+**Checked example.** The two routes agree exactly on every surface of this
+chapter — the arrow statement (a) and the ruler statement (b) are the same
+computation:
+
+```lean
+#eval show IO Unit from do
+  IO.println s!"paraboloid:  gap = {gammaGap surf 1 0}"
+  IO.println s!"polar plane: gap = {gammaGap polarPlane 1.5 0.7}"
+  IO.println s!"sphere:      gap = {gammaGap sphere 1.0 0.2}"
+```
+
+**Output:**
+```text
+paraboloid:  gap = 0.000000
+polar plane: gap = 0.000000
+sphere:      gap = 0.000000
+```
+
+> One sentence to keep both views in place: *the Christoffel symbols are the
+> coordinates of the tangent part of the second-derivative arrows: numbers
+> read off by whichever formula is convenient, never required by the vector
+> story itself.*
+
+### 2.9 Exercises
+
+1. **Polar, both ways.** From §2.5's arrow rows read
+   $T(\partial_\theta\Phi_r) = (1/r)\Phi_\theta$ and
+   $T(\partial_\theta\Phi_\theta) = -r\,\Phi_r$; then check the same numbers
+   via the pure-$I$ formula of §2.8 with $I=\mathrm{diag}(1,r^2)$.
+   *(The §2.5 checked example already ran the second half for you.)*
+2. **Standard coordinates.** Show that every tangent-part coefficient
+   vanishes for the plane in standard $(x,y)$ coordinates — and explain why
+   that matches §2.5's nonzero polar numbers: the *plane* is flat in both;
+   the *arrows* turn only after polar wrapping.
+3. **Symmetry.** Use $\Phi_{uv}=\Phi_{vu}$ to show the tangent-part
+   coordinates are symmetric in $i,j$: $\Gamma^k_{\;ij}=\Gamma^k_{\;ji}$.
+   *(Check: `Surface.christoffel s x y k 0 1 == Surface.christoffel s x y k 1 0`.)*
+4. **First-kind identity.** Prove
+   $\partial_k\,(\Phi_i\cdot\Phi_j)
+    = \Phi_{ik}\cdot\Phi_j + \Phi_i\cdot\Phi_{jk}$
+   and use it to derive the pure-$I$ formula of §2.8(b) in full.
+5. **Cylinder.** For $\Phi(\theta,z)=(R\cos\theta,R\sin\theta,z)$, compute
+   each of $\partial_\theta\Phi_\theta=(-R\,n)$,
+   $\partial_\theta\Phi_z = 0$-type rows and deduce that *every* tangent
+   part vanishes. Is that consistent with the cylinder being flat?
+6. **Sphere check.** Verify the three arrow splits of §2.6 from
+   $I=\mathrm{diag}(1,\sin^2\theta)$ and the pure-$I$ route.
+   *(The §2.6 checked example did the pure-$I$ half.)*
+7. **Conserved pairing.** Show that on the sphere
+   $\sin^2\theta\,\dot\varphi$ stays constant along any curve whose tangent
+   part of $\gamma''$ vanishes (Chapter 3). Hint: differentiate
+   $\sin^2\theta\,\dot\varphi$ in $s$ and substitute the two component
+   equations.
+8. **Code experiment.** Evaluate `Surface.christoffel` on the paraboloid at
+   $(0,0)$ and $(2,0)$; translate the printed numbers back into
+   *which arrow turned how much*, using §2.7's vector reading.
+
+---
+
+> **Where the outputs come from.** Every `Output:` block in this chapter was
+> produced by running the adjacent snippet with `lake env lean` against the
+> library, in the spirit of the Lean documentation (Verso): the examples are
+> part of the build, not decoration. If the project ever adopts Verso, these
+> ```lean blocks are exactly the pieces that would become checked examples.
+> The three vector declarations this chapter added — `Surface.tangentVec`,
+> `Surface.tangentialPart`, `Surface.normalPart` — live in
+> `Geodesia/Surface.lean` alongside the arrows they are built from.
+
 <!-- §APPEND -->
