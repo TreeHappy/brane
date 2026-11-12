@@ -9,8 +9,11 @@ Position marker at the bottom says where we resume.
   `Surface.normalPart` added to `Geodesia/Surface.lean`; `lake build` ✅,
   `mise run test` ✅; verified outputs captured (J(1,0), J(1,1), split of
   w=(0,0,0.6) incl. reconstruction; regression lines unchanged).
-- [ ] **Chapter rewrite.** New text on disk: chunk 1 (header, dictionary,
+- [x] **Chapter rewrite.** New text on disk: chunk 1 (header, dictionary,
   notation bridge, §1.1). Remaining appends at the `<!-- §APPEND -->` marker:
+  — completed in chunks 1–6 (commits 04d3147…7bad859); §1.1–§1.8, §2.1–2.9,
+  GA & CT coda all landed; all old verified fences preserved byte-identical
+  (mechanically checked with `awk`+`comm`).
   - [x] chunk 2 — §1.2 (inner product on the tangent space; classical names
     demoted; all four verified example blocks preserved)
   - [x] chunk 3 — §1.3 (acceleration arrows) + §1.4 (shape operator as
@@ -24,8 +27,9 @@ Position marker at the bottom says where we resume.
     wedge test, 1-forms d²=0; CT: Vect, morphism J, pullback I = Φ*δ,
     biproduct split, duality Jᵀ; three-coats mapping table) + pullback
     figure reference + closing "By the way"
-- [ ] **Intrinsic-vs-embedding aside.** Fold the "why not just assume the
-  extra dimension?" exchange in: compact Caution box in §1.1/§2.2 + pointer
+- [x] **Intrinsic-vs-embedding aside.** Caution box in §1.1 (Hilbert, flat
+  torus, Nash pointer, ADM/brane counterpoint) + Caution box in §2.2
+  (vector route needs the embedding, symbol route does not) + pointers
   to Ch. 8.
 - [ ] **Extend Ch. 8 §8.2** with the sharp examples it currently lacks:
   Hilbert's theorem (H² has *no* isometric embedding in ℝ³), the flat torus
