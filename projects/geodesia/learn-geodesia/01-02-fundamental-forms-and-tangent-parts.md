@@ -576,8 +576,8 @@ def Geodesic.tangentVecToParams (s : Surface) (u v : Float) (w : Vec3) : Vec2 :=
   ⟨gInv.a * a + gInv.b * b, gInv.b * a + gInv.c * b⟩
 ```
 
-**Vector-calculus reading.** With $b := J^{\mathsf T}w =
-\begin{bmatrix}\Phi_u\cdot w\\ \Phi_v\cdot w\end{bmatrix}$, the code returns
+**Vector-calculus reading.** With $b := J^{\mathsf T}w$ — the two dot
+products $\Phi_u\cdot w$ and $\Phi_v\cdot w$, stacked — the code returns
 $I^{-1}b$ component-wise: $\xi_1 = (I^{-1})_{11}b_0 + (I^{-1})_{12}b_1$,
 $\xi_2 = (I^{-1})_{21}b_0 + (I^{-1})_{22}b_1$ — the boxed solve
 $\xi = I^{-1}J^{\mathsf T}w$, with no matrix product ever formed.
@@ -1792,10 +1792,15 @@ Flat plane, nonzero $\Gamma$: the *vectors* turn, the *plane* does not bend.
 
 ### 2.6 Example: the unit sphere
 
-Sphere $\Phi(\theta,\varphi)=
-(\sin\theta\cos\varphi, \sin\theta\sin\varphi,\cos\theta)$,
-normal $n = \Phi$ (the radial vector), and Gram matrix
-$I = \operatorname{diag}(1, \sin^2\theta)$.
+On the unit sphere:
+
+```math
+\Phi(\theta,\varphi) =
+(\sin\theta\cos\varphi,\; \sin\theta\sin\varphi,\; \cos\theta),
+\qquad
+n = \Phi\ \text{(the radial vector)},\qquad
+I = \mathrm{diag}(1, \sin^2\theta).
+```
 
 Now differentiate the basis vectors — keeping the split intact:
 
@@ -2040,8 +2045,7 @@ sphere:      gap = 0.000000
    coordinates are symmetric in $i,j$: $\Gamma^k_{\;ij}=\Gamma^k_{\;ji}$.
    *(Check: `Surface.christoffel s x y k 0 1 == Surface.christoffel s x y k 1 0`.)*
 4. **First-kind identity.** Prove
-   $\partial_k\,(\Phi_i\cdot\Phi_j)
-    = \Phi_{ik}\cdot\Phi_j + \Phi_i\cdot\Phi_{jk}$
+   $\partial_k\,(\Phi_i\cdot\Phi_j) = \Phi_{ik}\cdot\Phi_j + \Phi_i\cdot\Phi_{jk}$
    and use it to derive the pure-$I$ formula of §2.8(b) in full.
 5. **Cylinder.** For $\Phi(\theta,z)=(R\cos\theta,R\sin\theta,z)$, compute
    each of $\partial_\theta\Phi_\theta=(-R\,n)$,
