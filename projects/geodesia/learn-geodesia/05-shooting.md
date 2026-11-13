@@ -614,8 +614,14 @@ q_{k+1} \;=\; q_k + h\,\xi_k,
 ```
 
 and the *only* thing the re-tangent step does is update $\xi$. This
-graph identity is the kind of statement [`Proofs.lean`](Proofs.lean)
-machine-checks <!-- LEMMA-REF: graph identity -->.
+graph identity is machine-checked in [`Proofs.lean`](Proofs.lean) as
+`GeodesicProof.toParams_graphPhi_eq_xy`: for a tangent $w$ — spelled there
+in its constructive form $w = a\,\Phi_u + b\,\Phi_v$, which is exactly
+$J\xi = w$ with $\xi = (a,b)$ — the conversion $\xi = I^{-1}J^{\mathsf T}w$
+returns literally the components $![w_x,\,w_y]$. The re-tangent step's
+tangency preservation is proved alongside it
+(`GeodesicProof.tangentialPart_normalVec_orthogonal`): the updated
+direction is genuinely tangent at the new point.
 
 **The re-tangent step IS the Christoffel term.** Compare the re-tangent
 update on $\xi$ against one Euler step of Chapter 3's geodesic ODE
