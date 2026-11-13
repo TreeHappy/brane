@@ -394,7 +394,217 @@ when that map folds, which is the failure mode of §5.6.
 
 ---
 
-## 5.9 Exercises
+## 5.9 🥾 Walking a hill: the tangent-plane step, projection, and why a straight path bends
+
+> **Picture.** §5.8 shot geodesics of the Jacobi metric in the *parameter
+> plane*. This section stays in the room instead: the hill becomes an
+> honest embedded surface, and we find a geodesic the way a hiker would —
+> take a straight step, fall back onto the ground, re-aim along the new
+> ground, repeat. No geodesic ODE is written down anywhere in the walk —
+> and the walk lands on the same curve the ODE produces.
+
+The hill is now carried by the embedding, not by a metric:
+
+```math
+\Phi(x,y) = \bigl(x,\,y,\,h(x,y)\bigr),
+\qquad h(x,y) = A\,e^{-(x^2+y^2)/2\sigma^2},
+\qquad A = 1,\ \sigma = 0.7,
+```
+
+the same Gaussian as §5.8, lifted into $\mathbb{R}^3$.
+
+(Watch the notation: the hill's height is $h(x,y)$ *and* the step length
+below is $h$ too. Subscripted symbols like $h_{xx}$, $h_{xy}$, $h_{yy}$
+always belong to the height; the bare $h$ is a step length.)
+
+> **What does "ambient" mean?** The *ambient space* is just the surrounding
+> $\mathbb{R}^3$ the surface lives in. Positions (`Surface.point : Vec3`),
+> directions, and dot products all live there. The surface's ruler is
+> ambient too: $I = J^{\mathsf T}J$ is the plain ambient dot product pulled
+> back along $J$, so a surface length is an ambient chord length. And
+> `Geodesic.shoot` returns an *ambient* endpoint `Vec3` — which is why the
+> shooting residual $q(L) - b$ of §5.1 is an ambient vector. But $b$ and
+> $q(L)$ both sit on the surface, so only two of the residual's three
+> components are independent; that redundancy is exactly why §5.4 prefers
+> parameter coordinates.
+
+### The walker
+
+Stand at a point $p$ on the surface holding a *unit tangent* direction $w$
+(a unit ambient tangent: $I(w,w) = 1$, so straight ambient steps of size
+$h$ are honest length-$h$ surface steps, up to curvature). The loop has
+three moves:
+
+```
+walk(p, w, h, L):                    # p on the surface, unit tangent w at p
+    repeat round(L / h) times:
+        tip = p + h*w                # 1. move straight: a chord in ambient R^3
+        q   = project(tip)           # 2. pull the chord tip back onto the surface
+        n   = unit normal at q
+        w   = (w - (w·n) n) / |w - (w·n) n|   # 3. re-tangent + renormalize
+        p   = q
+    return p
+```
+
+Step 1 is the hiker's stride: a perfectly straight segment in $\mathbb{R}^3$
+that — this is the whole point — *leaves the surface*, because the surface
+curves away from its own tangent plane. Step 2 is the fall back to the
+ground; for a graph the cheapest exact projection is the vertical one: keep
+the tip's $(x, y)$, replace its $z$ by the surface height there. (A
+closest-point projection works too; the numbers below use the vertical
+one.) Step 3 is the re-aim, and it is a Gauss split you already own: the
+new tangent plane is tilted relative to the old one, so the old $w$ picks
+up a normal component; kill it — that is exactly
+`Surface.tangentialPart` — and renormalize to a unit vector again.
+
+### The walk, in numbers
+
+Launch data, all fixed:
+
+- start $a = \Phi(1.40,\,0.90) = (1.40,\,0.90,\,0.059218)$;
+- launch angle $\alpha = 215^\circ$ in the orthonormal tangent frame
+  $(e_1, e_2)$ at $a$ (the `Geodesic.tangentFrame` construction:
+  $e_1$ along $\Phi_x$, $e_2$ equal to $\Phi_y$ with its $e_1$-part
+  removed), so $w = \cos\alpha\,e_1 + \sin\alpha\,e_2$;
+- the parameter-space velocity the ODE route needs comes from the chapter's
+  conversion $\xi = I^{-1}J^{\mathsf T}w = (-0.797470,\,-0.570306)$ — the
+  same line as §5.5's pseudocode;
+- total walk length $L = 1.6$.
+
+The reference curve is the geodesic from the same launch data, integrated
+with RK4 on the identity $I\,(u'', v'') = -g$ — the one `Geodesic.accelVector`
+implements and [`Proofs.lean`](Proofs.lean) verifies. Its endpoint is
+
+```math
+\Phi(0.315158,\,0.107340) = (0.315158,\,0.107340,\,0.893054),
+```
+
+so the walk has to climb from $z = 0.059$ up the shoulder of the hill to
+$z \approx 0.893$, just below the summit plateau. Here is the walker's
+convergence — the ambient distance between its endpoint and the ODE
+endpoint:
+
+| $h$ | steps | ambient endpoint error |
+|---:|---:|---:|
+| 0.2 | 8 | 0.014587 |
+| 0.1 | 16 | 0.006906 |
+| 0.05 | 32 | 0.003350 |
+| 0.025 | 64 | 0.001649 |
+| 0.0125 | 128 | 0.000818 |
+
+Every halving of $h$ halves the error: **first-order convergence**,
+error $\propto h$. The first three steps at $h = 0.1$ show the two
+per-step measurements the next section explains:
+
+| step | chord-tip miss (gap to the surface) | turn of $w$ |
+|---:|---:|---:|
+| 1 | 0.0029 | $3.272^\circ$ |
+| 2 | 0.0033 | $3.650^\circ$ |
+| 3 | 0.0036 | $3.856^\circ$ |
+
+At the finer $h = 0.025$ the largest turn of the whole walk is
+$1.262^\circ$ per step, and the total bend accumulated over the 1.6-length
+walk is $39.78^\circ$.
+
+![The hill walk on the embedded Gaussian surface $\Phi(x,y)=(x,y,e^{-(x^2+y^2)/2\sigma^2})$: at the start point the tangent plane $T_pS$, the unit direction $w$ and the normal $n$; the first chord (dashed) is perfectly straight in ℝ³ but floats a gap of 0.0029 above the curving surface — the side-view inset shows chord vs surface to scale; the piecewise-linear walker (peach, 16 chords of $h=0.1$) and the RK4 geodesic (red) of the same surface are visually one curve, climbing together from $z=0.059$ to the shared endpoint at $z=0.893$.](images/hill-walk.png)
+
+### Why the straight path bends
+
+Each chord is perfectly straight in $\mathbb{R}^3$, yet it floats *off* the
+surface. The floating is not an accident of the scheme: because the chord
+direction $w$ is tangent, the surface's height above the tangent plane has
+**no linear term** along the chord — first order cancels — and what
+survives is the surface's own second-order departure,
+
+```math
+\operatorname{gap}(h) \;=\; \frac{h^2}{2}\,
+\bigl(h_{xx}w_x^2 + 2\,h_{xy}\,w_x w_y + h_{yy}w_y^2\bigr) \;+\; O(h^3).
+```
+
+At the launch point the quadratic factor is $0.269$, so the formula
+predicts $0.0027$ where the walk measured $0.0029$ — the misses in the
+table above are $h^2$-sized, exactly as the formula says.
+
+The projection snaps the point back down, but it cannot undo the *tilt*:
+the normal $n$ at the new point has turned, so the old $w$ now has a
+normal component, and the re-tangenting step rotates $w$ by a purely
+normal correction. Per unit length, that rotation rate is exactly
+
+```math
+-\langle w,\,Dn\,w\rangle \;=\; \kappa_n(w),
+```
+
+the normal curvature of the hill in the walking direction — the shape
+operator of Chapter 2 at work. The numbers agree: at the launch point
+$\kappa_n(w) = 0.5283$ rad per unit length ($30.25^\circ$/unit). The
+$h = 0.1$ walk turns its first step $3.272^\circ$, a rate of
+$32.7^\circ$/unit; the $h = 0.025$ walk turns its first step $0.773^\circ$,
+a rate of $30.9^\circ$/unit — closing in on $\kappa_n$ as $h$ shrinks. The
+turn also *grows* along the walk ($3.272^\circ \to 3.650^\circ \to
+3.856^\circ$ in three steps) as the shoulder steepens under the walker's
+feet.
+
+Compound hundreds of these tiny straight moves on successively tilted
+tangent planes and the zig-zag melts into a smooth curve whose ambient
+acceleration is **purely normal**:
+
+```math
+\boxed{\;\frac{dw}{ds} \;=\; -\langle w,\,Dn\,w\rangle\,n
+\;=\; II(w,w)\,n,
+\qquad T\,\frac{dw}{ds} \;=\; 0.\;}
+```
+
+The bend you *see* in 3D is the surface bending under your feet (normal
+curvature), not the path choosing to steer sideways: the tangential part
+of the bending vanishes. That is precisely the geodesic condition —
+"straightest inside the surface" — and its formal version is the
+machine-checked statement `GeodesicProof.tangential_gamma2_eq_zero` in
+[`Proofs.lean`](Proofs.lean): with the geodesic acceleration,
+$\langle \Phi_k, \Phi''\rangle = 0$ for $k = u, v$, i.e. the ambient
+acceleration is purely normal.
+
+In the limit $h \to 0$ the walker converges to the true geodesic, and the
+convergence table says the accuracy is first-order. One sentence of why:
+each step lands within $O(h^3)$ of the true geodesic arc *along the
+normal*, but the vertical projection discards the $O(h^2)$ *tangential*
+drift that the geodesic's own normal bending produces in the $(x,y)$
+plane; summed over $L/h$ steps, that per-step $O(h^2)$ becomes a global
+$O(h)$.
+
+> **Why the Lean code doesn't walk.** The walk is the *understanding*
+> device: three plain moves, no Christoffel symbols, no ODE — and
+> first-order accurate. The library integrates the ODE instead:
+> `Geodesic.integrate` runs RK4, which is fourth-order accurate, so
+> refining the grid buys entire digits at once rather than one at a time.
+> The two routes meet at the same curve — the convergence table above is
+> that meeting, watched from the walker's side, and the figure shows it:
+> peach and red are the same path.
+
+### Where it lives in the code
+
+Every ingredient of the walk is already in the library — only the loop
+itself lives in the figure script, because the Lean side deliberately
+takes the accurate ODE route (that is the point of the callout above):
+
+| What | Code | File |
+|---|---|---|
+| the Gauss split the re-tangent step runs on: $T w = w - (w\cdot n)\,n$ | `Surface.tangentialPart`, `Surface.normalPart`, `Surface.normalAt` | `Geodesia/Surface.lean` |
+| ambient direction → parameter velocity $\xi = I^{-1}J^{\mathsf T}w$ | `Geodesic.tangentVecToParams` | `Geodesia/Geodesic.lean` |
+| the ODE shot — the accurate route to the same curve | `Geodesic.shoot`, `Geodesic.integrate` | `Geodesia/Geodesic.lean` |
+| the walker of this section (figure code, not Lean) | `hill_walk` / `fig_hill_walk` | `images/make_figs.py` |
+| the formal backbone: no tangential residue | `GeodesicProof.tangential_gamma2_eq_zero` | `Proofs.lean` |
+
+> **Try it.** Rerun the walk with $\alpha$ aimed straight at the summit,
+> then tangentially across the shoulder, and watch each walk's total bend
+> track $\kappa_n(w)$: the summit-directed launch spends its 1.6 length
+> where the normal curvature is largest, the tangential launch mostly does
+> not. Second experiment: change $h$ and watch the total bend settle
+> ($39.98^\circ$ at $h = 0.2$, $39.78^\circ$ at $h = 0.025$) even as the
+> endpoint error collapses — the bend is geometry; the error is numerics.
+
+---
+
+## 5.10 Exercises
 
 1. **Variational equation.** Derive
    $Y''=F_qY+F_{q'}Y'$ from $q''=F(q,q')$ by differentiating with respect to

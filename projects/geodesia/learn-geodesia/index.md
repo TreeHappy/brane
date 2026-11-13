@@ -128,7 +128,7 @@ source for the algorithms.
 | `Geodesia/Calculus.lean` | gradient, Hessian, Laplacian, divergence, curl, Jacobian determinant, directional derivative along a curve. |
 | `Geodesia/Curvature.lean` | `I`, `II`, tangent-part coordinates (`Surface.christoffel`), shape operator, `K`, `H`, principal curvatures. |
 | `Geodesia/Geodesic.lean` | two acceleration routes (`accelChristoffel`, `accelVector` via `gVector`), generic `rhsWith`, Euler and RK4 integrators, energy, tangent frame, `shoot`. |
-| `learn-geodesia/Proofs.lean` | machine-checked proof that the Christoffel and vector-calculus accelerations agree over `ℝ`, using Mathlib's `EuclideanSpace` and `Matrix`. |
+| `learn-geodesia/Proofs.lean` | machine-checked proof that the Christoffel and vector-calculus accelerations agree over `ℝ`, using Mathlib's `EuclideanSpace` and `Matrix`; plus `tangential_gamma2_eq_zero` — with the geodesic acceleration the ambient acceleration is purely normal (Ch. 5 §5.9). |
 | `Main.lean` | a small exact demo on a paraboloid and the unit sphere, including an Euler-vs-RK4 comparison. |
 
 Run it:
@@ -156,6 +156,10 @@ holding the geodesic energy while Euler drifts.
   $I_{ij} = \Phi_i\cdot\Phi_j$; $I^{-1}$ is its inverse.
 - $n$ is the unit normal; $II_{ij} = \langle n,\Phi_{ij}\rangle$.
 - Repeated indices are summed.
+- The **ambient space** is the surrounding $\mathbb{R}^3$ the surface lives
+  in: positions (`Surface.point : Vec3`), directions and dot products live
+  there, and the ruler $I = J^{\mathsf T}J$ is the ambient dot product
+  pulled back along $J$ (Ch. 5 §5.9).
 
 A useful dictionary in the other direction (older books use these):
 

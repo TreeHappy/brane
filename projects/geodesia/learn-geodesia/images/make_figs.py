@@ -1039,6 +1039,295 @@ def fig_jacobi_fan():
 
 
 # ---------------------------------------------------------------------------
+# Figure 8: walking the embedded hill — the tangent-plane step
+#
+# The same Gaussian hill as fig_jacobi_fan, now as an embedded surface
+#     Phi(x, y) = (x, y, h(x, y)),   h = A exp(-(x^2 + y^2) / 2 sigma^2),
+# walked in ambient R^3 without ever writing the geodesic ODE: straight
+# step, project the chord tip back onto the surface, re-tangent, repeat.
+# The comparison curve is integrated with RK4 on the vector-route identity
+# I (u'', v'') = -g specialised to a height field,
+#     I_ij = delta_ij + h_i h_j,
+#     g_k  = h_k (h_xx u'^2 + 2 h_xy u' v' + h_yy v'^2),
+# the height-field twin of Geodesic.lean's gVector / accelVector.
+# ---------------------------------------------------------------------------
+HILL_START = np.array([1.40, 0.90])
+HILL_LAUNCH_ANGLE = math.radians(215.0)
+HILL_WALK_LENGTH = 1.6
+
+
+def hill_height(x, y):
+    """The hill's height, elementwise (scalars or arrays)."""
+    return HILL_A * np.exp(-(x * x + y * y) / (2 * HILL_SIGMA ** 2))
+
+
+def hill_dx(x, y):
+    return -x / HILL_SIGMA ** 2 * hill_height(x, y)
+
+
+def hill_dy(x, y):
+    return -y / HILL_SIGMA ** 2 * hill_height(x, y)
+
+
+def hill_dxx(x, y):
+    return (x * x / HILL_SIGMA ** 4 - 1.0 / HILL_SIGMA ** 2) * hill_height(x, y)
+
+
+def hill_dxy(x, y):
+    return x * y / HILL_SIGMA ** 4 * hill_height(x, y)
+
+
+def hill_dyy(x, y):
+    return (y * y / HILL_SIGMA ** 4 - 1.0 / HILL_SIGMA ** 2) * hill_height(x, y)
+
+
+def HILLSURF(U, V):
+    return np.stack([U, V, hill_height(U, V)])
+
+
+def hill_normal(x, y):
+    n = np.array([-hill_dx(x, y), -hill_dy(x, y), 1.0])
+    return n / np.linalg.norm(n)
+
+
+def hill_frame(x, y):
+    """Orthonormal tangent frame (e1 along +x, e2 = Φ_y orthogonalized):
+    the height-field twin of `Geodesic.tangentFrame`."""
+    e1 = np.array([1.0, 0.0, hill_dx(x, y)])
+    e1 /= np.linalg.norm(e1)
+    raw = np.array([0.0, 1.0, hill_dy(x, y)])
+    e2 = raw - (raw @ e1) * e1
+    return e1, e2 / np.linalg.norm(e2)
+
+
+def hill_metric(x, y):
+    gx, gy = hill_dx(x, y), hill_dy(x, y)
+    return np.array([[1.0 + gx * gx, gx * gy], [gx * gy, 1.0 + gy * gy]])
+
+
+def hill_gvector(x, y, p):
+    """g_k = <Φ_k, Φ_ij> q'^i q'^j for the graph: <Φ_k, Φ_ij> = h_k h_ij,
+    since Φ_k = (e_k, h_k) and Φ_ij = (0, 0, h_ij)."""
+    d = (hill_dxx(x, y) * p[0] ** 2 + 2.0 * hill_dxy(x, y) * p[0] * p[1]
+         + hill_dyy(x, y) * p[1] ** 2)
+    return np.array([hill_dx(x, y) * d, hill_dy(x, y) * d])
+
+
+def hill_accel(x, y, p):
+    """(u'', v'') = -I⁻¹ g — the height-field twin of `Geodesic.accelVector`."""
+    return -np.linalg.solve(hill_metric(x, y), hill_gvector(x, y, p))
+
+
+def _hill_geo_rhs(q, p):
+    return p, hill_accel(q[0], q[1], p)
+
+
+def _hill_geo_rk4(q, p, h):
+    k1q, k1p = _hill_geo_rhs(q, p)
+    k2q, k2p = _hill_geo_rhs(q + 0.5 * h * k1q, p + 0.5 * h * k1p)
+    k3q, k3p = _hill_geo_rhs(q + 0.5 * h * k2q, p + 0.5 * h * k2p)
+    k4q, k4p = _hill_geo_rhs(q + h * k3q, p + h * k3p)
+    return (q + h / 6 * (k1q + 2 * k2q + 2 * k3q + k4q),
+            p + h / 6 * (k1p + 2 * k2p + 2 * k3p + k4p))
+
+
+def hill_launch():
+    """Start point, unit tangent direction w and parameter velocity ξ of the
+    §5.9 walk: ξ = I⁻¹ Jᵀ w (`Geodesic.tangentVecToParams`'s formula)."""
+    x, y = HILL_START
+    e1, e2 = hill_frame(x, y)
+    w = math.cos(HILL_LAUNCH_ANGLE) * e1 + math.sin(HILL_LAUNCH_ANGLE) * e2
+    JT = np.array([[1.0, 0.0, hill_dx(x, y)], [0.0, 1.0, hill_dy(x, y)]])
+    xi = np.linalg.solve(hill_metric(x, y), JT @ w)
+    return np.array([x, y, hill_height(x, y)]), w, xi
+
+
+def hill_geodesic(n=400):
+    """RK4 on I (u'', v'') = -g for the hill surface, from the §5.9 launch
+    data; returns the parameter path (u(s), v(s))."""
+    _, _, xi = hill_launch()
+    h = HILL_WALK_LENGTH / n
+    q, p = HILL_START.copy(), xi
+    pts = [q.copy()]
+    for _ in range(n):
+        q, p = _hill_geo_rk4(q, p, h)
+        pts.append(q.copy())
+    return np.array(pts)
+
+
+def hill_walk(hstep, n_geo=400):
+    """Walk the embedded hill without any geodesic ODE.
+
+    Each step: move straight p' = p + hstep·w in ambient R^3 (the chord
+    leaves the surface), drop the tip vertically back onto the graph, then
+    re-tangent — kill the normal part of w in the new tangent plane (the
+    `Surface.tangentialPart` split) and renormalize.  Returns the ambient
+    polyline, the per-step chord misses, the per-step direction turns, and
+    the walker's endpoint error against the RK4 geodesic."""
+    P0, w0, _ = hill_launch()
+    steps = int(round(HILL_WALK_LENGTH / hstep))
+    p, w = P0.copy(), w0.copy()
+    pts = [p.copy()]
+    misses, turns = [], []
+    for _ in range(steps):
+        tip = p + hstep * w                       # straight chord
+        x, y = tip[0], tip[1]                     # vertical projection
+        q = np.array([x, y, hill_height(x, y)])
+        misses.append(float(np.linalg.norm(tip - q)))
+        n = hill_normal(x, y)
+        wt = w - (w @ n) * n                      # tangential part
+        w_new = wt / np.linalg.norm(wt)
+        turns.append(math.degrees(math.acos(np.clip(w @ w_new, -1.0, 1.0))))
+        p, w = q, w_new
+        pts.append(q)
+    geo = hill_geodesic(n_geo)
+    geo_amb = np.column_stack([geo[:, 0], geo[:, 1],
+                               hill_height(geo[:, 0], geo[:, 1])])
+    err = float(np.linalg.norm(pts[-1] - geo_amb[-1]))
+    return np.array(pts), geo_amb, misses, turns, err
+
+
+def fig_hill_walk():
+    """§5.9's picture: the embedded Gaussian hill, the start point with its
+    tangent plane, the first straight chord floating its h²-sized gap above
+    the surface, and the piecewise-linear walker (peach) against the RK4
+    geodesic (red) of the same surface — near-identical on purpose: the
+    walk and the ODE meet at the same curve."""
+    walk, geo, misses, turns, err = hill_walk(0.1)
+    P0, w0, xi0 = hill_launch()
+    n0 = hill_normal(*HILL_START)
+    e1, e2 = hill_frame(*HILL_START)
+
+    fig = plt.figure(figsize=(9.6, 7.4))
+    ax = fig.add_subplot(111, projection="3d")
+    ulim, vlim = (-0.42, 1.86), (-0.42, 1.36)
+    style3d(ax, (ulim[0] - 0.06, ulim[1] + 0.06),
+            (vlim[0] - 0.06, vlim[1] + 0.06), (-0.03, 1.08),
+            elev=24, azim=-122, aspect=(1, 1, 0.62))
+    shaded_surface(ax, HILLSURF, ulim, vlim, color=LATTE["crust"], alpha=0.96)
+    iso_lines(ax, HILLSURF, ulim, vlim, nu=7, nv=6)
+    rim_lines(ax, HILLSURF, ulim, vlim)
+
+    # tangent plane at the start: translucent patch + dashed outline
+    r = 0.30
+    patch = [P0 + a * e1 + b * e2 for a, b in
+             [(-r, -r), (r, -r), (r, r), (-r, r)]]
+    ax.add_collection3d(Poly3DCollection([patch], facecolors=LATTE["lavender"],
+                                         edgecolors="none", alpha=0.18,
+                                         zorder=5))
+    ring = patch + [patch[0]]
+    ax.plot([q[0] for q in ring], [q[1] for q in ring], [q[2] for q in ring],
+            color=LATTE["blue"], lw=1.0, ls=(0, (3, 2)), alpha=0.8, zorder=5)
+
+    # the RK4 geodesic (red) and the walker (peach, with chord vertices)
+    ax.plot(geo[:, 0], geo[:, 1], geo[:, 2], color=LATTE["red"], lw=3.0,
+            zorder=4, solid_capstyle="round")
+    ax.plot(walk[:, 0], walk[:, 1], walk[:, 2], color=LATTE["peach"], lw=1.5,
+            zorder=5, solid_capstyle="round")
+    ax.scatter(walk[:, 0], walk[:, 1], walk[:, 2], s=9, color=LATTE["peach"],
+               depthshade=False, zorder=6)
+
+    # the first chord: straight, floating its miss above the surface
+    tip1 = P0 + 0.1 * w0
+    q1 = np.array([tip1[0], tip1[1], hill_height(tip1[0], tip1[1])])
+    ax.plot([P0[0], tip1[0]], [P0[1], tip1[1]], [P0[2], tip1[2]],
+            color=LATTE["text"], lw=1.6, ls=(0, (4, 2.2)), zorder=6)
+    ax.plot([tip1[0], q1[0]], [tip1[1], q1[1]], [tip1[2], q1[2]],
+            color=LATTE["teal"], lw=2.4, zorder=7)
+    ball(ax, tip1, s=26, color=LATTE["teal"])
+
+    fancy_arrow(ax, P0, 0.34 * w0, LATTE["blue"], lw=2.0, head=0.06)
+    fancy_arrow(ax, P0, 0.80 * n0, LATTE["red"], lw=2.2)
+    ball(ax, P0, s=70)
+    ball(ax, walk[-1], s=70, color=LATTE["maroon"])
+
+    mlabel(ax, P0 + 0.34 * w0, r"$w$", LATTE["blue"],
+           offset=(0.02, 0.10, 0.12))
+    mlabel(ax, P0 + 0.80 * n0, r"$n$", LATTE["red"],
+           offset=(0.08, 0.02, 0.08))
+    mlabel(ax, P0 - r * e1 - r * e2, r"$T_pS$", LATTE["blue"],
+           offset=(-0.16, -0.10, -0.10), fontsize=10.5)
+    mlabel(ax, walk[-1], "shared\nendpoint", LATTE["maroon"],
+           offset=(-0.55, 0.10, -0.08), fontsize=9.5)
+
+    ax.text2D(0.02, 0.97,
+              "16 straight chords of $h=0.1$, projected and re-tangented\n"
+              rf"first chord misses the surface by {misses[0]:.4f}"
+              rf" — turn {turns[0]:.2f}$^\circ$"
+              "\n" rf"steepest turn {max(turns):.2f}$^\circ$, total bend"
+              f" {sum(turns):.1f}$^\\circ$"
+              "\n" rf"walker vs ODE endpoint: {err:.4f} apart"
+              r" (first order in $h$)",
+              transform=ax.transAxes, va="top", fontsize=8.5,
+              color=LATTE["subtext1"])
+    handles = [
+        Line2D([0], [0], color=LATTE["red"], lw=2.4,
+               label="RK4 geodesic of the surface (ODE route)"),
+        Line2D([0], [0], color=LATTE["peach"], lw=1.8,
+               label="tangent-plane walk, 16 chords"),
+        Line2D([0], [0], color=LATTE["text"], lw=1.6, ls=(0, (4, 2.2)),
+               label=r"first chord: straight in $\mathbb{R}^3$"),
+    ]
+    ax.legend(handles=handles, loc="lower left", fontsize=8, frameon=False,
+              labelcolor=LATTE["subtext1"])
+    ax.set_title("Walking a hill: straight step, project, re-tangent\n"
+                 r"every chord is straight in $\mathbb{R}^3$ — the bend"
+                 " comes from the tilted tangent planes",
+                 fontsize=10.5, color=LATTE["text"])
+    fig.tight_layout()
+
+    # side-view inset: the first steps along w — straight chords, curving
+    # surface.  The vertical gap at each chord tip is the O(h²) miss of §5.9;
+    # plotted to scale (no exaggeration), which is the point: it is tiny but
+    # systematic, and it is what the projection + re-tangenting repair.
+    ins = fig.add_axes((0.635, 0.53, 0.31, 0.21))
+    smax = 0.15
+    ss = np.linspace(0.0, smax, 200)
+    xy0 = P0[:2] + ss[:, None] * w0[:2]
+    chord_z = P0[2] + ss * w0[2]
+    surf_z = hill_height(xy0[:, 0], xy0[:, 1])
+    ins.plot(ss, surf_z, color=LATTE["overlay0"], lw=2.6, zorder=2,
+             label="surface profile")
+    ins.plot(ss, chord_z, color=LATTE["text"], lw=1.4, ls=(0, (4, 2.2)),
+             zorder=3, label="straight chord")
+    i1 = np.searchsorted(ss, 0.1)
+    ins.scatter([ss[i1]], [chord_z[i1]], s=26, color=LATTE["teal"], zorder=5)
+    ins.scatter([0.0], [P0[2]], s=30, color=LATTE["text"], zorder=5)
+    ins.annotate("", xy=(ss[i1], surf_z[i1]), xytext=(ss[i1], chord_z[i1]),
+                 arrowprops=dict(arrowstyle="-|>", color=LATTE["teal"],
+                                 lw=1.6, mutation_scale=9))
+    ins.text(ss[i1] + 0.005, (chord_z[i1] + surf_z[i1]) / 2,
+             f"gap {misses[0]:.4f}", color=LATTE["teal"], fontsize=8.5,
+             va="center")
+    ins.legend(loc="lower right", fontsize=7.5, frameon=False,
+               labelcolor=LATTE["subtext0"])
+    ins.set_xlim(0.0, smax)
+    ins.set_ylim(P0[2] - 0.002, float(surf_z[-1]) + 0.004)
+    ins.set_xticks([0.0, 0.05, 0.10, 0.15])
+    ins.set_xlabel("distance along $w$", fontsize=8, color=LATTE["subtext0"])
+    ins.set_ylabel("$z$", fontsize=8, color=LATTE["subtext0"])
+    ins.tick_params(labelsize=7, colors=LATTE["subtext0"])
+    ins.set_facecolor(LATTE["mantle"])
+    for sp in ins.spines.values():
+        sp.set_color(LATTE["surface2"])
+        sp.set_linewidth(0.8)
+    ins.set_title("the chord floats above the curving surface",
+                  fontsize=8.5, color=LATTE["text"], pad=4)
+
+    for ext in ("png", "svg"):
+        fig.savefig(os.path.join(HERE, f"hill-walk.{ext}"),
+                    dpi=170, bbox_inches="tight")
+    plt.close(fig)
+    nrm = np.linalg.norm([hill_dx(*HILL_START), hill_dy(*HILL_START), 1.0])
+    kap = float((hill_dxx(*HILL_START) * xi0[0] ** 2
+                 + 2 * hill_dxy(*HILL_START) * xi0[0] * xi0[1]
+                 + hill_dyy(*HILL_START) * xi0[1] ** 2) / nrm)
+    print(f"hill-walk: endpoint ({geo[-1, 0]:.6f}, {geo[-1, 1]:.6f}), "
+          f"walker error at h=0.1 {err:.6f}, first miss {misses[0]:.4f}, "
+          f"first turn {turns[0]:.3f} deg, launch kappa_n {kap:.4f} rad/unit")
+
+
+# ---------------------------------------------------------------------------
 # Figure: tangent space schematic (2-D book style)
 # ---------------------------------------------------------------------------
 def fancy2(ax, base, vec, color, lw=2.2, head=0.055, zorder=5):
@@ -1351,8 +1640,9 @@ if __name__ == "__main__":
     fig_shape_operator()
     fig_signatures()
     fig_jacobi_fan()
+    fig_hill_walk()
     fig_pullback()
     fig_height_map()
     print("wrote tangent-space, fundamental-forms, shooting, relaxation, "
           "normal-curvature, shape-operator, curvature-signatures, "
-          "jacobi-fan, pullback, height-map (png + svg)")
+          "jacobi-fan, hill-walk, pullback, height-map (png + svg)")

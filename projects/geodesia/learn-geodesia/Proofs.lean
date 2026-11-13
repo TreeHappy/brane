@@ -200,9 +200,87 @@ theorem metric_mulVec_accelVector (Phi : Fin 2 → Vec3)
   simp only [accelVector, Matrix.mulVec_neg, Matrix.mulVec_mulVec, hInv,
     Matrix.one_mulVec]
 
+/-! ## The ambient acceleration is purely normal
+
+Parameterize a curve on the surface as `s ↦ Φ(u(s), v(s))` with velocity
+`p = (u', v')` and parameter acceleration `a = (u'', v'')`.  The chain rule
+gives the ambient second derivative
+
+```
+Φ'' = Σ_i Φ_i u''_i + Σ_{i,j} Φ_ij u'_i u'_j.
+```
+
+The claim behind chapter 05's "a straight walk on a hill bends only off the
+surface" is that when `a` comes from the `accelVector` route, `Φ''` has no
+tangential component: `⟨Φ_k, Φ''⟩ = 0` for both tangent directions `Φ_k`,
+so the ambient acceleration is purely normal.  Note the two sums cancel
+against each other exactly because `accelVector` was built as `−I⁻¹ g`:
+pairing the first sum with `Φ_k` gives `(I a)_k = −g_k`, pairing the second
+gives `g_k`. -/
+
+/-- The ambient second derivative of the parameter curve
+`s ↦ Φ(u(s), v(s))` with velocity `p = (u', v')` and parameter acceleration
+`a = (u'', v'')`, by the chain rule:
+
+`Φ'' = Σ_i Φ_i • u''_i + Σ_{i,j} Φ_ij • (u'_i u'_j)`.
+
+The first sum is the chain rule through the first partials (the part the
+curve steers); the second is the grid-bending part (how the parameter grid
+itself curves).  Note that in Lean the scalar comes first in `•`:
+`a i • Phi i` is the vector `Φ_i` scaled by `u''_i`. -/
+def gamma2 (Phi : Fin 2 → Vec3) (d2Phi : Fin 2 → Fin 2 → Vec3)
+    (a p : Fin 2 → ℝ) : Vec3 :=
+  (∑ i, a i • Phi i) + (∑ i, ∑ j, (p i * p j) • d2Phi i j)
+
+/-- **The ambient acceleration is purely normal.**  Pairing the ambient
+second derivative `Φ''` of the curve with either tangent vector `Φ_k` gives
+zero, i.e. the tangential part of `Φ''` vanishes: the curve is straight
+inside the surface and bent only off it.  The proof pairs each of the two
+sums in `gamma2` with `Φ_k`; the first gives `(I a)_k = −g_k` (by
+`metric_mulVec_accelVector`), the second gives `g_k`, and they cancel. -/
+theorem tangential_gamma2_eq_zero (Phi : Fin 2 → Vec3)
+    (d2Phi : Fin 2 → Fin 2 → Vec3)
+    (Iinv : Matrix (Fin 2) (Fin 2) ℝ)
+    (hInv : metric Phi * Iinv = 1)
+    (p : Fin 2 → ℝ) (k : Fin 2) :
+    ⟪Phi k, gamma2 Phi d2Phi (accelVector Phi d2Phi Iinv p) p⟫_ℝ = 0 := by
+  -- Unfold `gamma2` and split the inner product over the two sums.
+  show ⟪Phi k, (∑ i, accelVector Phi d2Phi Iinv p i • Phi i)
+      + ∑ i, ∑ j, (p i * p j) • d2Phi i j⟫_ℝ = 0
+  rw [inner_add_right]
+  -- Pair the `a`-sum with `Φ_k`: this is exactly `I *ᵥ a` at `k`.
+  have h1 : ⟪Phi k, ∑ i, accelVector Phi d2Phi Iinv p i • Phi i⟫_ℝ
+      = (metric Phi *ᵥ accelVector Phi d2Phi Iinv p) k := by
+    rw [Matrix.mulVec_apply_eq_sum, inner_sum]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [inner_smul_right]
+    -- `metric Phi k i` is definitionally `⟪Phi k, Phi i⟫_ℝ`.
+    have hmet : metric Phi k i = ⟪Phi k, Phi i⟫_ℝ := rfl
+    rw [hmet]
+    ring
+  -- Pair the grid-bending sum with `Φ_k`: this is `gvec` at `k`, since
+  -- `gamma1 Phi d2Phi k i j = ⟪Phi k, d2Phi i j⟫_ℝ` by definition.
+  have h2 : ⟪Phi k, ∑ i, ∑ j, (p i * p j) • d2Phi i j⟫_ℝ
+      = gvec Phi d2Phi p k := by
+    show ⟪Phi k, ∑ i, ∑ j, (p i * p j) • d2Phi i j⟫_ℝ
+      = ∑ i, ∑ j, gamma1 Phi d2Phi k i j * p i * p j
+    rw [inner_sum]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [inner_sum]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [inner_smul_right]
+    -- `gamma1 Phi d2Phi k i j` is definitionally `⟪Phi k, d2Phi i j⟫_ℝ`.
+    have hgam : gamma1 Phi d2Phi k i j = ⟪Phi k, d2Phi i j⟫_ℝ := rfl
+    rw [hgam]
+    ring
+  -- The two sums cancel: `I a = −g` is exactly how `accelVector` was built.
+  rw [h1, h2, metric_mulVec_accelVector Phi d2Phi Iinv hInv p]
+  simp
+
 end GeodesicProof
 end Geodesia
 
 -- The main theorem depends only on the standard kernel axioms.
 #print axioms Geodesia.GeodesicProof.accelChristoffel_eq_accelVector
 #print axioms Geodesia.GeodesicProof.metric_mulVec_accelVector
+#print axioms Geodesia.GeodesicProof.tangential_gamma2_eq_zero
