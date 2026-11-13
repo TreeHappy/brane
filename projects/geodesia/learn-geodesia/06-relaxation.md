@@ -352,7 +352,7 @@ re-relaxing finishes the job.
    $\nabla_{q_i}L=J(q_i)^{\mathsf T}(\tau_i^{-}-\tau_i^{+})$
    from the chord-length formula.
 4. **Dirichlet functional.** Show that in Cartesian coordinates the gradient
-   descent update for $E=\sum\frac12|\Delta q_i|^2$ is
+   descent update for $E=\sum\frac12\lvert\Delta q_i\rvert^2$ is
    $q_i\leftarrow q_i+\varepsilon(q_{i-1}-2q_i+q_{i+1})$.
 5. **Ladder path.** On a cylinder, start with a path that winds around the
    cylinder and relax it. How many geodesics connect the endpoints? Which

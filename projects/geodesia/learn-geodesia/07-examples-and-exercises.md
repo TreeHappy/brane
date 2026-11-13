@@ -196,7 +196,7 @@ lake build
 lake exe geodesia
 ```
 
-Expected exact-derivative demo output (abridged):
+Expected exact-derivative demo output:
 
 ```
 Geodesia — exact differential geometry (no finite differences)
@@ -207,9 +207,21 @@ paraboloid z = 0.3(x² + y²) at (x, y) = (1.000000, 0.000000)
   Γ²₁₁, Γ²₁₂, Γ²₂₂ = 0.000000, 0.000000, 0.000000
   K, H          = 0.194637, 0.446401
   κ_min, κ_max  = 0.378306, 0.514496
-geodesic from (1, 0) with tangent-basis direction (1, 0), s ∈ [0, 1]
-  endpoint      = (1.879182, 0.000000, 1.059398)
-  E(0), E(1)    = 0.680000, 0.680000
+geodesic from (1, 0) with parameter velocity (1, 0), s ∈ [0, 1]
+  RK4 endpoint  = (1.879182, 0.000000, 1.059398)
+  Euler endpoint= (1.880145, 0.000000, 1.060483)
+  E(0)          = 0.680000
+  E RK4, Euler  = 0.680000, 0.679768
+the two accelerations at the start state
+  Christoffel   = (-0.264706, -0.000000)
+  vector        = (-0.264706, -0.000000)
+the two right-hand sides at the same state
+  rhs       = (u = 1.000000, v = 0.000000, du = -0.264706, dv = -0.000000)
+  rhsVector = (u = 1.000000, v = 0.000000, du = -0.264706, dv = -0.000000)
+one step of size 0.1 from the same state
+  Euler         = (u = 1.100000, v = 0.000000, du = 0.973529, dv = 0.000000)
+  RK4           = (u = 1.098681, v = 0.000000, du = 0.973668, dv = 0.000000)
+  shoot(angle=0.6, length=1) = (1.606884, 0.550855, 0.865655)
 unit sphere at (θ, φ) = (1.000000, 0.200000)
   K (should be 1) = 1.000000
 ```
@@ -408,7 +420,7 @@ $DR=Y(L)$ with a finite-difference Jacobian. How close are they?
 ### Exercise 6 — relaxation Hessian
 
 Derive the block tridiagonal Hessian of the discrete Dirichlet functional
-$\mathcal D=\sum\frac12|\Delta q_i|^2$ (the sum of squared parameter-space
+$\mathcal D=\sum\frac12\lvert\Delta q_i\rvert^2$ (the sum of squared parameter-space
 steps). Write the linear system for a Newton step.
 
 *Hint:* the Hessian is the discrete Laplacian with Dirichlet boundary
@@ -433,7 +445,7 @@ $f(x,y)=x^2-y^2$ (a saddle). Where is $K$ negative?
 
 Add a `geodesicLength` function to `Geodesic.lean` that sums
 $\sqrt{\Delta q^{\mathsf T} I\, \Delta q}$ along an integrated geodesic, and check
-that it matches `length` in `shootState`.
+that it matches the `length` argument of `shootState`.
 
 ---
 

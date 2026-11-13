@@ -531,8 +531,8 @@ I((1,0),(1,0))  = 1.360000
 ```
 
 Two claims verified at once: the angle formula (the two routes agree) and
-the squared-length formula ($I(w,w) = |Jw|^2$: here
-$I((1,0),(1,0)) = 1.36 = |\Phi_x|^2 = 1 + f_x^2$).
+the squared-length formula ($I(w,w) = \lvert Jw\rvert^2$: here
+$I((1,0),(1,0)) = 1.36 = \lvert\Phi_x\rvert^2 = 1 + f_x^2$).
 
 **Area.** The two basis vectors span a parallelogram whose area is the norm
 of their cross product — and that equals the determinant of the Gram matrix:
@@ -615,7 +615,7 @@ $dx^2 + dy^2 + (f_x dx + f_y dy)^2$ — the same quadratic form.
 
 **Checked example.** Three claims verified at once on `surf` at $(1,0)$:
 the graph formula ($I_{11} = 1 + 0.6^2 = 1.36$), the determinant identity
-$\det I = |\Phi_x\times\Phi_y|^2$ (Exercise 2), and the $I^{-1}J^{\mathsf T}w$
+$\det I = \lvert\Phi_x\times\Phi_y\rvert^2$ (Exercise 2), and the $I^{-1}J^{\mathsf T}w$
 round-trip, fed the non-unit vector $\Phi_x$ itself:
 
 ```lean
@@ -768,7 +768,7 @@ applied to the velocity:
 Let $d := (u'(s),\, v'(s)) \in \mathbb{R}^2$ be the
 parameter velocity. So $II(d,d)$ *is* the normal component of the
 acceleration when you move in surface direction $d$. Dividing by the
-squared speed $|J\,d|^2$ normalizes it — that ratio is the **normal
+squared speed $\lvert J\,d\rvert^2$ normalizes it — that ratio is the **normal
 curvature** `Surface.normalCurvature`:
 
 ```math
@@ -1189,8 +1189,8 @@ is why a cylinder can be cut and unrolled flat — nothing forces it to bend.
 = R\,(\sin\theta\cos\varphi,\ \sin\theta\sin\varphi,\ \cos\theta).
 ```
 
-Tangent vectors have lengths $|R\Phi_\theta| = R$ and
-$|\Phi_\varphi| = R\sin\theta$, perpendicular to each other, so
+Tangent vectors have lengths $\lvert R\Phi_\theta\rvert = R$ and
+$\lvert\Phi_\varphi\rvert = R\sin\theta$, perpendicular to each other, so
 
 ```math
 I = \begin{bmatrix}R^2 & 0\\ 0 & R^2\sin^2\theta\end{bmatrix}.
@@ -1261,7 +1261,7 @@ H = \tfrac12(0.3783 + 0.5145) = 0.4464.
 ```
 
 Every number in this example is a dot product of four 3-D vectors — exactly
-what `lake exe geodesia` prints:
+the opening lines of `lake exe geodesia`:
 
 ```text
 Geodesia — exact differential geometry (no finite differences)
@@ -1272,12 +1272,6 @@ paraboloid z = 0.3(x² + y²) at (x, y) = (1.000000, 0.000000)
   Γ²₁₁, Γ²₁₂, Γ²₂₂ = 0.000000, 0.000000, 0.000000
   K, H          = 0.194637, 0.446401
   κ_min, κ_max  = 0.378306, 0.514496
-geodesic from (1, 0) with parameter velocity (1, 0), s ∈ [0, 1]
-  endpoint      = (1.879182, 0.000000, 1.059398)
-  E(0), E(1)    = 0.680000, 0.680000
-  shoot(angle=0.6, length=1) = (1.606884, 0.550855, 0.865655)
-unit sphere at (θ, φ) = (1.000000, 0.200000)
-  K (should be 1) = 1.000000
 ```
 
 ### 1.7 How the code represents this (exact derivatives)
@@ -1450,7 +1444,7 @@ Surface.shapeOperator s x y w
 1. **Cone.** Take $\Phi(r,\theta) = (r\cos\theta, r\sin\theta, r)$.
    Compute the tangent vectors $\Phi_r$, $\Phi_\theta$ and $I = J^{\mathsf T}J$.
    Show that one bending direction is zero and hence $K = 0$.
-2. **Determinant identity.** Prove $\det I = |\Phi_u\times\Phi_v|^2$ using
+2. **Determinant identity.** Prove $\det I = \lvert\Phi_u\times\Phi_v\rvert^2$ using
    only the cross-product identity
    $(a\times b)\cdot(c\times d) = (a\cdot c)(b\cdot d) - (a\cdot d)(b\cdot c)$.
    *(The §1.2 checked example verifies it numerically on the paraboloid.)*

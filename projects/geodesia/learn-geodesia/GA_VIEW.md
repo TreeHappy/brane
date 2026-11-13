@@ -129,10 +129,10 @@ in coordinate functions and is integrated with RK4), it simplifies the
 ## §5 Curvature as blade maps
 
 The shape operator remains a linear map $S(v) = -T\,\partial_v n$ (its
-tangential image is automatically tangent, since $\partial_v|n|^2 = 0$). Two
+tangential image is automatically tangent, since $\partial_v\lvert n\rvert^2 = 0$). Two
 GA readings:
 
-**(a) Normal via the blade, again.** With $n = B/|B|$ the normal is the
+**(a) Normal via the blade, again.** With $n = B/\lvert B\rvert$ the normal is the
 *dualized blade*; differentiating the *unit* blade keeps its derivative
 *within* the tangent plane — the very content of Rodrigues'
 $\partial_v n = -S(v)$: $\partial_v n$ is tangent, so it lies inside $B$
@@ -234,7 +234,7 @@ Geometric product = reindexing with the $\mathrm{Cl}_3$ law
 (sign $-$ per swapped basis pair, $I_3^2 = -1$). Then check the chapter's
 headline claims numerically:
 
-1. **Sandwich split.** For $w$ with $|n|=1$: check in a `#eval` that
+1. **Sandwich split.** For $w$ with $\lvert n\rvert=1$: check in a `#eval` that
    $\tfrac12(w - nwn)$ is tangent (zero dot with $n$) and equals
    $w - (w\cdot n)\,n$, while $\tfrac12(w + nwn)$ equals $(w\cdot n)\,n$
    — both projections of Chapter 2 come from one product.

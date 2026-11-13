@@ -248,14 +248,14 @@ $T\gamma'' = 0$ (Chapter 3). `Geodesia/Geodesic.lean` implements the
 coordinate form of that single projection:
 
 ```lean
-def Geodesic.accel (s : Surface) (st : GeoState) : Vec2
+def Geodesic.accelChristoffel (s : Surface) (st : GeoState) : Vec2
     -- (u″, v″) = −Γ^k_ij q′ⁱ q′ʲ: the coefficient form of T γ″ = 0
 ```
 
 **Implementation.** Verbatim from `Geodesia/Geodesic.lean`:
 
 ```lean
-def Geodesic.accel (s : Surface) (st : GeoState) : Vec2 :=
+def Geodesic.accelChristoffel (s : Surface) (st : GeoState) : Vec2 :=
   let Γ := Surface.christoffel s st.u st.v
   let g1uu := Γ 0 0 0
   let g1uv := Γ 0 0 1
@@ -268,6 +268,11 @@ def Geodesic.accel (s : Surface) (st : GeoState) : Vec2 :=
   ⟨-(g1uu * du * du + 2 * g1uv * du * dv + g1vv * dv * dv),
    -(g2uu * du * du + 2 * g2uv * du * dv + g2vv * dv * dv)⟩
 ```
+
+The same equation also has a direct vector implementation,
+`Geodesic.accelVector`, which assembles `gVector` and solves `I a = −g`
+without ever forming the $\Gamma$ array. Chapter 3 §3.2 shows both, and
+`learn-geodesia/Proofs.lean` machine-checks that they agree over `ℝ`.
 
 **Vector-calculus reading.** Start from the vector statement
 $T\gamma''(s) = 0$ and expand it in the basis $\{\Phi_u, \Phi_v\}$, using
@@ -300,7 +305,7 @@ the $(uv)$ and $(vu)$ contributions. Note what the return value is: a
 an ambient vector. That is the price of the coefficient form; §2.1's $\gamma''$
 was the honest vector, this is its coordinate shadow. `Geodesic.rhs` packages
 these two components with $\dot u = p,\ \dot v = q$ into the first-order
-system that Chapter 4 integrates with RK4.
+system that Chapter 4 integrates.
 
 ### 2.4 The Gauss formula, in vector form
 
@@ -693,7 +698,7 @@ def hill : Surface :=
   IO.println s!"geodesic: E(0), E(1)        = {Geodesic.energy s st0}, {Geodesic.energy s st1}"
   -- 4. zero-residual check at st1:
   --    γ'' = u''·Φu + v''·Φv + u'²·Φuu + 2u'v'·Φuv + v'²·Φvv
-  let a1 := Geodesic.accel s st1
+  let a1 := Geodesic.accelChristoffel s st1
   let dU := Surface.dPhi s 0 st1.u st1.v
   let dV := Surface.dPhi s 1 st1.u st1.v
   let d2UU := Surface.d2Phi s 0 0 st1.u st1.v
@@ -749,7 +754,7 @@ $E(0) = E(1) = 0.680000$ — the ruler-speed never changes.
 So the recipe "follow the path that wastes no turning" is not a slogan —
 it is an equation, and §2.8 already wrote it down:
 $T\gamma'' = 0$ is exactly the ODE $q'' + \Gamma(q', q') = 0$ whose
-right-hand side `Geodesic.accel` packages. What that equation *earns* you
+right-hand side `Geodesic.accelChristoffel` packages. What that equation *earns* you
 — shortest paths, three equivalent definitions, the conserved pairing —
 is the subject of the next chapter.
 

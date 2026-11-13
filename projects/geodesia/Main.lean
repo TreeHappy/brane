@@ -43,10 +43,27 @@ def main : IO Unit := do
   IO.println s!"  κ_min, κ_max  = {kmin}, {kmax}"
 
   let st0 : GeoState := ⟨x, y, 1.0, 0.0⟩
-  let st1 := Geodesic.integrate s (1.0 / 100) 100 st0
+  let stE := Geodesic.eulerIntegrate s (1.0 / 100) 100 st0
+  let stR := Geodesic.integrate s (1.0 / 100) 100 st0
   IO.println "geodesic from (1, 0) with parameter velocity (1, 0), s ∈ [0, 1]"
-  IO.println s!"  endpoint      = {Surface.point s st1.u st1.v}"
-  IO.println s!"  E(0), E(1)    = {Geodesic.energy s st0}, {Geodesic.energy s st1}"
+  IO.println s!"  RK4 endpoint  = {Surface.point s stR.u stR.v}"
+  IO.println s!"  Euler endpoint= {Surface.point s stE.u stE.v}"
+  IO.println s!"  E(0)          = {Geodesic.energy s st0}"
+  IO.println s!"  E RK4, Euler  = {Geodesic.energy s stR}, {Geodesic.energy s stE}"
+
+  IO.println "the two accelerations at the start state"
+  IO.println s!"  Christoffel   = {Geodesic.accelChristoffel s st0}"
+  IO.println s!"  vector        = {Geodesic.accelVector s st0}"
+
+  IO.println "the two right-hand sides at the same state"
+  IO.println s!"  rhs       = {Geodesic.rhs s st0}"
+  IO.println s!"  rhsVector = {Geodesic.rhsVector s st0}"
+
+  let stE1 := Geodesic.eulerStep s (1.0 / 10) st0
+  let stR1 := Geodesic.rk4Step s (1.0 / 10) st0
+  IO.println "one step of size 0.1 from the same state"
+  IO.println s!"  Euler         = {stE1}"
+  IO.println s!"  RK4           = {stR1}"
 
   let hit := Geodesic.shoot s x y 0.6 1.0 100
   IO.println s!"  shoot(angle=0.6, length=1) = {hit}"

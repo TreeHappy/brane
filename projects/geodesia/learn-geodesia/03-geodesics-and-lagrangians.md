@@ -52,9 +52,12 @@ The dictionary this chapter uses (Ch. 1–2 tabulated the rest):
 | $I = J^{\mathsf T}J$ — the ruler | `Surface.metricI`, `Surface.firstForm` | `Geodesia/Curvature.lean` |
 | $T w = w - (w\cdot n)\,n$ — the tangent part of the split | `Surface.tangentialPart` | `Geodesia/Surface.lean` |
 | $\Gamma^k_{\;ij}$ (coordinates of $T\Phi_{ij}$) | `Surface.christoffel` | `Geodesia/Curvature.lean` |
-| $(u'', v'') = -\,\Gamma^k_{\;ij}\dot q^i\dot q^j$ — the geodesic ODE | `Geodesic.accel` | `Geodesia/Geodesic.lean` |
-| first-order right-hand side $(\dot u, \dot v, \ddot u, \ddot v)$ | `Geodesic.rhs` | `Geodesia/Geodesic.lean` |
-| one RK4 step / $n$ steps | `Geodesic.rk4Step` / `Geodesic.integrate` | `Geodesia/Geodesic.lean` |
+| $(u'', v'') = -\,\Gamma^k_{\;ij}\dot q^i\dot q^j$ — the Christoffel route | `Geodesic.accelChristoffel` | `Geodesia/Geodesic.lean` |
+| $g_k = \Phi_k\cdot(\Phi_{ij}\dot q^i\dot q^j)$ — the bending vector | `Geodesic.gVector` | `Geodesia/Geodesic.lean` |
+| $(u'', v'') = -\,I^{-1}g$ — the vector route | `Geodesic.accelVector` | `Geodesia/Geodesic.lean` |
+| first-order right-hand side $(\dot u, \dot v, \ddot u, \ddot v)$ | `Geodesic.rhsWith` / `rhs` / `rhsVector` | `Geodesia/Geodesic.lean` |
+| one Euler step / $n$ Euler steps | `Geodesic.eulerStep` / `Geodesic.eulerIntegrate` | `Geodesia/Geodesic.lean` |
+| one RK4 step / $n$ RK4 steps | `Geodesic.rk4Step` / `Geodesic.integrate` | `Geodesia/Geodesic.lean` |
 | $E = \tfrac12\,\dot q^{\mathsf T}I\,\dot q$ — the conserved speed squared | `Geodesic.energy` | `Geodesia/Geodesic.lean` |
 | $\lvert\gamma'\rvert = \sqrt{2E}$ | `Geodesic.speed` | `Geodesia/Geodesic.lean` |
 | orthonormal frame $(e_1, e_2)$ of the tangent plane | `Geodesic.tangentFrame` | `Geodesia/Geodesic.lean` |
@@ -74,9 +77,12 @@ uses math symbols. Every occurrence is translatable by this table:
 | `Surface.firstForm s u v d` | the quadratic form $I(d, d) = d^{\mathsf T}I\,d$ |
 | `Surface.dPhi s 0 u v` / `s 1 u v` | the basis vectors $\Phi_u$ / $\Phi_v$ |
 | `Surface.tangentVec s u v ⟨du, dv⟩` | the surface velocity $J\,\dot q$ |
-| `Geodesic.accel s st` | the parameter acceleration $(u'', v'') = -\,I^{-1}g$ |
+| `Geodesic.accelChristoffel s st` | coefficient form $(u'', v'') = -\,\Gamma^k_{\;ij}\dot q^i\dot q^j$ |
+| `Geodesic.gVector s st` | the bending vector $g_k = \Phi_k\cdot(\Phi_{ij}\dot q^i\dot q^j)$ |
+| `Geodesic.accelVector s st` | vector form $(u'', v'') = -\,I^{-1}g$ |
 | `Geodesic.energy s st` | $E = \tfrac12\,\dot q^{\mathsf T}I\,\dot q$ |
 | `Geodesic.speed s st` | the ruler-speed $\lvert J\,\dot q\rvert = \sqrt{2E}$ |
+| `Geodesic.eulerIntegrate s h n st` | $n$ Euler steps of size $h$ from the state `st` |
 | `Geodesic.integrate s h n st` | $n$ RK4 steps of size $h$ from the state `st` |
 | `Geodesic.tangentFrame s u v` | the orthonormal frame $(e_1, e_2)$ at $(u,v)$ |
 | `Geodesic.shoot s u v angle length steps` | where a shot lands (initial-value aim; Ch. 5) |
@@ -183,19 +189,26 @@ Note what does *not* appear: the normal part of $\gamma''$ never vanishes on
 a curved surface. A geodesic is the curve that lets the surface's own
 bending supply *all* of its acceleration.
 
-**Signature.** The library's ODE right-hand side for $(u'', v'')$ — the
-coefficient form of the boxed equation, with the tangent-part coordinates
-$\Gamma^k_{\;ij}$ contracted against the velocity:
+**Signatures.** The library keeps both forms of the boxed equation. The
+coefficient form contracts `Surface.christoffel`; the vector form assembles
+the bending vector `gVector`, then inverts `metricI`:
 
 ```lean
-/-- Parameter-space acceleration `(u'', v'')` from the geodesic equation. -/
-def Geodesic.accel (s : Surface) (st : GeoState) : Vec2
+def Geodesic.accelChristoffel (s : Surface) (st : GeoState) : Vec2
+    -- −Γ^k_ij q′ⁱ q′ʲ: the coefficient form of T γ″ = 0
+
+def Geodesic.gVector (s : Surface) (st : GeoState) : Vec2
+    -- g_k = Φ_k · (Φ_uu u′² + 2Φ_uv u′v′ + Φ_vv v′²)
+
+def Geodesic.accelVector (s : Surface) (st : GeoState) : Vec2
+    -- −I⁻¹ g: the vector form of the same equation
 ```
 
-**Implementation.** Verbatim from `Geodesia/Geodesic.lean`:
+**Implementation (Christoffel route).** Verbatim from
+`Geodesia/Geodesic.lean`:
 
 ```lean
-def Geodesic.accel (s : Surface) (st : GeoState) : Vec2 :=
+def Geodesic.accelChristoffel (s : Surface) (st : GeoState) : Vec2 :=
   let Γ := Surface.christoffel s st.u st.v
   let g1uu := Γ 0 0 0
   let g1uv := Γ 0 0 1
@@ -209,12 +222,45 @@ def Geodesic.accel (s : Surface) (st : GeoState) : Vec2 :=
    -(g2uu * du * du + 2 * g2uv * du * dv + g2vv * dv * dv)⟩
 ```
 
+**Implementation (vector route).** Verbatim, same file:
+
+```lean
+def Geodesic.gVector (s : Surface) (st : GeoState) : Vec2 :=
+  let Φu := Surface.dPhi s 0 st.u st.v
+  let Φv := Surface.dPhi s 1 st.u st.v
+  let Φuu := Surface.d2Phi s 0 0 st.u st.v
+  let Φuv := Surface.d2Phi s 0 1 st.u st.v
+  let Φvv := Surface.d2Phi s 1 1 st.u st.v
+  let du := st.du
+  let dv := st.dv
+  ⟨Φu.dot Φuu * du * du + 2 * Φu.dot Φuv * du * dv + Φu.dot Φvv * dv * dv,
+   Φv.dot Φuu * du * du + 2 * Φv.dot Φuv * du * dv + Φv.dot Φvv * dv * dv⟩
+
+def Geodesic.accelVector (s : Surface) (st : GeoState) : Vec2 :=
+  let I := Surface.metricI s st.u st.v
+  let gInv := I.inv
+  let g := gVector s st
+  ⟨-(gInv.a * g.x + gInv.b * g.y), -(gInv.b * g.x + gInv.c * g.y)⟩
+```
+
+**Why keep both?** The Christoffel route is what the intrinsic literature
+uses and it needs only the metric. The vector route says what the equation
+*means* — cancel the tangent part — and uses only dot products of the
+embedding. They are algebraically the same; `learn-geodesia/Proofs.lean`
+machine-checks `accelChristoffel = accelVector` over `ℝ` with Mathlib's
+`EuclideanSpace` and `Matrix` API. The executable code uses `Float`, where
+the two routes can differ in the last displayed digit, so the check below
+prints both.
+
 **Vector-calculus reading.** Each `Γ k i j` is the coefficient of $\Phi_k$
-inside $T\Phi_{ij}$ (Chapter 2 §2.8), so each bracket is one component of
-$-\,g$ with the first-kind coordinates swapped for the second-kind ones via
-$I^{-1}$ — the boxed equation solved for $\ddot q$, term by term. Nothing
-here is new machinery: it is the projection $T$ of Chapter 1, wearing
-coefficients.
+inside $T\Phi_{ij}$ (Chapter 2 §2.8), so each Christoffel bracket is one
+component of $-\,g$ with the first-kind coordinates swapped for the
+second-kind ones via $I^{-1}$ — the boxed equation solved for $\ddot q$,
+term by term. The vector route does the same job without naming the
+coefficients: `gVector` is the boxed vector sum dotted with $\Phi_u$ and
+$\Phi_v$, and `accelVector` multiplies by `I.inv`. Nothing here is new
+machinery: it is the projection $T$ of Chapter 1, once wearing coefficients
+and once wearing arrows.
 
 **The surfaces of this chapter.** The three walked below, in one fence so
 the checked examples can share a scratch file — the paraboloid hill of
@@ -252,7 +298,9 @@ def pConserved (s : Surface) (st : GeoState) : Float :=
 integrator involved — on the paraboloid at $(1,0)$ with parameter velocity
 $(1,0)$. There the velocity-vector sum in the $g$ formula is just
 $\Phi_{uu}$, so $g_u = \Phi_u\cdot\Phi_{uu}$ and
-$g_v = \Phi_v\cdot\Phi_{uu}$:
+$g_v = \Phi_v\cdot\Phi_{uu}$. The snippet checks the manual $g$, the
+`gVector` helper, both acceleration routes, and the residual of the boxed
+equation for each:
 
 ```lean
 #eval show IO Unit from do
@@ -262,32 +310,45 @@ $g_v = \Phi_v\cdot\Phi_{uu}$:
   let gv := (Surface.dPhi s 1 1 0).dot (Surface.d2Phi s 0 0 1 0)
   IO.println s!"g at (1,0), q̇ = (1,0):   g_u = {gq}   g_v = {gv}"
   let st : GeoState := ⟨1.0, 0.0, 1.0, 0.0⟩
-  let a := Geodesic.accel s st
-  IO.println s!"accel = (u″, v″)          = ({a.x}, {a.y})"
+  let g := Geodesic.gVector s st
+  IO.println s!"gVector                      = ({g.x}, {g.y})"
+  let aC := Geodesic.accelChristoffel s st
+  let aV := Geodesic.accelVector s st
+  IO.println s!"accel (Christoffel)          = ({aC.x}, {aC.y})"
+  IO.println s!"accel (vector)               = ({aV.x}, {aV.y})"
   -- the boxed equation, checked: I · accel + g  must be (0, 0)
   let I := Surface.metricI s 1 0
-  let r1 := I.a * a.x + I.b * a.y + gq
-  let r2 := I.b * a.x + I.c * a.y + gv
-  IO.println s!"I·accel + g               = ({r1}, {r2})"
+  let r1 := I.a * aC.x + I.b * aC.y + gq
+  let r2 := I.b * aC.x + I.c * aC.y + gv
+  IO.println s!"I·accel_C + g                = ({r1}, {r2})"
+  let r1v := I.a * aV.x + I.b * aV.y + g.x
+  let r2v := I.b * aV.x + I.c * aV.y + g.y
+  IO.println s!"I·accel_V + g                = ({r1v}, {r2v})"
 ```
 
 **Output:**
 ```text
 g at (1,0), q̇ = (1,0):   g_u = 0.360000   g_v = 0.000000
-accel = (u″, v″)          = (-0.264706, -0.000000)
-I·accel + g               = (0.000000, 0.000000)
+gVector                      = (0.360000, 0.000000)
+accel (Christoffel)          = (-0.264706, -0.000000)
+accel (vector)               = (-0.264706, -0.000000)
+I·accel_C + g                = (0.000000, 0.000000)
+I·accel_V + g                = (0.000000, 0.000000)
 ```
 
-**How to read the numbers.** Three facts line up. First,
+**How to read the numbers.** Four facts line up. First,
 $g_u = 0.360000 = \Phi_u\cdot\Phi_{uu}$ — the $\Phi_u$-component of the
-velocity-vector sum, exactly the box's definition. Second,
-$u'' = -0.264706$ is minus the very number §2.7 printed as
+velocity-vector sum, exactly the box's definition; `gVector` returns the same
+pair. Second, $u'' = -0.264706$ is minus the very number §2.7 printed as
 $\Gamma^u_{\;uu}$ — the coefficient form and the vector form agree on the
-same point. Third, the residual is $I\cdot\text{accel} + g = (0.000000,\,0.000000)$:
-the two forms of the equation are the same equation, to the last float
-digit, with no integrator in sight. (The printed $-0.000000$ in
-the $v''$ slot is a negative zero from the float arithmetic — magnitude
-below $10^{-15}$, kept verbatim as the program emitted it.)
+same point. Third, both residuals are
+$I\cdot\text{accel} + g = (0.000000,\,0.000000)$: the two forms of the
+equation are the same equation, to the last float digit, with no integrator
+in sight. Fourth, the machine-checked proof in
+`learn-geodesia/Proofs.lean` upgrades this numerical agreement to an exact
+identity over `ℝ`. (The printed $-0.000000$ in the $v''$ slot is a negative
+zero from the float arithmetic — magnitude below $10^{-15}$, kept verbatim
+as the program emitted it.)
 
 ---
 
@@ -546,7 +607,7 @@ $\ddot\theta = 0$; the equator ($\theta = \pi/2$) gives
 $\ddot\varphi = 0$. The conserved pairing is
 $\sin^2\theta\,\dot\varphi$ — verified at $0.424844$ in §3.4 — the
 projection of the velocity against the rotation-symmetry vector
-$\Phi_\varphi$. The §3.4 table shows the general (non-meridian) case
+$\Phi_\varphi$. The §3.4 checkpoints show the general (non-meridian) case
 drifting toward the equator as the pairing holds fixed.
 
 ### Paraboloid
@@ -560,8 +621,8 @@ I = \begin{bmatrix}1+f_x^2 & f_xf_y \\ f_xf_y & 1+f_y^2\end{bmatrix};
 the $g$-vector is assembled from the curvature vectors
 $\Phi_{xx}, \Phi_{xy}, \Phi_{yy}$ exactly as in §3.2's box; and no
 closed-form solution exists in general — which is precisely why the
-numerical methods of Chapters 4–6 exist. The §3.4 table (and the height map
-figure there) shows the integrated geodesic holding
+numerical methods of Chapters 4–6 exist. The §3.4 checkpoints (and the height map
+figure there) show the integrated geodesic holding
 $E = 0.680000$ across the whole walk — a first check that the ODE and the
 integrator agree.
 
@@ -577,29 +638,41 @@ straight line after unrolling.
 ## 3.6 How the code implements it
 
 ```lean
-Geodesic.accel s st      -- (u'', v''): the boxed equation of §3.2
-Geodesic.rhs s st        -- first-order system (u, v, u', v')
-Geodesic.rk4Step s h st  -- one RK4 step
+Geodesic.accelChristoffel s st  -- (u'', v''): the Christoffel route of §3.2
+Geodesic.accelVector s st       -- (u'', v''): the vector route of §3.2
+Geodesic.gVector s st           -- the bending vector g before solving I a = −g
+Geodesic.rhs s st               -- first-order system using accelChristoffel
+Geodesic.rhsVector s st         -- first-order system using accelVector
+Geodesic.eulerStep s h st       -- one Euler step
+Geodesic.eulerIntegrate s h n st
+Geodesic.rk4Step s h st         -- one RK4 step
 Geodesic.integrate s h n st
-Geodesic.energy s st     -- ½ · dot qᵀ I dot q  (the conserved quadratic form)
-Geodesic.speed s st      -- |J·dotq|  =  √(2 · that value)
+Geodesic.energy s st            -- ½ · dot qᵀ I dot q  (the conserved quadratic form)
+Geodesic.speed s st             -- |J·dotq|  =  √(2 · that value)
 ```
 
-`accel` (implementation in §3.2) computes exactly the boxed equation of
-§3.2, up to coordinates. In the code the tangent-part coefficients come
-pre-computed as the `Surface.christoffel` array (those are, again, purely
-the coordinates of $T\Phi_{ij}$ in the basis — the routine *is* the vector
-formula of Chapter 2 §2.8, in coefficient clothing), and `accel` contracts
-them with the direction numbers — the coefficient-image of the vector
-recipe "form the vector sum
+`accelChristoffel` (implementation in §3.2) computes exactly the boxed
+equation of §3.2, up to coordinates. In the code the tangent-part
+coefficients come pre-computed as the `Surface.christoffel` array (those
+are, again, purely the coordinates of $T\Phi_{ij}$ in the basis — the
+routine *is* the vector formula of Chapter 2 §2.8, in coefficient clothing),
+and `accelChristoffel` contracts them with the direction numbers — the
+coefficient-image of the vector recipe "form the vector sum
 $\dot u^2\Phi_{uu} + 2\dot u\dot v\Phi_{uv} + \dot v^2\Phi_{vv}$, dot it
 with each basis vector to get $g$, solve $I\ddot q = -g$" (the boxed
-equation of §3.2).
+equation of §3.2). `accelVector` is that vector recipe executed literally:
+`gVector` forms the dots, `metricI.inv` solves the system. The two agree
+over the reals, and `learn-geodesia/Proofs.lean` proves it.
 
-The demo (`lake exe geodesia`) integrates a geodesic on the paraboloid and
-prints the conserved quadratic form holding to the printed precision — the
-discrete analogue of §3.4's identity, and the same health check the three
-tables there put on display.
+`rhsWith` packages either acceleration into the first-order right-hand side;
+`rhs` picks the Christoffel route and `rhsVector` picks the vector route.
+`eulerStep` and `rk4Step` are the two single-step integrators; `eulerIntegrate`
+and `integrate` repeat them.
+
+The demo (`lake exe geodesia`) integrates a geodesic on the paraboloid with
+both integrators and prints the conserved quadratic form. RK4 holds it to
+the printed precision; Euler drifts — the discrete analogue of §3.4's
+identity, and the same health check the §3.4 checkpoints put on display.
 
 ---
 
@@ -627,7 +700,7 @@ tables there put on display.
    *then* from the components.
 6. **Symmetry pairing.** Prove that $\partial_\ell\,I = 0$ implies
    $p_\ell = \Phi_\ell\cdot\gamma'$ is constant along a geodesic. *(The
-   §3.4 tables are the numerical shadow of exactly this statement.)*
+   §3.4 checkpoints are the numerical shadow of exactly this statement.)*
 7. **Surface of revolution.** Derive the Gram matrix for
    $\Phi(r,\theta) = (r\cos\theta, r\sin\theta, f(r))$ and the corresponding
    conserved pairing.
@@ -636,7 +709,7 @@ tables there put on display.
    form?
 9. **Code check.** Run `lake exe geodesia` and verify that the conserved
    quadratic form is unchanged after 100 RK4 steps. Then change the step
-   size and see how the error behaves. *(Compare with §3.4's tables: at
+   size and see how the error behaves. *(Compare with §3.4's checkpoints: at
    $h = 0.01$, $E = 0.680000$ at every checkpoint.)*
 
 ---
@@ -703,7 +776,7 @@ conserved quantity. Both conserved quantities of §3.4 are of this kind:
 | geodesic equation $I\ddot q + g = 0$ | Euler–Lagrange: critical paths of the action |
 | $E$ conserved | Noether: the action is invariant under $s$-translations |
 | $p_\ell$ conserved when $\partial_\ell I = 0$ | Noether: the metric $\Phi^{*}\delta$ is invariant under the $\ell$-slides; $p_\ell$ is the momentum of that symmetry |
-| $r^2\dot\theta$, $\sin^2\theta\,\dot\varphi$ (§3.4 tables) | the momenta of the respective rotation ($S^1$) actions |
+| $r^2\dot\theta$, $\sin^2\theta\,\dot\varphi$ (§3.4 checkpoints) | the momenta of the respective rotation ($S^1$) actions |
 
 Why the pairing *had* to be conserved: the symmetry is a relabeling that
 leaves $I$ unchanged; the geodesic equation is written entirely in $I$, so

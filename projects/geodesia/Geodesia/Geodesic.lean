@@ -3,25 +3,76 @@ import Geodesia.Curvature
 /-!
 # Geodesia — geodesics as an initial-value problem
 
-The geodesic equation in parameter space is
+A geodesic is a curve `s ↦ (u(s), v(s))` in the parameter plane whose
+covariant acceleration vanishes.  In coordinates the geodesic equation is
 
 ```
 u'' + Γ¹₁₁ (u')² + 2Γ¹₁₂ u'v' + Γ¹₂₂ (v')² = 0
 v'' + Γ²₁₁ (u')² + 2Γ²₁₂ u'v' + Γ²₂₂ (v')² = 0
 ```
 
-with the Christoffel symbols from `Curvature.lean`.  Writing `p = u'` and
-`q = v'` turns this into the first-order system
+with the Christoffel symbols from `Curvature.lean`.  Writing
 
 ```
-u' = p,  v' = q,  p' = F(u,v,p,q),  q' = G(u,v,p,q)
+u' = du,  v' = dv,  u'' = a_u,  v'' = a_v
 ```
 
-which `rk4Step` integrates.  `shoot` is the first half of a shooting method:
-pick a unit tangent direction on the surface, convert it to parameter-space
-velocity with `G⁻¹ Jᵀ`, integrate for a prescribed length, and return the
-ambient endpoint.  Root-finding on the direction is the other half; see
-`learn-geodesia/05-shooting.md`.
+turns the second-order system into the first-order system
+
+```
+(u, v, du, dv)' = (du, dv, a_u, a_v).
+```
+
+`rhs` is exactly the map on the right: it leaves the two velocities alone and
+asks an acceleration function for the last two slots.  `rhsWith` makes that
+acceleration argument explicit, so the *same* integrator can drive either of
+the two accelerations below.
+
+## Two ways to compute the acceleration
+
+1. **Christoffel route** (`accelChristoffel`).  Read `Γ^k_ij` from the
+   metric and evaluate
+
+   ```
+   a^k = −Σ_{i,j} Γ^k_ij p^i p^j,     p = (du, dv).
+   ```
+
+   This is the textbook coordinate formula.
+
+2. **Vector-calculus route** (`accelVector`).  Differentiate the ambient
+   curve `Φ(u(s), v(s))` twice.  The chain rule gives
+
+   ```
+   Φ'' = Φ_u u'' + Φ_v v'' + Φ_uu (u')² + 2Φ_uv u'v' + Φ_vv (v')².
+   ```
+
+   A geodesic has no *tangential* acceleration, so `⟨Φ_k, Φ''⟩ = 0` for
+   `k = u, v`.  That is the linear system `I (u'', v'') = −g`, where
+   `I` is the first fundamental form and
+
+   ```
+   g_k = ⟨Φ_k, Φ_uu⟩ (u')² + 2⟨Φ_k, Φ_uv⟩ u'v' + ⟨Φ_k, Φ_vv⟩ (v')².
+   ```
+
+   `gVector` computes `g`, and `accelVector` inverts `I` and negates.
+   No Christoffel symbol appears: this route uses only dot products of the
+   embedding and its exact partials.
+
+The two formulas are the same identity — substituting the definition of `Γ`
+into the coordinate equation produces the vector equation.  The identity is
+machine-checked over `ℝ` in `learn-geodesia/Proofs.lean`.
+
+## Integration
+
+`eulerStep` is one forward-Euler step: follow the tangent line of the state
+for time `h`.  `rk4Step` takes four such slope samples and averages them, so
+it is fourth-order accurate.  `eulerIntegrate` and `integrate` repeat their
+single step a prescribed number of times.
+
+`shoot` is the first half of a shooting method: pick a unit tangent direction
+on the surface, convert it to parameter-space velocity with `G⁻¹ Jᵀ`, integrate
+for a prescribed length, and return the ambient endpoint.  Root-finding on the
+direction is the other half; see `learn-geodesia/05-shooting.md`.
 -/
 
 namespace Geodesia
@@ -41,12 +92,21 @@ def add (a b : GeoState) : GeoState :=
 def smul (c : Float) (a : GeoState) : GeoState :=
   ⟨c * a.u, c * a.v, c * a.du, c * a.dv⟩
 
+/-- Compact demo printing: `(u = …, v = …, du = …, dv = …)`. -/
+instance : ToString GeoState :=
+  ⟨fun st => s!"(u = {st.u}, v = {st.v}, du = {st.du}, dv = {st.dv})"⟩
+
 end GeoState
 
 namespace Geodesic
 
-/-- Parameter-space acceleration `(u'', v'')` from the geodesic equation. -/
-def accel (s : Surface) (st : GeoState) : Vec2 :=
+/-- Coordinate-space acceleration `(u'', v'')` from the Christoffel symbols:
+
+`a^k = −Σ_{i,j} Γ^k_ij p^i p^j`, with `p = (du, dv)`.
+
+The sum is written out using the symmetry `Γ^k_01 = Γ^k_10`, so the mixed
+term appears twice.  This is the coordinate form of the geodesic equation. -/
+def accelChristoffel (s : Surface) (st : GeoState) : Vec2 :=
   let Γ := Surface.christoffel s st.u st.v
   let g1uu := Γ 0 0 0
   let g1uv := Γ 0 0 1
@@ -59,10 +119,66 @@ def accel (s : Surface) (st : GeoState) : Vec2 :=
   ⟨-(g1uu * du * du + 2 * g1uv * du * dv + g1vv * dv * dv),
    -(g2uu * du * du + 2 * g2uv * du * dv + g2vv * dv * dv)⟩
 
-/-- Right-hand side of the first-order system. -/
-def rhs (s : Surface) (st : GeoState) : GeoState :=
+/-- The bending part of the ambient acceleration,
+
+`g_k = ⟨Φ_k, Φ_uu⟩ (u')² + 2⟨Φ_k, Φ_uv⟩ u'v' + ⟨Φ_k, Φ_vv⟩ (v')²`
+
+for `k = u, v`.  A geodesic satisfies `I (u'', v'') = −g`; see
+`accelVector`. -/
+def gVector (s : Surface) (st : GeoState) : Vec2 :=
+  let Φu := Surface.dPhi s 0 st.u st.v
+  let Φv := Surface.dPhi s 1 st.u st.v
+  let Φuu := Surface.d2Phi s 0 0 st.u st.v
+  let Φuv := Surface.d2Phi s 0 1 st.u st.v
+  let Φvv := Surface.d2Phi s 1 1 st.u st.v
+  let du := st.du
+  let dv := st.dv
+  ⟨Φu.dot Φuu * du * du + 2 * Φu.dot Φuv * du * dv + Φu.dot Φvv * dv * dv,
+   Φv.dot Φuu * du * du + 2 * Φv.dot Φuv * du * dv + Φv.dot Φvv * dv * dv⟩
+
+/-- Vector-calculus acceleration: require the tangential part of `Φ''` to
+vanish.  Since `Φ'' = Φ_u u'' + Φ_v v'' + (grid-bending terms)`, the two
+tangential conditions are `I (u'', v'') = −gVector`, so inverting the metric
+gives `(u'', v'') = −I⁻¹ gVector`.
+
+This is the same acceleration as `accelChristoffel`, but computed from dot
+products instead of Christoffel symbols. -/
+def accelVector (s : Surface) (st : GeoState) : Vec2 :=
+  let I := Surface.metricI s st.u st.v
+  let gInv := I.inv
+  let g := gVector s st
+  ⟨-(gInv.a * g.x + gInv.b * g.y), -(gInv.b * g.x + gInv.c * g.y)⟩
+
+/-- Package a chosen acceleration function into the first-order system:
+
+`(u, v, du, dv) ↦ (du, dv, a_u, a_v)`.
+
+Keeping the acceleration abstract is what lets `eulerStep`, `rk4Step` and
+`integrate` run either `accelChristoffel` or `accelVector`. -/
+def rhsWith (accel : Surface → GeoState → Vec2) (s : Surface)
+    (st : GeoState) : GeoState :=
   let a := accel s st
   ⟨st.du, st.dv, a.x, a.y⟩
+
+/-- Right-hand side of the coordinate (Christoffel) geodesic system. -/
+def rhs (s : Surface) (st : GeoState) : GeoState :=
+  rhsWith accelChristoffel s st
+
+/-- Right-hand side of the vector-calculus geodesic system. -/
+def rhsVector (s : Surface) (st : GeoState) : GeoState :=
+  rhsWith accelVector s st
+
+/-- One forward-Euler step: follow the tangent line of the state for time `h`.
+
+Euler is the simplest integrator; `rk4Step` below is the accurate one. -/
+def eulerStep (s : Surface) (h : Float) (st : GeoState) : GeoState :=
+  GeoState.add st (GeoState.smul h (rhs s st))
+
+/-- Integrate `n` Euler steps of size `h`. -/
+def eulerIntegrate (s : Surface) (h : Float) (n : Nat) (st : GeoState) : GeoState :=
+  match n with
+  | 0 => st
+  | n + 1 => eulerIntegrate s h n (eulerStep s h st)
 
 /-- One classical fourth-order Runge–Kutta step. -/
 def rk4Step (s : Surface) (h : Float) (st : GeoState) : GeoState :=

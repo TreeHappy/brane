@@ -163,10 +163,13 @@ verbatim, no normal required:
 ```
 
 which is Chapter 3's $I\ddot q + g = 0$ in coefficient clothing. This is
-not decoration: `Geodesic.accel` in the Lean code contracts exactly this
+not decoration: `Geodesic.accelChristoffel` in the Lean code contracts exactly this
 $\Gamma$ array (`Surface.christoffel`) with the direction numbers, so the
 integrator runs entirely in the $(u,v)$-plane and never forms $n$ at
-runtime. The intrinsic equation is the code's runtime feed.
+runtime. The intrinsic equation is the code's runtime feed. The vector
+route `Geodesic.accelVector` reaches the same acceleration without the
+$\Gamma$ array at all; `learn-geodesia/Proofs.lean` proves the two formulas
+agree over `ℝ`.
 
 **Parallel transport.** "Keep pointing the same way" becomes
 $\nabla_{\dot q} W = 0$ along the curve. Chapter 3 §3.4's conserved
@@ -328,7 +331,8 @@ that any chart agrees on.
 Surface.christoffel s x y  -- Γ^k_ij by the pure-I formula (exact ∂I via dMetricEntry)
 Surface.metricI s x y      -- the ruler I
 Surface.gaussK s x y       -- K = det II / det I  (extrinsic road to an intrinsic number)
-Geodesic.accel s st        -- q̈ = -(Γ·q̇)q̇ : the ODE feed runs in the (u,v)-plane
+Geodesic.accelChristoffel s st  -- q̈ = -(Γ·q̇)q̇ : the ODE feed runs in the (u,v)-plane
+Geodesic.accelVector s st       -- the same q̈ from gVector and I⁻¹ (no Γ array)
 ```
 
 Two code-level remarks worth noticing:

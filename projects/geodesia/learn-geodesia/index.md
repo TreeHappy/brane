@@ -57,7 +57,7 @@ flowchart TD
     A["Ch. 1 — Fundamental forms<br/>Jacobian J, I = JᵀJ, II, shape operator"]
     B["Ch. 2 — Turning tangent vectors<br/>covariant derivative via projection, polar, sphere & the hill walk"]
     C["Ch. 3 — Geodesics<br/>zero tangent part of γ″, length functional, conserved pairings, height map"]
-    D["Ch. 4 — ODEs & RK4<br/>state space, Runge–Kutta, stability"]
+    D["Ch. 4 — ODEs, Euler & RK4<br/>state space, integrators, stability"]
     E["Ch. 5 — Shooting<br/>BVP → IVP, Newton, variational equations"]
     F["Ch. 6 — Relaxation<br/>deform a whole path, PDE & hierarchical methods"]
     G["Ch. 7 — Worked examples & exercises"]
@@ -74,7 +74,7 @@ Suggested paths:
 - **“I want to understand the code’s first/second fundamental forms.”**
   Read Ch. 1, then the code map at the end of it.
 - **“I never understood shooting.”**
-  Read Ch. 3 (the ODE), Ch. 4 (RK4), then Ch. 5 slowly.
+  Read Ch. 3 (the ODE), Ch. 4 (Euler and RK4), then Ch. 5 slowly.
 - **“I want the relaxation algorithm.”**
   Read Ch. 1–3, then Ch. 6.
 - **“I want the variational view.”**
@@ -86,6 +86,9 @@ Suggested paths:
   projection is half a sandwich product, the tangent plane is one blade, the
   geodesic test is a single wedge $\gamma''\wedge n = 0$, and Darboux
   scalars are the coefficients of one rotor's rate. Read it after Ch. 3.
+- **“I want to see the two acceleration formulas proved equal.”**
+  Read Ch. 3 §3.2 for both routes, then
+  [`Proofs.lean`](Proofs.lean) — the machine-checked identity over `ℝ`.
 - **“Why do textbooks insist on Christoffel symbols and tensors?”**
   Read Ch. 8 — it audits what breaks when the ambient space is taken away
   and rebuilds vector calculus from the ruler $I$ alone.
@@ -105,7 +108,7 @@ notes (Creative Commons Attribution 4.0):
   parameterization), §3 continuous relaxation by PDEs, §4 Dijkstra, §5
   hierarchical relaxation.
 - [*Principal Curvatures of Surfaces*](https://www.geometrictools.com/Documentation/PrincipalCurvature.pdf)
-  — quadratic forms, graph curvature $II = \operatorname{Hess} f/\sqrt{1+|\nabla f|^2}$.
+  — quadratic forms, graph curvature $II = \operatorname{Hess} f/\sqrt{1+\lvert\nabla f\rvert^2}$.
 - [*Mesh Differential Geometry*](https://www.geometrictools.com/Documentation/MeshDifferentialGeometry.pdf)
   — $I=J^{\mathsf T}J$, $II=[N\cdot P_{ij}]$, generalized eigenproblem
   $II\,y=\kappa\,I\,y$.
@@ -124,8 +127,9 @@ source for the algorithms.
 | `Geodesia/Surface.lean` | `Surface`, `ofHeight`, exact `dPhi`, `d2Phi`, normals. |
 | `Geodesia/Calculus.lean` | gradient, Hessian, Laplacian, divergence, curl, Jacobian determinant, directional derivative along a curve. |
 | `Geodesia/Curvature.lean` | `I`, `II`, tangent-part coordinates (`Surface.christoffel`), shape operator, `K`, `H`, principal curvatures. |
-| `Geodesia/Geodesic.lean` | geodesic RHS, RK4, energy, tangent frame, `shoot`. |
-| `Main.lean` | a small exact demo on a paraboloid and the unit sphere. |
+| `Geodesia/Geodesic.lean` | two acceleration routes (`accelChristoffel`, `accelVector` via `gVector`), generic `rhsWith`, Euler and RK4 integrators, energy, tangent frame, `shoot`. |
+| `learn-geodesia/Proofs.lean` | machine-checked proof that the Christoffel and vector-calculus accelerations agree over `ℝ`, using Mathlib's `EuclideanSpace` and `Matrix`. |
+| `Main.lean` | a small exact demo on a paraboloid and the unit sphere, including an Euler-vs-RK4 comparison. |
 
 Run it:
 
@@ -136,8 +140,9 @@ lake exe geodesia
 ```
 
 The demo should print exact-looking numbers (they are ordinary `Float`
-rounding, not finite-difference noise), including `K = 1` on the unit sphere
-and constant geodesic energy.
+rounding, not finite-difference noise), including `K = 1` on the unit sphere,
+matching accelerations from the Christoffel and vector routes, and RK4
+holding the geodesic energy while Euler drifts.
 
 ---
 
