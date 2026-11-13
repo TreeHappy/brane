@@ -457,6 +457,20 @@ new tangent plane is tilted relative to the old one, so the old $w$ picks
 up a normal component; kill it — that is exactly
 `Surface.tangentialPart` — and renormalize to a unit vector again.
 
+> **Step 3 is parallel transport.** In the $h \to 0$ limit the
+> re-tangent step is exactly the parallel transport of a tangent vector
+> along the walked curve. Carrying any tangent vector $W$ along a curve
+> with unit tangent $t$, parallel transport solves
+> $\tfrac{dW}{ds} = -\langle W,\, Dn\,t\rangle\, n$ — the normal tips as
+> you move, and the vector must shed exactly that much normal residue to
+> stay tangent. The walker's update
+> $\Delta W = -h\,\langle W,\, Dn\,t\rangle\, n + O(h^2)$ is that ODE's
+> Euler step, and renormalization only matters at $O(h^2)$. And "$w$
+> parallel along itself" — transport a tangent vector along the very
+> curve it spans — *is* the geodesic condition. That is why the walk
+> converges to a geodesic: each step parallel-transports, and
+> self-parallel curves are geodesics.
+
 ### The walk, in numbers
 
 Launch data, all fixed:
@@ -580,6 +594,94 @@ $O(h)$.
 > that meeting, watched from the walker's side, and the figure shows it:
 > peach and red are the same path.
 
+### The same walk, read in parameter space
+
+Everything the walker did above has a second life in $(u, v)$
+coordinates — and read there, the walk stops being a trick and becomes
+the geodesic ODE in disguise.
+
+**The parameter velocity is the tangent, seen from above.** For the
+graph $\Phi(x,y) = (x, y, h(x,y))$, the parameter velocity
+$\xi = I^{-1}J^{\mathsf T}w$ of the launch data (the
+`Geodesic.tangentVecToParams` conversion) is literally
+$\xi = (w_x, w_y)$: tangency forces $w_z = h_x w_x + h_y w_y$, which is
+exactly the statement $J\xi = w$ with $\xi = (w_1, w_2)$. And the
+vertical projection of step 2 does not touch $(x, y)$ at all. So read in
+parameter coordinates, the walker takes perfectly straight steps
+
+```math
+q_{k+1} \;=\; q_k + h\,\xi_k,
+```
+
+and the *only* thing the re-tangent step does is update $\xi$. This
+graph identity is the kind of statement [`Proofs.lean`](Proofs.lean)
+machine-checks <!-- LEMMA-REF: graph identity -->.
+
+**The re-tangent step IS the Christoffel term.** Compare the re-tangent
+update on $\xi$ against one Euler step of Chapter 3's geodesic ODE
+$I\,\ddot q = -g$, i.e. $\xi \mapsto \xi + h\cdot\mathrm{accel}$ with
+$\mathrm{accel} = -I^{-1}g$ — or, in §5.2's Christoffel recipe
+$g_k = \Gamma_{kij}\,\xi^i\xi^j$, the update
+$\xi \mapsto \xi - h\,\Gamma(\xi,\xi)$. From the chapter's launch data
+$\xi_0 = (-0.797470, -0.570306)$:
+
+| $h$ | $\lVert\,\text{re-tangent} - \text{Euler}\,\rVert$ |
+|---:|---:|
+| 0.1 | $2.45\times 10^{-3}$ |
+| 0.05 | $5.88\times 10^{-4}$ |
+| 0.025 | $1.44\times 10^{-4}$ |
+
+Each halving of $h$ quarters the difference: the two updates agree up to
+$O(h^2)$. The ambient normal $n$ and the Christoffel symbols $\Gamma$
+are two coordinate systems for the same bending.
+
+**The pure parameter-space walker.** That reading collapses the loop to
+two lines:
+
+```
+walk_params(q, xi, h, L):
+    repeat round(L / h) times:
+        xi = xi + h * accel(q, xi)     # the "re-tangent" step: ξ -= h Γ(ξ,ξ)
+        q  = q  + h * xi               # the "straight chord" step
+    return q
+```
+
+No projection, no tip, no normal — the chart enforces the constraint for
+free: the coordinates ARE the surface. Endpoint errors against the RK4
+reference endpoint $(0.315158,\ 0.107340)$, same launch data,
+$L = 1.6$, measured in parameter space (the ambient-distance version of
+this comparison is the table in "The walk, in numbers"):
+
+| $h$ | ambient walker (§5.9's loop) | parameter Euler walker |
+|---:|---:|---:|
+| 0.2 | 0.013029 | 0.027849 |
+| 0.1 | 0.006169 | 0.014040 |
+| 0.05 | 0.002994 | 0.007044 |
+
+Both columns halve with $h$: first order, and the same curve — but the
+ambient walker has the better constant, because the straight chord in
+$\mathbb{R}^3$ does part of the curvature correction for free.
+
+> **Straight in parameter space is not a thing.** Walk straight in
+> parameter space with *no* correction — constant $\xi$,
+> $q_{k+1} = q_k + h\,\xi_k$ forever — and you do *not* walk a geodesic:
+> from the same launch data you end at $(0.124048,\ -0.012490)$, a miss
+> of $0.2256$ — two orders of magnitude worse than either walker above.
+> In ambient $\mathbb{R}^3$ "straight" is unambiguous (a chord); in
+> parameter space it is meaningless until you say which ruler — and the
+> Christoffel term is exactly what "straight in $\mathbb{R}^3$" looks
+> like written in $(u, v)$ coordinates. This is Chapter 3's
+> $I\ddot q = -g$ seen from the walker's side: the velocity bends so
+> that the ambient path stays straight.
+
+**Three viewpoints, one walk:**
+
+| Viewpoint | How to step | What measures the bending |
+|---|---|---|
+| ambient | kill the normal part of $w$ (`Surface.tangentialPart`) | turn rate $\kappa_n(w)$ |
+| parameter | $\xi \mapsto \xi - h\,\Gamma(\xi,\xi)$ | Christoffel symbols of the graph metric |
+| invariant | tangential part of the acceleration $= 0$ | the geodesic condition — `GeodesicProof.tangential_gamma2_eq_zero` in [`Proofs.lean`](Proofs.lean) |
+
 ### Where it lives in the code
 
 Every ingredient of the walk is already in the library — only the loop
@@ -592,6 +694,8 @@ takes the accurate ODE route (that is the point of the callout above):
 | ambient direction → parameter velocity $\xi = I^{-1}J^{\mathsf T}w$ | `Geodesic.tangentVecToParams` | `Geodesia/Geodesic.lean` |
 | the ODE shot — the accurate route to the same curve | `Geodesic.shoot`, `Geodesic.integrate` | `Geodesia/Geodesic.lean` |
 | the walker of this section (figure code, not Lean) | `hill_walk` / `fig_hill_walk` | `images/make_figs.py` |
+| the parameter-space walker of the subsection above, plus the printed comparison (figure code, not Lean) | `hill_walk_param_space` / `hill_walk_param_report` | `images/make_figs.py` |
+| the walk as a game: arrow keys steer the §5.9 walker (and its straight-in-$\mathbb{R}^2$ twin) on the hill, no dependencies — open the file in a browser | the playable walker | [`WALKER.html`](WALKER.html) |
 | the formal backbone: no tangential residue | `GeodesicProof.tangential_gamma2_eq_zero` | `Proofs.lean` |
 
 > **Try it.** Rerun the walk with $\alpha$ aimed straight at the summit,
@@ -601,6 +705,10 @@ takes the accurate ODE route (that is the point of the callout above):
 > not. Second experiment: change $h$ and watch the total bend settle
 > ($39.98^\circ$ at $h = 0.2$, $39.78^\circ$ at $h = 0.025$) even as the
 > endpoint error collapses — the bend is geometry; the error is numerics.
+> Or skip the scripts and *play* it: open [`WALKER.html`](WALKER.html) in a
+> browser, walk with the arrow keys, and press G to switch between the
+> geodesic walker and its straight-in-$\mathbb{R}^2$ twin — the HUD reads
+> out $\kappa_n(w)$ and the chord gap live.
 
 ---
 

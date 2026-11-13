@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🥾 walk the hill — the §5.9 walker, playable</title>
+<style>
+  :root {
+    --base: #11111b; --mantle: #181825; --text: #cdd6f4; --subtext: #a6adc8;
+    --peach: #fab387; --red: #f38ba8; --green: #a6e3a1; --blue: #89b4fa;
+  }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--base); }
+  canvas { display: block; width: 100vw; height: 100vh; cursor: grab; }
+  canvas.dragging { cursor: grabbing; }
+  .panel {
+    position: fixed; font: 12px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    color: var(--text); background: rgba(24,24,37,.82); border: 1px solid #313244;
+    border-radius: 10px; padding: 10px 14px; user-select: none; pointer-events: none;
+    backdrop-filter: blur(4px);
+  }
+  #stats { top: 12px; left: 12px; min-width: 305px; }
+  #stats h1 { margin: 0 0 6px; font-size: 13px; color: var(--peach); }
+  #stats .dim { color: var(--subtext); }
+  #stats .val { color: var(--text); }
+  #stats .kappa { color: var(--green); }
+  #stats .gap { color: var(--red); }
+  #legend { bottom: 12px; left: 12px; }
+  #legend b { color: var(--peach); font-weight: 600; }
+  #legend .k { display: inline-block; min-width: 86px; color: var(--blue); }
+  #note { top: 12px; right: 12px; max-width: 330px; color: var(--subtext); }
+  #note b { color: var(--text); }
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+
+<div class="panel" id="stats">
+  <h1>🥾 <span id="surfName">…</span></h1>
+  <div id="surfFormula" class="dim"></div>
+  <div>mode&nbsp;&nbsp;&nbsp;<span id="mode" class="val"></span></div>
+  <div>pos&nbsp;&nbsp;&nbsp;&nbsp;<span id="pos" class="val"></span></div>
+  <div>ξ&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="xi" class="val"></span> <span class="dim">= (w<sub>x</sub>, w<sub>y</sub>) on a graph</span></div>
+  <div>heading <span id="heading" class="val"></span> <span class="dim">(α in tangent frame)</span></div>
+  <div>κ<sub>n</sub>(w)&nbsp;<span id="kappa" class="kappa"></span> <span class="dim">= the turn the hill forces</span></div>
+  <div>walked&nbsp;<span id="len" class="val"></span> <span class="dim" id="steps"></span></div>
+  <div>chord&nbsp;&nbsp;<span id="gap" class="gap"></span> <span class="dim">(one h = 0.15 demo step, key E)</span></div>
+</div>
+
+<div class="panel" id="note">
+  <b>You are the §5.9 walker.</b> Every step is the chapter's algorithm —
+  straight ambient chord → vertical projection → re-tangent — no geodesic ODE
+  anywhere. In <b>geodesic mode</b> your path bends exactly with κ<sub>n</sub>:
+  the hill steers you. Toggle <b>straight-in-parameter-space</b> (G) to walk the
+  <i>wrong</i> curve — straight lines in the (x, y) plane, the Christoffel
+  correction of Ch. 3 switched off.
+</div>
+
+<div class="panel" id="legend">
+  <div><span class="k">↑ / W</span> walk forward (hold)</div>
+  <div><span class="k">↓ / S</span> walk backward</div>
+  <div><span class="k">← → / A D</span> turn in the tangent plane</div>
+  <div><span class="k">Space</span> auto-walk on/off</div>
+  <div><span class="k">G</span> toggle geodesic ⇄ straight-in-ℝ²</div>
+  <div><span class="k">E</span> show the demo chord + gap</div>
+  <div><span class="k">C</span> camera follows walker</div>
+  <div><span class="k">1 / 2</span> hill ⇄ paraboloid</div>
+  <div><span class="k">R</span> reset to the chapter's launch</div>
+  <div><span class="k">mouse / wheel</span> orbit / zoom</div>
+</div>
+
+<script>
+'use strict';
+// =====================================================================
+// The §5.9 walker, playable.  Movement is EXACTLY the chapter's algorithm:
+//   1. straight ambient chord    tip = p + h·w          (leaves the surface)
+//   2. vertical projection       q = (tip.x, tip.y, H(tip.x, tip.y))
+//   3. re-tangent                w ← (w − (w·n)n)/|…|    (Surface.tangentialPart)
+// plus a turn, which rotates w inside the tangent plane (around n).
+// The twins in make_figs.py: hill_height/hill_normal/hill_frame/hill_walk.
+// =====================================================================
+
+// ---------- tiny vector kit (Vec3 as [x, y, z]) ----------
+function add(a, b) { return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]; }
+function sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+function scl(a, s) { return [a[0] * s, a[1] * s, a[2] * s]; }
+function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+function cross(a, b) {
+  return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+}
+function nrm(a) { return Math.hypot(a[0], a[1], a[2]); }
+function unt(a) { const n = nrm(a) || 1; return [a[0] / n, a[1] / n, a[2] / n]; }
+function dst(a, b) { return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]); }
+// Rodrigues rotation of w around the unit axis ax
+function rotAxis(w, ax, ang) {
+  const c = Math.cos(ang), s = Math.sin(ang);
+  return add(add(scl(w, c), scl(cross(ax, w), s)), scl(ax, dot(ax, w) * (1 - c)));
+}
+function lerp(a, b, t) { return a + (b - a) * t; }
+function mixRGB(c0, c1, t) {
+  return [lerp(c0[0], c1[0], t) | 0, lerp(c0[1], c1[1], t) | 0, lerp(c0[2], c1[2], t) | 0];
+}
+
+// ---------- the two surfaces (the chapter's exact formulas) ----------
+function hillSurface() {
+  const A = 1.0, S = 0.7;
+  return {
+    name: 'Gaussian hill',
+    formula: 'Φ(x,y) = (x, y, e^(−(x²+y²)/2σ²)),  σ = 0.7',
+    xmin: -2.5, xmax: 2.5, ymin: -2.5, ymax: 2.5,
+    grid: 64, dist0: 7.0,
+    startX: 1.40, startY: 0.90, startAlpha: 215 * Math.PI / 180,
+    low: [86, 95, 125], high: [250, 179, 135],   // slate → peach
+    H(x, y)    { return A * Math.exp(-(x * x + y * y) / (2 * S * S)); },
+    gx(x, y)   { return -x / (S * S) * this.H(x, y); },
+    gy(x, y)   { return -y / (S * S) * this.H(x, y); },
+    hxx(x, y)  { return (x * x / (S ** 4) - 1 / (S * S)) * this.H(x, y); },
+    hxy(x, y)  { return x * y / (S ** 4) * this.H(x, y); },
+    hyy(x, y)  { return (y * y / (S ** 4) - 1 / (S * S)) * this.H(x, y); },
+  };
+}
+function paraboloidSurface() {
+  const C = 0.3;
+  return {
+    name: 'Paraboloid',
+    formula: 'Φ(u,v) = (u, v, 0.3(u² + v²))   — §5.7\u2019s shooting target',
+    xmin: -2.0, xmax: 2.0, ymin: -2.0, ymax: 2.0,
+    grid: 64, dist0: 8.0,
+    startX: 0.4, startY: 0.2, startAlpha: 0.67974028,   // §5.7's converged shot
+    low: [64, 96, 105], high: [166, 227, 161],   // teal → green
+    H(x, y)    { return C * (x * x + y * y); },
+    gx(x, y)   { return 2 * C * x; },
+    gy(x, y)   { return 2 * C * y; },
+    hxx()      { return 2 * C; },
+    hxy()      { return 0; },
+    hyy()      { return 2 * C; },
+  };
+}
+const SURFACES = [hillSurface, paraboloidSurface];
+
+// ---------- surface helpers ----------
+function posOn(s, x, y) { return [x, y, s.H(x, y)]; }
+function surfNormal(s, x, y) { return unt([-s.gx(x, y), -s.gy(x, y), 1]); }
+function clampX(s, x) { return Math.min(Math.max(x, s.xmin + 1e-6), s.xmax - 1e-6); }
+function clampY(s, y) { return Math.min(Math.max(y, s.ymin + 1e-6), s.ymax - 1e-6); }
+// `Geodesic.tangentFrame`: e1 along Φ_x, e2 = Φ_y with its e1-part removed
+function tangentFrame(s, x, y) {
+  const e1 = unt([1, 0, s.gx(x, y)]);
+  const raw = [0, 1, s.gy(x, y)];
+  return [e1, unt(sub(raw, scl(e1, dot(raw, e1))))];
+}
+
+// ---------- the walker ----------
+function makeWalker(s) {
+  const [e1, e2] = tangentFrame(s, s.startX, s.startY);
+  const w = add(scl(e1, Math.cos(s.startAlpha)), scl(e2, Math.sin(s.startAlpha)));
+  return {
+    s, x: s.startX, y: s.startY,
+    w,
+    // parameter velocity ξ = (w_x, w_y) — for a unit ambient tangent these
+    // coincide (J ξ = w), which is the subsection's graph identity.
+    xi: [w[0], w[1]],
+    mode: 'geodesic',           // 'geodesic' | 'straight'
+    len: 0, steps: 0,
+  };
+}
+function walkerPos(st) { return posOn(st.s, st.x, st.y); }
+
+// One §5.9 step with SIGNED h (h < 0 walks backward, facing unchanged).
+// 'geodesic': chord from the unit tangent w, then re-tangent w in the NEW
+//             tangent plane (the chapter's algorithm).
+// 'straight': advance the parameter point straight, x += h·ξ, with ξ HELD
+//             CONSTANT — the missing Christoffel term — and rebuild the
+//             displayed direction as unt(J ξ) at the new point.
+// Returns the chord-tip gap (how far the tip floated above the surface).
+function walkerStep(st, h) {
+  const s = st.s, p = walkerPos(st);
+  let tip, x, y;
+  if (st.mode === 'geodesic') {
+    tip = add(p, scl(st.w, h));
+    x = clampX(s, tip[0]); y = clampY(s, tip[1]);
+    const n = surfNormal(s, x, y);
+    st.w = unt(sub(st.w, scl(n, dot(st.w, n))));
+  } else {
+    x = clampX(s, st.x + h * st.xi[0]); y = clampY(s, st.y + h * st.xi[1]);
+    tip = add(posOn(s, x, y), scl(unt([st.xi[0], st.xi[1],
+      s.gx(x, y) * st.xi[0] + s.gy(x, y) * st.xi[1]]), h));
+    st.w = unt([st.xi[0], st.xi[1], s.gx(x, y) * st.xi[0] + s.gy(x, y) * st.xi[1]]);
+  }
+  const q = posOn(s, x, y);
+  const gap = dst(tip, q);
+  st.x = x; st.y = y; st.len += Math.abs(h); st.steps += 1;
+  return gap;
+}
+
+// Turn δ inside the plane we are allowed to steer in:
+// geodesic mode → rotate w around the normal (tangent plane);
+// straight mode → rotate ξ in the parameter plane (this is the "wrong" steering).
+function walkerTurn(st, delta) {
+  const s = st.s;
+  if (st.mode === 'geodesic') {
+    st.w = unt(rotAxis(st.w, surfNormal(s, st.x, st.y), delta));
+    st.xi = [st.w[0], st.w[1]];
+  } else {
+    const c = Math.cos(delta), sn = Math.sin(delta);
+    const xi0 = st.xi[0] * c - st.xi[1] * sn, xi1 = st.xi[0] * sn + st.xi[1] * c;
+    st.xi = [xi0, xi1];
+    st.w = unt([xi0, xi1, s.gx(st.x, st.y) * xi0 + s.gy(st.x, st.y) * xi1]);
+  }
+}
+
+// heading α measured from e1 within the tangent frame (the chapter's convention)
+function headingAlpha(st) {
+  const [e1, e2] = tangentFrame(st.s, st.x, st.y);
+  return Math.atan2(dot(st.w, e2), dot(st.w, e1));
+}
+// κ_n(w) = II(w, w) for a unit ambient tangent w  (= the per-unit turn rate)
+function normalCurvature(st) {
+  const s = st.s, wx = st.w[0], wy = st.w[1];
+  const quad = s.hxx(st.x, st.y) * wx * wx + 2 * s.hxy(st.x, st.y) * wx * wy
+             + s.hyy(st.x, st.y) * wy * wy;
+  const gx = s.gx(st.x, st.y), gy = s.gy(st.x, st.y);
+  return quad / Math.sqrt(1 + gx * gx + gy * gy);
+}
+// One exaggerated demo step (the figure's inset): shown, never applied.
+function demoChord(st, h) {
+  const p = walkerPos(st);
+  const tip = add(p, scl(st.w, h));
+  const x = clampX(st.s, tip[0]), y = clampY(st.s, tip[1]);
+  const q = posOn(st.s, x, y);
+  return { p, tip, q, gap: dst(tip, q) };
+}
+
+// ---------- node test hook (browser code below is skipped) ----------
+if (typeof window === 'undefined' && typeof globalThis !== 'undefined') {
+  globalThis.__walker = {
+    hillSurface, paraboloidSurface, makeWalker, walkerStep, walkerTurn,
+    walkerPos, headingAlpha, normalCurvature, demoChord, tangentFrame,
+  };
+}
+
+// =====================================================================
+// Browser game: renderer, camera, input, loop.
+// =====================================================================
+if (typeof document !== 'undefined' && document.getElementById('view')) {
+  const canvas = document.getElementById('view');
+  const ctx = canvas.getContext('2d');
+  const $ = id => document.getElementById(id);
+
+  // ---------- state ----------
+  let surfIdx = 0;
+  let surf = SURFACES[0]();
+  let st = makeWalker(surf);
+  const path = [];                       // walked trail, ambient points
+  const WALK_H = 0.008;                  // substep (the "h" of §5.9)
+  const SPEED = 0.9, TURN_RATE = 110 * Math.PI / 180;
+  const DEMO_H = 0.15;                   // the exaggerated displayed chord
+  const keys = new Set();
+  let auto = false, showChord = true, lastGap = 0;
+  let dirty = true;
+
+  // camera
+  const cam = { yaw: -1.05, pitch: 0.52, dist: surf.dist0,
+                target: [0, 0, 0.35], follow: false };
+
+  // ---------- camera math ----------
+  function toCam(p) {
+    const t = cam.target;
+    const x = p[0] - t[0], y = p[1] - t[1], z = p[2] - t[2];
+    const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
+    const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+    const x1 = cy * x - sy * y, y1 = sy * x + cy * y;
+    return [x1, cp * y1 - sp * z, sp * y1 + cp * z];   // [right, up', depth]
+  }
+  let W = 0, H = 0, DPR = 1;
+  function resize() {
+    DPR = window.devicePixelRatio || 1;
+    W = canvas.clientWidth; H = canvas.clientHeight;
+    canvas.width = W * DPR; canvas.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    dirty = true;
+  }
+  function project(p) {
+    const c = toCam(p);
+    const k = 0.17 * Math.min(W, H) * cam.dist / Math.max(0.5, cam.dist + c[2]);
+    return [W / 2 + k * c[0], H / 2 + k * c[1], c[2]];
+  }
+
+  // ---------- static mesh cache (surface doesn't move) ----------
+  let mesh = null;
+  function getMesh(s) {
+    if (mesh && mesh.s === s) return mesh;
+    const N = s.grid, n1 = N + 1;
+    const xs = new Float64Array(n1), ys = new Float64Array(n1);
+    for (let i = 0; i <= N; i++) {
+      xs[i] = lerp(s.xmin, s.xmax, i / N);
+      ys[i] = lerp(s.ymin, s.ymax, i / N);
+    }
+    const P = new Float64Array(3 * n1 * n1);      // world positions
+    const NZ = new Float64Array(n1 * n1);         // 1/√(1+|∇H|²), for shading
+    for (let j = 0; j <= N; j++) for (let i = 0; i <= N; i++) {
+      const x = xs[i], y = ys[j], o = (j * n1 + i) * 3;
+      P[o] = x; P[o + 1] = y; P[o + 2] = s.H(x, y);
+      const g = Math.hypot(s.gx(x, y), s.gy(x, y));
+      NZ[j * n1 + i] = 1 / Math.sqrt(1 + g * g);
+    }
+    const quads = new Int32Array(N * N * 4);
+    let q = 0;
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      quads[q++] = j * n1 + i; quads[q++] = j * n1 + i + 1;
+      quads[q++] = (j + 1) * n1 + i + 1; quads[q++] = (j + 1) * n1 + i;
+    }
+    mesh = { s, N, n1, xs, ys, P, NZ, quads, nQ: N * N,
+             order: new Int32Array(N * N),
+             depth: new Float64Array(N * N),
+             zmin: s.H(0, 0) * 0, zmax: 0 };
+    // height range for the color tint
+    let lo = Infinity, hi = -Infinity;
+    for (let k = 0; k < P.length; k += 3) { lo = Math.min(lo, P[k + 2]); hi = Math.max(hi, P[k + 2]); }
+    mesh.zmin = lo; mesh.zmax = Math.max(hi, lo + 1e-9);
+    return mesh;
+  }
+
+  // ---------- renderer ----------
+  const LIGHT = unt([-0.35, -0.25, 0.9]);
+  function render() {
+    ctx.fillStyle = '#11111b';
+    ctx.fillRect(0, 0, W, H);
+
+    // ----- surface mesh, painter's algorithm -----
+    const m = getMesh(surf);
+    const { N, n1, P, quads, order, depth, nQ } = m;
+    const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
+    const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+    const tx = cam.target[0], ty = cam.target[1], tz = cam.target[2];
+    // depth = camera-space depth of the quad centroid (average of 4 corners)
+    for (let q = 0; q < nQ; q++) {
+      let z = 0;
+      for (let k = 0; k < 4; k++) {
+        const o = quads[4 * q + k] * 3;
+        const x1 = cy * (P[o] - tx) - sy * (P[o + 1] - ty);
+        const y1 = sy * (P[o] - tx) + cy * (P[o + 1] - ty);
+        z += sp * y1 + cp * (P[o + 2] - tz);
+      }
+      depth[q] = z * 0.25;
+    }
+    for (let q = 0; q < nQ; q++) order[q] = q;
+    order.sort((p1, p2) => depth[p2] - depth[p1]);      // far → near
+
+    for (let oi = 0; oi < nQ; oi++) {
+      const q = order[oi];
+      const iA = quads[4 * q], iB = quads[4 * q + 1], iC = quads[4 * q + 2], iD = quads[4 * q + 3];
+      const A = [P[iA * 3], P[iA * 3 + 1], P[iA * 3 + 2]];
+      const B = [P[iB * 3], P[iB * 3 + 1], P[iB * 3 + 2]];
+      const C = [P[iC * 3], P[iC * 3 + 1], P[iC * 3 + 2]];
+      const D = [P[iD * 3], P[iD * 3 + 1], P[iD * 3 + 2]];
+      // face normal (world), oriented upward
+      let n = cross(sub(C, A), sub(D, A));
+      if (n[2] < 0) n = scl(n, -1);
+      const nn = nrm(n) || 1; n = scl(n, 1 / nn);
+      // Lambert + height tint
+      const lam = Math.max(0, dot(n, LIGHT));
+      const tH = (((A[2] + C[2]) * 0.5) - m.zmin) / (m.zmax - m.zmin);
+      const base = mixRGB(surf.low, surf.high, tH);
+      const sh = 0.42 + 0.58 * lam;
+      ctx.fillStyle = `rgb(${base[0] * sh | 0},${base[1] * sh | 0},${base[2] * sh | 0})`;
+      const pA = project(A), pB = project(B), pC = project(C), pD = project(D);
+      ctx.beginPath();
+      ctx.moveTo(pA[0], pA[1]); ctx.lineTo(pB[0], pB[1]);
+      ctx.lineTo(pC[0], pC[1]); ctx.lineTo(pD[0], pD[1]);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(17,17,27,0.12)'; ctx.lineWidth = 0.5; ctx.stroke();
+    }
+
+    // ----- trail -----
+    if (path.length > 1) {
+      ctx.strokeStyle = st.mode === 'geodesic' ? 'rgba(242,110,120,0.95)' : 'rgba(137,180,250,0.95)';
+      ctx.lineWidth = 2.2; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      for (let i = 0; i < path.length; i++) {
+        const s3 = project(path[i]);
+        if (i === 0) ctx.moveTo(s3[0], s3[1]); else ctx.lineTo(s3[0], s3[1]);
+      }
+      ctx.stroke();
+    }
+
+    // ----- demo chord (toggle E): one exaggerated §5.9 step, not applied -----
+    if (showChord) {
+      const dc = demoChord(st, DEMO_H);
+      const pp = project(dc.p), pt = project(dc.tip), pq = project(dc.q);
+      ctx.setLineDash([5, 4]);
+      ctx.strokeStyle = 'rgba(205,214,244,0.9)'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(pp[0], pp[1]); ctx.lineTo(pt[0], pt[1]); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.strokeStyle = 'rgba(243,139,168,0.95)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(pt[0], pt[1]); ctx.lineTo(pq[0], pq[1]); ctx.stroke();
+      ctx.fillStyle = 'rgba(243,139,168,0.95)';
+      ctx.beginPath(); ctx.arc(pt[0], pt[1], 3, 0, 7); ctx.fill();
+    }
+
+    // ----- walker: dot + heading arrow (green) + normal (blue) -----
+    const p = walkerPos(st);
+    const n = surfNormal(surf, st.x, st.y);
+    const pS = project(p);
+    const wEnd = project(add(p, scl(st.w, 0.28)));
+    const nEnd = project(add(p, scl(n, 0.20)));
+    ctx.strokeStyle = 'rgba(137,180,250,0.85)'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(pS[0], pS[1]); ctx.lineTo(nEnd[0], nEnd[1]); ctx.stroke();
+    ctx.strokeStyle = 'rgba(166,227,161,0.95)'; ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.moveTo(pS[0], pS[1]); ctx.lineTo(wEnd[0], wEnd[1]); ctx.stroke();
+    ctx.fillStyle = '#fab387';
+    ctx.beginPath(); ctx.arc(pS[0], pS[1], 5.5, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(17,17,27,0.8)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(pS[0], pS[1], 5.5, 0, 7); ctx.stroke();
+  }
+
+  // ---------- HUD ----------
+  function hud() {
+    $('surfName').textContent = surf.name;
+    $('surfFormula').textContent = surf.formula;
+    $('mode').innerHTML = st.mode === 'geodesic'
+      ? '🥾 <b>geodesic walk</b> (§5.9 algorithm)'
+      : '📐 <b>straight in parameter space</b> (no Christoffel fix)';
+    const p = walkerPos(st);
+    $('pos').textContent = `(${p[0].toFixed(3)}, ${p[1].toFixed(3)}, ${p[2].toFixed(3)})`;
+    $('xi').textContent = `(${st.xi[0].toFixed(3)}, ${st.xi[1].toFixed(3)})`;
+    $('heading').textContent = `${(headingAlpha(st) * 180 / Math.PI).toFixed(1)}°`;
+    const k = normalCurvature(st);
+    $('kappa').textContent = `${k.toFixed(4)} rad/unit (${(k * 180 / Math.PI).toFixed(1)}°/unit)`;
+    $('len').textContent = `${st.len.toFixed(3)}`;
+    $('steps').textContent = `in ${st.steps} steps of h = ${WALK_H}`;
+    $('gap').textContent = showChord
+      ? `gap = ${demoChord(st, DEMO_H).gap.toFixed(5)} at h = ${DEMO_H}` : 'hidden (E to show)';
+  }
+
+  // ---------- simulation ----------
+  function advance(dt) {
+    let turn = 0;
+    if (keys.has('ArrowLeft') || keys.has('a')) turn += 1;
+    if (keys.has('ArrowRight') || keys.has('d')) turn -= 1;
+    let fwd = 0;
+    if (keys.has('ArrowUp') || keys.has('w') || auto) fwd += 1;
+    if (keys.has('ArrowDown') || keys.has('s')) fwd -= 1;
+    if (turn !== 0) walkerTurn(st, turn * TURN_RATE * dt);
+    let move = fwd * SPEED * dt;
+    while (Math.abs(move) > 1e-9) {
+      const h = Math.sign(move) * Math.min(WALK_H, Math.abs(move));
+      lastGap = walkerStep(st, h);
+      path.push(walkerPos(st));
+      if (path.length > 20000) path.shift();
+      move -= h;
+    }
+    if (cam.follow) {
+      const p = walkerPos(st);
+      for (let i = 0; i < 3; i++) cam.target[i] = lerp(cam.target[i], p[i], Math.min(1, dt * 4));
+    }
+  }
+
+  function reset() {
+    st = makeWalker(surf);
+    path.length = 0;
+    cam.dist = surf.dist0;
+    cam.target = [surf.startX * 0.4, surf.startY * 0.4, 0.35];
+    dirty = true;
+  }
+
+  // ---------- input ----------
+  window.addEventListener('keydown', ev => {
+    const k = ev.key;
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(k)) ev.preventDefault();
+    if (ev.repeat) { keys.add(k.length === 1 ? k.toLowerCase() : k); return; }
+    if (k === 'g' || k === 'G') {
+      if (st.mode === 'geodesic') {
+        st.mode = 'straight';
+        st.xi = [st.w[0], st.w[1]];   // ξ captured from the current heading
+      } else {
+        st.mode = 'geodesic';         // w is already a consistent unit tangent
+        st.xi = [st.w[0], st.w[1]];
+      }
+      dirty = true;
+    } else if (k === 'e' || k === 'E') { showChord = !showChord; dirty = true; }
+    else if (k === 'c' || k === 'C') { cam.follow = !cam.follow; }
+    else if (k === 'r' || k === 'R') { reset(); }
+    else if (k === ' ') { auto = !auto; }
+    else if (k === '1' || k === '2') {
+      surfIdx = k === '1' ? 0 : 1;
+      surf = SURFACES[surfIdx]();
+      mesh = null;
+      reset();
+    }
+    keys.add(k.length === 1 ? k.toLowerCase() : k);
+    dirty = true;
+  });
+  window.addEventListener('keyup', ev => {
+    keys.delete(ev.key.length === 1 ? ev.key.toLowerCase() : ev.key);
+    dirty = true;
+  });
+  window.addEventListener('blur', () => keys.clear());
+
+  // mouse orbit + wheel zoom
+  let dragging = false, lastX = 0, lastY = 0;
+  canvas.addEventListener('mousedown', ev => { dragging = true; lastX = ev.clientX; lastY = ev.clientY; canvas.classList.add('dragging'); });
+  window.addEventListener('mouseup', () => { dragging = false; canvas.classList.remove('dragging'); });
+  window.addEventListener('mousemove', ev => {
+    if (!dragging) return;
+    cam.yaw += (ev.clientX - lastX) * 0.008;
+    cam.pitch = Math.min(1.45, Math.max(-0.15, cam.pitch + (ev.clientY - lastY) * 0.006));
+    lastX = ev.clientX; lastY = ev.clientY;
+    dirty = true;
+  });
+  canvas.addEventListener('wheel', ev => {
+    ev.preventDefault();
+    cam.dist = Math.min(20, Math.max(2.5, cam.dist * Math.exp(ev.deltaY * 0.001)));
+    dirty = true;
+  }, { passive: false });
+  window.addEventListener('resize', resize);
+
+  // ---------- loop ----------
+  let prev = performance.now();
+  function loop(now) {
+    const dt = Math.min(0.05, (now - prev) / 1000);
+    prev = now;
+    const moving = auto || keys.has('ArrowUp') || keys.has('w')
+                || keys.has('ArrowDown') || keys.has('s')
+                || keys.has('ArrowLeft') || keys.has('a')
+                || keys.has('ArrowRight') || keys.has('d');
+    if (moving || cam.follow) { advance(dt); dirty = true; }
+    if (dirty) { render(); hud(); dirty = false; }
+    requestAnimationFrame(loop);
+  }
+  resize();
+  reset();
+  requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>

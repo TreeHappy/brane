@@ -1187,6 +1187,54 @@ def hill_walk(hstep, n_geo=400):
     return np.array(pts), geo_amb, misses, turns, err
 
 
+def hill_walk_param_space(hstep):
+    """The parameter-space twin of `hill_walk`: forward Euler on the geodesic
+    ODE I q'' = -g — the "re-tangent" step written in (u, v) coordinates
+    (xi -= h * Gamma(xi, xi)) followed by the straight chord q += h * xi.
+    No ambient step, no projection, no normal: the chart IS the surface.
+    Returns the parameter-space endpoint (q, xi)."""
+    _, _, xi = hill_launch()
+    steps = int(round(HILL_WALK_LENGTH / hstep))
+    q, p = HILL_START.copy(), xi.copy()
+    for _ in range(steps):
+        p = p + hstep * hill_accel(q[0], q[1], p)   # xi -= h * Gamma(xi, xi)
+        q = q + hstep * p                          # the straight chord in (u, v)
+    return q, p
+
+
+def hill_walk_param_report():
+    """§5.9's parameter-space readout.  For a graph Phi(x, y) = (x, y, h),
+    the parameter velocity of the unit ambient tangent w is literally
+    xi = (w_x, w_y), so the ambient walker's (x, y) advance is already a
+    straight parameter step and the re-tangent step is a hidden Christoffel
+    update.  Prints the one-step re-tangent-vs-Euler comparison at the
+    launch point, the endpoint-error table against the RK4 reference, and
+    the no-correction straight walk (not a geodesic)."""
+    ref = hill_geodesic()[-1]
+    P0, w0, xi0 = hill_launch()
+    print("hill-walk, parameter space:")
+    print(f"  RK4 reference endpoint (u, v): ({ref[0]:.6f}, {ref[1]:.6f})")
+    for hstep in (0.1, 0.05, 0.025):
+        n_new = hill_normal(P0[0] + hstep * w0[0], P0[1] + hstep * w0[1])
+        wt = w0 - (w0 @ n_new) * n_new
+        xi_rt = np.array([*(wt / np.linalg.norm(wt))[0:2]])
+        xi_eu = xi0 + hstep * hill_accel(P0[0], P0[1], xi0)
+        diff = float(np.linalg.norm(xi_rt - xi_eu))
+        print(f"  one step at launch, h={hstep:<6}: "
+              f"|re-tangent - Euler| = {diff:.2e}")
+    for hstep in (0.2, 0.1, 0.05):
+        walk, *_ = hill_walk(hstep)
+        err_amb = float(np.linalg.norm(walk[-1][:2] - ref))
+        q_end, _ = hill_walk_param_space(hstep)
+        err_par = float(np.linalg.norm(q_end - ref))
+        print(f"  endpoint err, h={hstep:<6}: ambient walker {err_amb:.6f}, "
+              f"parameter Euler {err_par:.6f}")
+    q_straight = HILL_START + HILL_WALK_LENGTH * xi0
+    print(f"  no-correction straight endpoint: ({q_straight[0]:.6f}, "
+          f"{q_straight[1]:.6f}), miss "
+          f"{float(np.linalg.norm(q_straight - ref)):.4f}")
+
+
 def fig_hill_walk():
     """§5.9's picture: the embedded Gaussian hill, the start point with its
     tangent plane, the first straight chord floating its h²-sized gap above
@@ -1641,6 +1689,7 @@ if __name__ == "__main__":
     fig_signatures()
     fig_jacobi_fan()
     fig_hill_walk()
+    hill_walk_param_report()
     fig_pullback()
     fig_height_map()
     print("wrote tangent-space, fundamental-forms, shooting, relaxation, "
